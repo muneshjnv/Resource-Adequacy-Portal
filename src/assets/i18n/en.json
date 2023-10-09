@@ -101,6 +101,12 @@
         "HOVERED": "Hovered"
       }
     },
+    "VIEWUPLOADS": {
+      "TEXT": "Past File Uploads",
+      "LIST": {
+        "DAYAHEAD":"Day Ahead Forecast"
+      }
+    },
     "PAGES": {
       "TEXT": "Pages"
     },

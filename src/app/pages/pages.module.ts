@@ -26,6 +26,7 @@ import { DashboardComponent } from './dashboards/dashboard/dashboard.component';
 import { DashboardsModule } from "./dashboards/dashboards.module";
 import { DayaheadComponent } from './fileuploads/dayahead/dayahead.component';
 import { FileuploadsModule } from './fileuploads/fileuploads.module';
+import { ViewFileuploadsModule } from './viewuploads/viewuploads.module';
 
 @NgModule({
   declarations: [
@@ -45,7 +46,8 @@ import { FileuploadsModule } from './fileuploads/fileuploads.module';
     SlickCarouselModule ,
     LightboxModule,
     DashboardsModule,
-    FileuploadsModule
+    FileuploadsModule,
+    ViewFileuploadsModule
   ],
   schemas: [CUSTOM_ELEMENTS_SCHEMA]
 })

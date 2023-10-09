@@ -9,7 +9,7 @@ export const LAYOUT_POSITION = 'fixed';
 
 export const TOPBAR = 'light';
 
-export const SIDEBAR_SIZE = 'lg';
+export const SIDEBAR_SIZE = 'sm-hover';
 
 export const SIDEBAR_VIEW = 'default';
 
@@ -19,4 +19,4 @@ export const SIDEBAR_IMAGE = 'none';
 
 export const SIDEBAR_VISIBILITY = 'show';
 
-export const DATA_PRELOADER = 'disable';
+export const DATA_PRELOADER = 'enable';

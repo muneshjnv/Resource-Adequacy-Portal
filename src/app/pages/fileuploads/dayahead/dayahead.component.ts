@@ -29,6 +29,8 @@ export class DayaheadComponent {
   breadCrumbItems!: Array<{}>;
 
   spreadsheetData: any = [[]];
+
+  loadedData: boolean = false;
   
   // disabledDate: Date = new Date(today.getTime() + 24 * 60 * 60 * 1000);
  
@@ -107,6 +109,7 @@ export class DayaheadComponent {
     
       this.validationform.get('state')!.setValue(this.userData['state_id']);
       this.validationform.get('state')!.disable();
+      this.validationform.get('disabledDate')!.disable()
     }
 
     Swal.fire({text:'Data is prefilled with zeros, Please upload the file preview the data and then Upload!',confirmButtonColor: 'rgb(3, 142, 220)',});
@@ -610,8 +613,9 @@ export class DayaheadComponent {
     updateTable(instance, cell, colIndex, rowIndex, value, displayedValue, cellName) {
   
       if(colIndex == 2) {
-        // console.log(value);
-        if(typeof value !== 'number' ){
+        const exactValue = value.toString()
+        console.log(typeof value);
+        if(typeof value !== 'number' && Number.isNaN(Number.parseInt(exactValue))){
           cell.style.background = '#ffcccb'
           Swal.fire({text:'Your Data has some errors, They are highlighted. Please check and Update',confirmButtonColor: 'rgb(3, 142, 220)',});
         }
@@ -622,18 +626,14 @@ export class DayaheadComponent {
         // console.log("enter the dragon!")
         cell.style.background = 'white';
       }
-  
+      
+      
         
         
       }
     },
   
-    onload(element, instance) {
-
-      console.log(element);
-      console.log("Prasad");
-      
-    },
+   
   
     // onchange(element, cell, colIndex, rowIndex, newValue, oldValue) {
     //   // console.log('Rinnegan')
@@ -665,8 +665,9 @@ export class DayaheadComponent {
     
     
     });
-  
-    
+
+
+        
   }
   
   formSubmit() {
@@ -675,19 +676,68 @@ export class DayaheadComponent {
   
   
   confirm() {
-    Swal.fire({
-      title: 'Are you sure?',
-      text: 'You won\'t be able to revert this!',
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: 'rgb(3, 142, 220)',
-      cancelButtonColor: 'rgb(243, 78, 78)',
-      confirmButtonText: 'Yes, Insert it!'
-    }).then(result => {
-      if (result.value) {
-        Swal.fire({title: 'Successfully Inserted!', text:'Your file has been deleted.', confirmButtonColor: 'rgb(3, 142, 220)',icon: 'success',});
+
+    if(this.validationform.get('excelFile')!.value == null) {
+      Swal.fire({text:'It seems you have not uploaded the file, Please upload the file!',confirmButtonColor: 'rgb(3, 142, 220)',});
+  
+    }
+    else {
+
+      console.log("Entered Else part!")
+
+      if(this.validationform.valid) {
+
+        Swal.fire({
+          title: 'Are you sure?',
+          text: 'You won\'t be able to revert this!',
+          icon: 'warning',
+          showCancelButton: true,
+          confirmButtonColor: 'rgb(3, 142, 220)',
+          cancelButtonColor: 'rgb(243, 78, 78)',
+          confirmButtonText: 'Yes, Insert it!'
+        }).then(result => {
+          if (result.value) {
+            const formData = new FormData();
+            formData.append('state', this.validationform.get('state')!.value);
+            formData.append('disabledDate', this.validationform.get('disabledDate')!.value);
+            formData.append('excelFile', this.validationform.get('excelFile')!.value);
+            formData.append('data', JSON.stringify(this.data))
+              
+              this.dayAheadForecast.uploadDayAheadFile(formData).subscribe((res: any)=> {
+                if('error' in res) {
+                  console.log(res['error'])
+                }
+                else {
+                  console.log(res["message"]);
+                  // this.toastService.show(res['message'], { classname: 'bg-success text-white', delay: 5000 });
+        
+                  
+                  Swal.fire({
+                    text: res['message'],
+                    icon: 'success',
+                    confirmButtonColor: 'rgb(3, 142, 220)',
+                    confirmButtonText: 'OK'
+                  });
+
+                  this.spreadsheet.nativeElement.jexcel.setData(this.data);
+        
+        
+        
+        
+                }
+          
+              })
+                  }
+        });
+    
+    
+    
+    
       }
-    });
+
+    }
+   
+    
   }
   
   
@@ -762,6 +812,8 @@ export class DayaheadComponent {
   
   
   handleFileInput(event: any) {
+
+    console.log(this.spreadsheet.nativeElement.jexcel);
     const file = event.target.files[0];
     this.validationform.get('excelFile')!.setValue(file);
     if (!file) return;
@@ -777,36 +829,55 @@ export class DayaheadComponent {
       this.excelData = this.convertSheetData(worksheet);
       // console.log(this.excelData);
 
+      let flag: boolean = false;
+
       const secondColumnValues: any[] = this.data.map(row => row[1]);
       this.tempData = [];
       for(var i =0; i < this.excelData.rows.length; i++) {
-        if(this.excelData.rows[i][1] in secondColumnValues ){
+        if((this.excelData.rows[i][0] >= 1 && this.excelData.rows[i][0] <= 96) && secondColumnValues.includes(this.excelData.rows[i][1]) ){
           this.tempData.push(this.excelData.rows[i])
         }
-        else {
-          break
-        }
+        
         
       }
 
-      console.log(this.tempData)
+      let totalCount = this.getTotalElements(this.tempData);
+
+      this.loadedData = true;
+
       
-      // console.log(this.data);
-      console.log(this.tempData.length)
-      // console.log(this.tempData[0].length);
-      if(this.tempData.length < 0 || (this.tempData.length != 96 || this.tempData[0].length !=  21)) {
+      if(totalCount == 96*21) {
+          Swal.fire({text:'Data is successfully loaded, you can now preview the data!',confirmButtonColor: 'rgb(3, 142, 220)',});
+
+      }
+
+      else {
         Swal.fire({text:'The data you have uploaded is not in the proper format, Please upload based on the format provided above.',confirmButtonColor: 'rgb(3, 142, 220)',});   
 
+      }
+
+      this.spreadsheet.nativeElement.jexcel.setData(this.tempData);
+
+      
+
+
+
+      
+      
+
+      // if(this.tempData.length >= 0 && (this.tempData.length != 96 || this.tempData[0].length !=  21)) {
+      //   Swal.fire({text:'The data you have uploaded is not in the proper format, Please upload based on the format provided above.',confirmButtonColor: 'rgb(3, 142, 220)',});   
+
         
-      }
-      else {
-        console.log("Entered to save the data!")
-        this.data = this.tempData;
-        this.spreadsheet.nativeElement.jexcel.setData(this.data);
-        Swal.fire({text:'Data is successfully loaded, you can now preview the data!',confirmButtonColor: 'rgb(3, 142, 220)',});
+      // }
+      // else {
+      //   console.log("Entered to save the data!")
+      //   // this.data = this.tempData;
+      //   this.spreadsheet.nativeElement.jexcel.setData(this.data);
+      //   Swal.fire({text:'Data is successfully loaded, you can now preview the data!',confirmButtonColor: 'rgb(3, 142, 220)',});
 
 
-      }
+      // }
       
   
       // console.log(this.data);
@@ -820,7 +891,6 @@ export class DayaheadComponent {
       
   
       // this.ngAfterViewInit();
-      this.spreadsheet.nativeElement.jexcel.setData(this.data);
   
       // Swal.fire({text:'Data is successfully loaded, you can now preview the data!',confirmButtonColor: 'rgb(3, 142, 220)',});
 
@@ -835,6 +905,16 @@ export class DayaheadComponent {
       
     };
     reader.readAsBinaryString(file);
+  }
+
+  getTotalElements(arr: any[][]): number {
+    let totalCount = 0;
+  
+    for (const row of arr) {
+      totalCount += row.length;
+    }
+  
+    return totalCount;
   }
   
   convertSheetData(worksheet: XLSX.WorkSheet): { header: any[]; rows: any[] } {

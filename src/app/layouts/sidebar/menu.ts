@@ -500,6 +500,19 @@ export const MENU: MenuItem[] = [
       // },
     ]
   },
+  {
+    id: 10000,
+    label: 'MENUITEMS.VIEWUPLOADS.TEXT',
+    icon: 'mdi mdi-account-circle-outline',
+    subItems: [
+      {
+        id: 10001,
+        label: 'MENUITEMS.VIEWUPLOADS.LIST.DAYAHEAD',
+        parentId: 10000,
+        link: 'viewuploads/dayahead'
+      }
+    ]
+  }
   // {
   //   id: 54,
   //   label: 'MENUITEMS.PAGES.TEXT',
