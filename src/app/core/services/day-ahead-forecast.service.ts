@@ -20,4 +20,13 @@ export class DayAheadForecastService {
   uploadDayAheadFile(formData: any) {
     return this.http.post<any>(this.url + '/upload', formData)
   }
+
+  fetchRevisions(state: any, date: any) {
+    return this.http.post<any>(this.url + '/fetchrevisions', {"state": state, "date": date})
+
+  }
+
+  fetchRevisionsData(state: any, date: any, revision: any) {
+    return this.http.post<any>(this.url + '/fetchrevisionsdata', {"state": state, "date": date, "revision": revision})
+  }
 }

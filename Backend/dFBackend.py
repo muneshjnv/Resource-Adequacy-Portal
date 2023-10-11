@@ -67,7 +67,6 @@ def login():
 
 
 
-        print(username, password)
         
         cursor.execute("select username, password_hash, user_role, state_name, state_id from states where username= '{0}'".format(username))
         login_data = cursor.fetchall()
@@ -120,6 +119,61 @@ def login():
 
 
 
+@app.route('/api/fetchrevisions', methods=['POST'])
+def fetchRevisions():
+    params = request.get_json()
+    date = params["date"]
+    params["date"] = date
+    cursor.execute("select revision_no from file_uploads where state_id = {0} and upload_date = to_date('{1}', 'DD/MM/YYYY')".format(params["state"], params["date"]))
+    revisions_data = cursor.fetchall()
+    revision_list = [i[0] for i in revisions_data]
+
+    if len(revision_list) > 0:
+        return jsonify(status="success", message="Fetched Successfully for {0}".format(date), revisions=revision_list)
+    else:
+        return jsonify(status="failure", message="There are no Uploads on {0}".format(date))
+    
+    
+
+
+
+
+
+
+@app.route('/api/fetchrevisionsdata', methods=['POST'])
+def checkUploaded():
+    params = request.get_json()
+    print(params)
+    cursor.execute("select file_data, upload_date, upload_time, uploaded_by, revision_no from file_uploads where state_id = {0} and upload_date = to_date('{1}', 'DD/MM/YYYY') and revision_no={2}".format(params["state"], params["date"], int(params["revision"])))
+    data = cursor.fetchall()
+
+    file_data = []
+    uploaded_time = ''
+    uploaded_date = ''
+    uploaded_by = ''
+    # role = ''
+    revision_no = int()
+
+
+
+    if len(data) > 0:
+        file_data = data[0][0]
+        uploaded_date = data[0][1].strftime('%d-%b-%Y')
+        uploaded_time = data[0][2].strftime('%d-%b-%Y %H:%M:%S %p')
+        uploaded_by = data[0][3]
+        revision_no = data[0][4]
+        print(type(uploaded_date), type(uploaded_time))
+        # print(type(file_data), uploaded_time, uploaded_date, uploaded_by, revision_no)
+        # print(file_data[-1])
+        print(len(file_data), len(file_data[0]))
+        return jsonify(status="success", data=file_data, time=uploaded_time, date=uploaded_date, revision=revision_no, role=uploaded_by)
+    else:
+        return jsonify(status="failure", message="There is a Problem in fetching the data, Please contact SRLDC IT!")
+        
+
+    return jsonify(message="Fetched Successfully")
+
+
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
@@ -133,13 +187,12 @@ def upload_data_and_file():
     # print(request["form_data"])
     # print(request["data"])
     header_data = dict(request.headers)
-    print(header_data)
+    # print(header_data)
     state = request.form.get('state')
-    print("state",state)
+    # print("state",state)
     disabledDate = request.form.get('disabledDate')
-    print(disabledDate)
+    # print(disabledDate)
     data = request.form.get('data')
-    print(type(data))
     data = json.loads(data)
 
     data = json.dumps(data)
@@ -152,14 +205,12 @@ def upload_data_and_file():
     # print(username, "username")
     role = x['role']
     
-    print(username, role)
 
     cursor.execute("select state_name, acronym from states where state_id='{0}'".format(state))
 
     state_name = cursor.fetchall()[0][0]
 
 
-    print("state_name", state_name)
         
 
 
@@ -171,11 +222,9 @@ def upload_data_and_file():
 # Parse the date string into a datetime object
     disabledDate = (datetime.strptime(date_string, date_format)).strftime("%Y-%m-%d")
 
-    print(disabledDate)
     # print(state, type(disabledDate) )
     # print("Data Received")
 
-    print(request.files)
 
     if 'excelFile' not in request.files:
         return jsonify({'error': 'No file part'})
@@ -216,12 +265,12 @@ def upload_data_and_file():
                 print("entered in save")
                 file.save(file_path)
                 if len(existing_revs) > 0:
-                    cursor.execute("insert into file_uploads (state_id, upload_date, upload_time, file_name, revision_no, uploaded_by) values({0}, to_date('{1}', 'YYYY-MM-DD'), to_timestamp('{2}', 'YYYY-MM-DD HH24:MI:SS'), '{3}', {4}, '{5}')".format(state, disabledDate, datetime.now().strftime('%Y-%m-%d %H:%M:%S'), file_path, len(existing_revs)+1, role))
+                    cursor.execute("insert into file_uploads (state_id, upload_date, upload_time, file_name, revision_no, uploaded_by, file_data) values({0}, to_date('{1}', 'YYYY-MM-DD'), to_timestamp('{2}', 'YYYY-MM-DD HH24:MI:SS'), '{3}', {4}, '{5}', '{6}')".format(state, disabledDate, datetime.now().strftime('%Y-%m-%d %H:%M:%S'), file_path, len(existing_revs)+1, role, data))
                     cursor.execute("update file_contents set file_data =  '{0}' where state_id = {1} and upload_date = to_date('{2}', 'YYYY-MM-DD')".format( data, state, disabledDate))
                     return jsonify({'message': 'Data and file uploaded successfully. Uploaded {0} times'.format(len(existing_revs)+1)})
 
                 else:
-                    cursor.execute("insert into file_uploads (state_id, upload_date, upload_time, file_name, revision_no, uploaded_by) values({0}, to_date('{1}', 'YYYY-MM-DD'), to_timestamp('{2}', 'YYYY-MM-DD HH24:MI:SS'), '{3}', {4}, '{5}')".format(state, disabledDate, datetime.now().strftime('%Y-%m-%d %H:%M:%S'), file_path, len(existing_revs)+1, role))
+                    cursor.execute("insert into file_uploads (state_id, upload_date, upload_time, file_name, revision_no, uploaded_by, file_data) values({0}, to_date('{1}', 'YYYY-MM-DD'), to_timestamp('{2}', 'YYYY-MM-DD HH24:MI:SS'), '{3}', {4}, '{5}', '{6}')".format(state, disabledDate, datetime.now().strftime('%Y-%m-%d %H:%M:%S'), file_path, len(existing_revs)+1, role, data))
                     cursor.execute("insert into file_contents (state_id, upload_date, file_data) values({0}, to_date('{1}', 'YYYY-MM-DD'), '{2}')".format(state, disabledDate, data))
                     return jsonify({'message': 'Data and file uploaded successfully, File Uploaded for the first time'})
 

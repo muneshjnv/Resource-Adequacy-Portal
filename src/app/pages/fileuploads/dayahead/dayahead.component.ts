@@ -83,6 +83,9 @@ export class DayaheadComponent {
     this.userData = this.TokenStorageService.getUser();
 
 
+    
+
+
    
 
     
@@ -701,7 +704,7 @@ export class DayaheadComponent {
             formData.append('state', this.validationform.get('state')!.value);
             formData.append('disabledDate', this.validationform.get('disabledDate')!.value);
             formData.append('excelFile', this.validationform.get('excelFile')!.value);
-            formData.append('data', JSON.stringify(this.data))
+            formData.append('data', JSON.stringify(this.spreadsheet.nativeElement.jexcel.getData()))
               
               this.dayAheadForecast.uploadDayAheadFile(formData).subscribe((res: any)=> {
                 if('error' in res) {
@@ -755,7 +758,7 @@ export class DayaheadComponent {
     formData.append('state', this.validationform.get('state')!.value);
     formData.append('disabledDate', this.validationform.get('disabledDate')!.value);
     formData.append('excelFile', this.validationform.get('excelFile')!.value);
-    formData.append('data', JSON.stringify(this.data))
+    formData.append('data', JSON.stringify(this.spreadsheet.nativeElement.jexcel.getData()))
       
       this.dayAheadForecast.uploadDayAheadFile(formData).subscribe((res: any)=> {
         if('error' in res) {
@@ -832,10 +835,11 @@ export class DayaheadComponent {
       let flag: boolean = false;
 
       const secondColumnValues: any[] = this.data.map(row => row[1]);
+      secondColumnValues.push('23:45 - 24:00')
       this.tempData = [];
       for(var i =0; i < this.excelData.rows.length; i++) {
         if((this.excelData.rows[i][0] >= 1 && this.excelData.rows[i][0] <= 96) && secondColumnValues.includes(this.excelData.rows[i][1]) ){
-          this.tempData.push(this.excelData.rows[i])
+          this.tempData.push(this.excelData.rows[i].slice(0,21))
         }
         
         
@@ -844,6 +848,11 @@ export class DayaheadComponent {
       let totalCount = this.getTotalElements(this.tempData);
 
       this.loadedData = true;
+
+      console.log(this.tempData[0])
+      console.log(this.tempData[0].length)
+
+      console.log(totalCount)
 
       
       if(totalCount == 96*21) {
