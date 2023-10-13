@@ -17,6 +17,9 @@ const routes: Routes = [
     },
     {
       path: 'viewuploads', loadChildren: () => import('./viewuploads/viewuploads.module').then(m => m.ViewFileuploadsModule)
+    },
+    {
+      path: 'timingentry', loadChildren: () => import('./timingentry/timingentry.module').then(m => m.TimingEntryModule)
     }
 ];
 

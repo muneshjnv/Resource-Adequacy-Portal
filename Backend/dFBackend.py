@@ -1,6 +1,7 @@
 from base64 import decode
 from datetime import timedelta, datetime
 from operator import itemgetter
+import sys
 
 from flask import Flask, request
 from flask import jsonify
@@ -14,6 +15,7 @@ from flask_jwt_extended import get_jwt_identity
 from flask_jwt_extended import jwt_required
 from flask_jwt_extended import JWTManager
 from flask_jwt_extended import decode_token
+import requests
 from configBackend import *
 
 import numpy as np
@@ -282,7 +284,81 @@ def upload_data_and_file():
         # return jsonify({'message': 'Data and file uploaded successfully'})
     else:
         return jsonify({'error': 'Invalid file type'})
+    
 
+@app.route('/api/pendingentries', methods=['GET'])
+@jwt_required()
+def pendingTimingEntries():
+    try:
+        response = requests.get("https://oms2.srldc.in/Codebook/getDueTimingEntryData")
+
+        data = response.json()["data"]["dueTiminingEntryList"]
+
+        # print(data)
+
+        header_data = dict(request.headers)
+        # print(header_data)
+        token = header_data['Authorization'].split()[1]
+        x = decode_token(token, csrf_value=None, allow_expired=False)
+
+        username = x['sub']   # username in database
+
+        role = x['role']       # role in database
+
+        states_entities_dict = {}
+        states_entities_dict["kar_state"] = ['kptcl', 'KTL']
+        states_entities_dict["ap_state"] = ['LKPPLSTG3', 'APTRANSCO']
+        states_entities_dict["tn_state"] = ['TN','TANTRANSCO']
+        states_entities_dict["ker_state"] = []
+        states_entities_dict["tg_state"] = ['TSTRANSCO']
+        states_entities_dict["pondy_state"] = []
+
+
+        admin_states_list = []
+
+        for key, value in states_entities_dict.items():
+            for v in value:
+                admin_states_list.append(v)
+
+
+        # PGCIL SR-2, PGCIL SR-1
+
+        # print(states_entities_dict[username])
+
+
+        entities_data = []
+
+        # print(data)
+
+        id = 1
+
+        if role == 'user':
+            for i in data:
+                if i["codeIssuedto"] in states_entities_dict[username] or i["codeRequestedby"] in states_entities_dict[username]:
+                    entities_data.append({"id": id, "codeIssueTime": i["codeIssuedTime"], "elementType": i["entityFeatureName"], "elementName": i["elementName"], "switching": i["end"], "srldcCode": i["codeNo"], "category": i["outageCategory"], "codeIssuedTo": i["codeIssuedto"], "codeRequestedBy": i["codeRequestedby"], "isSelected": False})
+                    id = id + 1
+        
+        else:
+            for i in data:
+                if i["codeIssuedto"] in admin_states_list or i["codeRequestedby"] in admin_states_list:
+                    entities_data.append({"id": id, "codeIssueTime": i["codeIssuedTime"], "elementType": i["entityFeatureName"], "elementName": i["elementName"], "switching": i["end"], "srldcCode": i["codeNo"], "category": i["outageCategory"], "codeIssuedTo": i["codeIssuedto"], "codeRequestedBy": i["codeRequestedby"], "isSelected": False})
+                    id = id + 1
+
+
+        if len(entities_data) == 0:
+            return jsonify(status="failure", message="Data is Empty!")
+        
+
+
+        return jsonify(status="success", message="Message fetched successfully!", data=entities_data )
+
+
+    except Exception as e:
+        print(e)
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        print(exc_type, fname, exc_tb.tb_lineno)
+        return jsonify(status="failure", message="There is a problem in fetching the data, Please contact SRLDC IT!")
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0',debug=True)

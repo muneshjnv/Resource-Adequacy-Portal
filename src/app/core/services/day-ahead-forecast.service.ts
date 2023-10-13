@@ -29,4 +29,11 @@ export class DayAheadForecastService {
   fetchRevisionsData(state: any, date: any, revision: any) {
     return this.http.post<any>(this.url + '/fetchrevisionsdata', {"state": state, "date": date, "revision": revision})
   }
+
+  fetchPendingEntry() {
+    return this.http.get<any>(this.url + '/pendingentries')
+  }
+
+
+
 }

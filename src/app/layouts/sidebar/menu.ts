@@ -512,7 +512,18 @@ export const MENU: MenuItem[] = [
         link: 'viewuploads/dayahead'
       }
     ]
-  }
+  },
+  {
+    id: 10002,
+    label: 'MENUITEMS.TIMINGENTRY.TEXT',
+    icon: 'mdi mdi-sticker-text-outline',
+    subItems: [{
+      id: 10003,
+      label: 'MENUITEMS.TIMINGENTRY.LIST.PENDING',
+      parentId: 10002, 
+      link: 'timingentry/pending'
+    }]
+  },
   // {
   //   id: 54,
   //   label: 'MENUITEMS.PAGES.TEXT',
