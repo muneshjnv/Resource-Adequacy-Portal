@@ -290,7 +290,7 @@ def upload_data_and_file():
 @jwt_required()
 def pendingTimingEntries():
     try:
-        response = requests.get("https://oms2.srldc.in/Codebook/getDueTimingEntryData")
+        response = requests.get("http://10.0.100.58:8999/Codebook/getDueTimingEntryData")
 
         data = response.json()["data"]["dueTiminingEntryList"]
 
@@ -312,6 +312,8 @@ def pendingTimingEntries():
         states_entities_dict["ker_state"] = []
         states_entities_dict["tg_state"] = ['TSTRANSCO']
         states_entities_dict["pondy_state"] = []
+        states_entities_dict["pgcil_sr_1"] = ['PGCIL SR-1']
+        states_entities_dict["pgcil_sr_2"] = ['PGCIL SR-2']
 
 
         admin_states_list = []
@@ -334,14 +336,14 @@ def pendingTimingEntries():
 
         if role == 'user':
             for i in data:
-                if i["codeIssuedto"] in states_entities_dict[username] or i["codeRequestedby"] in states_entities_dict[username]:
-                    entities_data.append({"id": id, "codeIssueTime": i["codeIssuedTime"], "elementType": i["entityFeatureName"], "elementName": i["elementName"], "switching": i["end"], "srldcCode": i["codeNo"], "category": i["outageCategory"], "codeIssuedTo": i["codeIssuedto"], "codeRequestedBy": i["codeRequestedby"], "isSelected": False})
+                if (i["codeIssuedto"] in states_entities_dict[username] or i["codeRequestedby"] in states_entities_dict[username]) and (i["constituentEnteredTime"] == ""):
+                    entities_data.append({"id": id, "codeIssueTime": i["codeIssuedTime"], "elementType": i["entityFeatureName"], "elementName": i["elementName"], "switching": i["end"], "srldcCode": i["codeNo"], "category": i["outageCategory"], "codeIssuedTo": i["codeIssuedto"], "codeRequestedBy": i["codeRequestedby"], "codeId": i["codeId"], "isSelected": False})
                     id = id + 1
         
         else:
             for i in data:
-                if i["codeIssuedto"] in admin_states_list or i["codeRequestedby"] in admin_states_list:
-                    entities_data.append({"id": id, "codeIssueTime": i["codeIssuedTime"], "elementType": i["entityFeatureName"], "elementName": i["elementName"], "switching": i["end"], "srldcCode": i["codeNo"], "category": i["outageCategory"], "codeIssuedTo": i["codeIssuedto"], "codeRequestedBy": i["codeRequestedby"], "isSelected": False})
+                if (i["codeIssuedto"] in admin_states_list or i["codeRequestedby"] in admin_states_list) and (i["constituentEnteredTime"] == ""):
+                    entities_data.append({"id": id, "codeIssueTime": i["codeIssuedTime"], "elementType": i["entityFeatureName"], "elementName": i["elementName"], "switching": i["end"], "srldcCode": i["codeNo"], "category": i["outageCategory"], "codeIssuedTo": i["codeIssuedto"], "codeRequestedBy": i["codeRequestedby"],  "codeId": i["codeId"], "isSelected": False})
                     id = id + 1
 
 
@@ -359,6 +361,35 @@ def pendingTimingEntries():
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         print(exc_type, fname, exc_tb.tb_lineno)
         return jsonify(status="failure", message="There is a problem in fetching the data, Please contact SRLDC IT!")
+    
+@app.route('/api/submitentries', methods=['POST'])
+@jwt_required()
+def submitTimingEntries():
+    try:
+        data = request.get_json()
+
+        # data = json.loads(data)
+
+        data = data["data"]
+
+        for i in data:
+
+            if 'T' in i["codeIssueTime"]:
+                i["codeIssueTime"] = datetime.fromisoformat(i["codeIssueTime"]).strftime("%Y-%m-%d %H:%M")
+            else:
+                i["codeIssueTime"] = datetime.strptime(i["codeIssueTime"], "%d/%m/%Y, %H:%M")
+
+                # Format the datetime object as "yyyy-mm-dd hh:mm"
+                i["codeIssueTime"] = i["codeIssueTime"].strftime("%Y-%m-%d %H:%M")
+
+            response = requests.get("https://oms2.srldc.in/Codebook/EnterConstituentTime?codeId={0}&enteredTime={1}".format(i["codeId"], i["codeIssueTime"]))
+
+            print(response)
+
+        return jsonify(status="success", message="Sent Successfully!")
+    except Exception as error:
+        print(error)
+        return jsonify(status="failure", message="There is a problem, Please contact SRLDC IT!")
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0',debug=True)

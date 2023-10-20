@@ -1,5 +1,14 @@
 /* You can add global styles to this file, and also import other style files */
 // Swiper
+
+@import 'node_modules/@swimlane/ngx-datatable/index.css';
+// @import 'node_modules/@swimlane/ngx-datatable/themes/material.scss';
+// @import 'node_modules/@swimlane/ngx-datatable/themes/dark.scss';
+@import 'node_modules/@swimlane/ngx-datatable/themes/bootstrap.scss';
+@import 'node_modules/@swimlane/ngx-datatable/assets/icons.css';
+
+
+
 .coverflowslide .slide {
     position: relative;
     transition: transform 0.3s;
@@ -23,3 +32,10 @@
 .space .slick-slide {
     margin: 10px;
 }
+
+
+// @import '~@swimlane/ngx-datatable/index.css';
+// @import '~@swimlane/ngx-datatable/themes/material.scss';
+// @import '~@swimlane/ngx-datatable/themes/dark.scss';
+// @import '~@swimlane/ngx-datatable/themes/bootstrap.scss';
+// @import '~@swimlane/ngx-datatable/assets/icons.css';

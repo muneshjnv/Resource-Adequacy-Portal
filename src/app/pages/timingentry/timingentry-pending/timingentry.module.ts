@@ -24,8 +24,7 @@ import { TimingentryPendingComponent } from './timingentry-pending/timingentry-p
 // Sorting page
 import{NgbdListSortableHeader} from './timingentry-pending/listjs-sortable.directive'
 import { TimingEntryRoutingModule } from './timingentry-routing.module';
-import { ToastsContainer } from '../timingentry/timingentry-pending/toasts-container.component'
-import { NgxDatatableModule } from '@swimlane/ngx-datatable';
+import { ToastsContainer } from '../../account/login/toasts-container.component';
 
 @NgModule({
   declarations: [
@@ -47,8 +46,7 @@ import { NgxDatatableModule } from '@swimlane/ngx-datatable';
     SharedModule,
     SimplebarAngularModule,
     // Ng2SearchPipeModule,
-    NgbToastModule,
-    NgxDatatableModule,
+    NgbToastModule
   ],
   schemas: [CUSTOM_ELEMENTS_SCHEMA]
 })

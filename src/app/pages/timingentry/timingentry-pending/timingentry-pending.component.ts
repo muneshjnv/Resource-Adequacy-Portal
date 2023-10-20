@@ -12,6 +12,11 @@ import { ListJsModel, paginationModel } from './listjs.model';
 import { paginationlist, dataattribute, existingList, FuzzyList } from './data';
 import { OrdersService } from './listjs.service';
 import { NgbdListSortableHeader, listSortEvent } from './listjs-sortable.directive';
+import { ToastService } from './toast-service';
+import { PendingEntriesService } from 'src/app/core/services/pending-entries.service';
+import { Router } from '@angular/router';
+
+declare var $: any;
 
 
 @Component({
@@ -20,11 +25,23 @@ import { NgbdListSortableHeader, listSortEvent } from './listjs-sortable.directi
   styleUrls: ['./timingentry-pending.component.scss'],
   providers: [OrdersService, DecimalPipe]
 })
+
+
+
+
 export class TimingentryPendingComponent {
 
 
+  rows = [
+    { name: 'John', age: 30 },
+    { name: 'Alice', age: 25 },
+    { name: 'Bob', age: 35 },
+    // Add more data objects
+  ];
+
   breadCrumbItems!: Array<{}>;
   submitted = false;
+
   listJsForm!: UntypedFormGroup;
   pendingEntryForm!: UntypedFormGroup;
   ListJsData!: ListJsModel[];
@@ -48,13 +65,16 @@ export class TimingentryPendingComponent {
   dataterm: any;
   term: any;
 
+
+  modalTableData: any = [];
+
   // Table data
   ListJsList!: Observable<ListJsModel[]>;
   total!: Observable<number>;
 
   @ViewChildren(NgbdListSortableHeader) headers!: QueryList<NgbdListSortableHeader>;
 
-  constructor(private modalService: NgbModal, public service: OrdersService, private formBuilder: UntypedFormBuilder) {
+  constructor(private modalService: NgbModal, public service: OrdersService, private formBuilder: UntypedFormBuilder, public toastService: ToastService, public pendingService: PendingEntriesService, private router: Router) {
     
   }
 
@@ -69,6 +89,8 @@ export class TimingentryPendingComponent {
 
     this.ListJsList = this.service.countries$;
     this.total = this.service.total$;
+
+    
 
     
 
@@ -139,9 +161,36 @@ export class TimingentryPendingComponent {
    * @param content modal content
    */
   openModal(content: any) {
-    console.log(content);
-    this.submitted = false;
-    this.modalService.open(content, { size: 'xl', centered: false });
+    // console.log(content);
+    // console.log(content);
+    var checkboxes: any = document.getElementsByName('checkAll');
+    var result
+    var checkedVal: any[] = [];
+    for (var i = 0; i < checkboxes.length; i++) {
+      if (checkboxes[i].checked) {
+        result = checkboxes[i].value;
+        checkedVal.push(result);
+      }
+    }
+
+    if (checkedVal.length > 0) {
+      // console.log(checkedVal);
+      // console.log(this.ListJsDatas)
+
+      this.modalTableData = this.ListJsDatas.filter((item: any) => item.state);
+
+
+
+      this.modalService.open(content, { size: 'xl', centered: false });
+    }
+    else {
+      Swal.fire({ text: 'Please select at least one checkbox', confirmButtonColor: '#239eba', });
+    }
+    this.checkedValGet = checkedVal;
+
+    // this.submitted = false;
+    // this.modalService.open(content, { size: 'xl', centered: false });
+
   }
 
   /**
@@ -150,6 +199,24 @@ export class TimingentryPendingComponent {
   get form() {
     return this.listJsForm.controls;
   }
+
+
+    deleteRow(data: any) {
+      const objectIdToDelete = 2; // The ID of the object you want to delete
+
+      // Use the filter method to create a new array without the object to delete
+      this.modalTableData = this.modalTableData.filter((obj: any) => obj.srldcCode !== data.srldcCode);
+
+      for (const item of this.ListJsDatas) {
+        if(item.srldcCode == data.srldcCode){
+          item.state = false;
+        }
+      }
+
+
+    }
+
+
 
   /**
 * Pagination
@@ -211,6 +278,8 @@ export class TimingentryPendingComponent {
 
   // Delete Data
   deleteData(id: any) {
+
+    
     if (id) {
       document.getElementById('lj_' + id)?.remove();
     }
@@ -236,7 +305,6 @@ export class TimingentryPendingComponent {
       }
     }
 
-    console.log(checkedVal);
     if (checkedVal.length > 0) {
       this.modalService.open(content, { centered: true });
     }
@@ -278,6 +346,39 @@ export class TimingentryPendingComponent {
 
     this.service.sortColumn = column;
     this.service.sortDirection = direction;
+  }
+
+
+
+  submitData() {
+    console.log(this.modalTableData);
+
+    this.pendingService.submitEntries(this.modalTableData).subscribe((res: any)=> {
+
+      if(res["status"] == "success") {
+        this.toastService.show(res["message"], { classname: 'bg-success text-white', delay: 3000 });
+        setTimeout(() => {
+          window.location.reload()
+        }, 1000);
+        
+      }
+      else {
+        console.log(res);
+      }
+
+    })
+
+  }
+
+
+  ngAfterViewInit() {
+    $(document).ready(function () {
+      $('#employeeTable').DataTable({
+        // Enable sorting and searching
+        order: [[0, 'asc']], // Sort by the first column (0) in ascending order
+        searching: true,      // Enable searching
+      });
+    });
   }
 
 }

@@ -17,7 +17,8 @@ export interface ListJsModel {
   category: string,
   codeIssuedTo: string, 
   codeRequestedBy: string,
-  isSelected?: any
+  isSelected?: any,
+  codeId: string
 }
 
 export interface paginationModel {
@@ -37,6 +38,7 @@ export interface pendingEntryModel {
   srldcCode: string,
   category: string,
   codeIssuedTo: string, 
-  codeRequestedBy: string
+  codeRequestedBy: string,
+  
 
 }

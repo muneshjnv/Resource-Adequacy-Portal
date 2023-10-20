@@ -14,4 +14,10 @@ export class PendingEntriesService {
   fetchPendingEntry() {
     return this.http.get<any>(this.url + '/pendingentries')
   }
+
+  submitEntries(data: any) {
+    return this.http.post<any>(this.url + '/submitentries', {data: data})
+  }
+
+
 }

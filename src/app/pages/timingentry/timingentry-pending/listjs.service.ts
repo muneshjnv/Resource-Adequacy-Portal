@@ -10,6 +10,8 @@ import {debounceTime, delay, switchMap, tap} from 'rxjs/operators';
 import {SortColumn, SortDirection} from './listjs-sortable.directive';
 import { HttpClient } from '@angular/common/http';
 import { PendingEntriesService } from 'src/app/core/services/pending-entries.service';
+import { ToastService } from './toast-service';
+
 
 interface SearchResult {
   countries: ListJsModel[];
@@ -50,8 +52,7 @@ function matches(country: ListJsModel, term: string, pipe: PipeTransform) {
   // || country.status.toLowerCase().includes(term.toLowerCase());
 
 
-  return country.codeIssueTime.toLowerCase().includes(term.toLowerCase())
-  || country.elementType.toLowerCase().includes(term.toLowerCase())
+  return  country.elementType.toLowerCase().includes(term.toLowerCase())
   || country.elementName.toLowerCase().includes(term.toLowerCase())
   || country.switching.toLowerCase().includes(term.toLowerCase())
   || country.category.toLowerCase().includes(term.toLowerCase())
@@ -69,12 +70,12 @@ export class OrdersService {
 
   private _state: State = {
     page: 1,
-    pageSize: 10,
+    pageSize: 50,
     searchTerm: '',
     sortColumn: '',
     sortDirection: '',
     startIndex: 0,
-    endIndex: 9,
+    endIndex: 100,
     totalRecords: 0
   };
 
@@ -83,11 +84,37 @@ export class OrdersService {
 
   
 
-  constructor(private pipe: DecimalPipe, private http: HttpClient, private pendingEntries: PendingEntriesService) {
+  constructor(private pipe: DecimalPipe, private http: HttpClient, private pendingEntries: PendingEntriesService, public toastService: ToastService) {
 
     this.pendingEntries.fetchPendingEntry().subscribe((res: any) => {
       this.Listjs = res["data"];
-    })
+      if(this.Listjs.length > 0) {
+        this.toastService.show('Data Fetched Successfully!', { classname: 'bg-success text-white', delay: 3000 });
+
+        for (const item of this.Listjs) {
+          const date = new Date(item.codeIssueTime);
+          item.codeIssueTime = date.toLocaleString('en-GB', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false // Use 24-hour format
+          });
+        }
+
+
+      }
+
+      else {
+        this.toastService.show('Data is Empty!', { classname: 'bg-success text-white', delay: 3000 });
+
+
+      }
+
+    }
+              
+    )
 
 
 
