@@ -69,7 +69,7 @@
                                         </div>
                                     </th>
                                    
-                                    <td><ngb-highlight [result]="data.codeIssueTime"
+                                    <td><ngb-highlight [result]="data.codeIssueTime | date: 'd/M/yyyy, HH:mm'"
                                             [term]="service.searchTerm"></ngb-highlight></td>
                                     <td><ngb-highlight [result]="data.elementType"
                                             [term]="service.searchTerm"></ngb-highlight></td>
@@ -172,7 +172,7 @@
                         <td>{{data.category}}</td>
                         <td>{{data.srldcCode}}</td>
                         <td><div>
-                            <input class="form-control flatpickr-input" type="text" mwlFlatpickr [altInput]="true" [enableTime]="true" [convertModelValue]="true" altFormat="d/m/y H:i" [dateFormat]="'d/m/Y, H:i'" [(ngModel)]="data.codeIssueTime">
+                            <input class="form-control flatpickr-input" type="text" mwlFlatpickr [altInput]="true" [enableTime]="true"  [allowInput]="true" [convertModelValue]="true" altFormat="d/m/y H:i" [dateFormat]="'d/m/Y, H:i'" [minuteIncrement]="1" [(ngModel)]="data.codeIssueTime">
                         </div></td>
                         <!-- <td><span class="badge bg-success">Confirmed</span></td> -->
                         <td class="text-center"><div class="hstack gap-3 flex-wrap">

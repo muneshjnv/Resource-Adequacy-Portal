@@ -351,7 +351,6 @@ export class TimingentryPendingComponent {
 
 
   submitData() {
-    console.log(this.modalTableData);
 
     this.pendingService.submitEntries(this.modalTableData).subscribe((res: any)=> {
 
@@ -363,7 +362,7 @@ export class TimingentryPendingComponent {
         
       }
       else {
-        console.log(res);
+        // console.log(res);
       }
 
     })

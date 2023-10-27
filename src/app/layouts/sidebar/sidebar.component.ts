@@ -38,9 +38,9 @@ export class SidebarComponent implements OnInit {
 
     this.userData = this.TokenStorageService.getUser();
 
-    console.log(this.menuItems);
+    // console.log(this.menuItems);
 
-    console.log(this.userData)
+    // console.log(this.userData)
 
 
   }

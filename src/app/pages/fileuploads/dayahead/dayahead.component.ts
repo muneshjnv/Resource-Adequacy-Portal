@@ -686,7 +686,7 @@ export class DayaheadComponent {
     }
     else {
 
-      console.log("Entered Else part!")
+      // console.log("Entered Else part!")
 
       if(this.validationform.valid) {
 
@@ -708,10 +708,10 @@ export class DayaheadComponent {
               
               this.dayAheadForecast.uploadDayAheadFile(formData).subscribe((res: any)=> {
                 if('error' in res) {
-                  console.log(res['error'])
+                  // console.log(res['error'])
                 }
                 else {
-                  console.log(res["message"]);
+                  // console.log(res["message"]);
                   // this.toastService.show(res['message'], { classname: 'bg-success text-white', delay: 5000 });
         
                   
@@ -762,10 +762,10 @@ export class DayaheadComponent {
       
       this.dayAheadForecast.uploadDayAheadFile(formData).subscribe((res: any)=> {
         if('error' in res) {
-          console.log(res['error'])
+          // console.log(res['error'])
         }
         else {
-          console.log(res["message"]);
+          // console.log(res["message"]);
           // this.toastService.show(res['message'], { classname: 'bg-success text-white', delay: 5000 });
 
           
@@ -849,10 +849,10 @@ export class DayaheadComponent {
 
       this.loadedData = true;
 
-      console.log(this.tempData[0])
-      console.log(this.tempData[0].length)
+      // console.log(this.tempData[0])
+      // console.log(this.tempData[0].length)
 
-      console.log(totalCount)
+      // console.log(totalCount)
 
       
       if(totalCount == 96*21) {

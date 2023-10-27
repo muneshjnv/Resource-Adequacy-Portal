@@ -20,10 +20,11 @@ from configBackend import *
 
 import numpy as np
 import pandas as pd
-import psycopg2
 import json
 import jwt
 from flask_cors import CORS
+
+from psycopg2 import sql
 
 
 
@@ -56,7 +57,15 @@ def login():
         username=request.get_json()['username']
         password=request.get_json()['password']
 
-        # print(username, password)
+        print(username, password)
+
+        # username = 
+
+       
+        
+
+       
+
 
 
         e_name = ''
@@ -67,11 +76,23 @@ def login():
 
         state_id = ''
 
+        
 
 
         
-        cursor.execute("select username, password_hash, user_role, state_name, state_id from states where username= '{0}'".format(username))
+        # query = sql.SQL("select username, password_hash, user_role, state_name, state_id from states where username= {}'".format(sql.Literal(username)))
+        # cursor.execute(query)
+
+        query = "SELECT username, password_hash, user_role, state_name, state_id from states WHERE username = %s"
+        cursor.execute(query, (username,))
+
+        # Fetch the result (if any)
+        # result = cursor.fetchone()
+
+
         login_data = cursor.fetchall()
+
+        # print(login_data)
 
         if len(login_data) > 0:
             e_name = login_data[0][0]
@@ -372,6 +393,7 @@ def submitTimingEntries():
 
         data = data["data"]
 
+
         for i in data:
 
             if 'T' in i["codeIssueTime"]:
@@ -381,6 +403,7 @@ def submitTimingEntries():
 
                 # Format the datetime object as "yyyy-mm-dd hh:mm"
                 i["codeIssueTime"] = i["codeIssueTime"].strftime("%Y-%m-%d %H:%M")
+
 
             response = requests.get("https://oms2.srldc.in/Codebook/EnterConstituentTime?codeId={0}&enteredTime={1}".format(i["codeId"], i["codeIssueTime"]))
 

@@ -180,7 +180,7 @@ export class ViewDayaheadComponent {
 
 
       else {
-        console.log("Form is invalid!")
+        // console.log("Form is invalid!")
       }
       
       
@@ -568,7 +568,7 @@ export class ViewDayaheadComponent {
   
       if(colIndex == 2) {
         const exactValue = value.toString()
-        console.log(typeof value);
+        // console.log(typeof value);
         if(typeof value !== 'number' && Number.isNaN(Number.parseInt(exactValue))){
           cell.style.background = '#ffcccb'
         }
