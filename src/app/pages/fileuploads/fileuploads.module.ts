@@ -46,6 +46,9 @@ import { DatePipe } from '@angular/common';
 import { DayaheadComponent } from './dayahead/dayahead.component';
 import { FileuploadsRoutingModule } from './fileuploads-routing.module';
 import { SharedModule } from 'src/app/shared/shared.module';
+import { WeekaheadComponent } from './weekahead/weekahead.component';
+import { MonthaheadComponent } from './monthahead/monthahead.component';
+import { YearaheadComponent } from './yearahead/yearahead.component';
 
 // // Component Pages
 // import { AppsRoutingModule } from "./apps-routing.module";
@@ -73,7 +76,10 @@ import { SharedModule } from 'src/app/shared/shared.module';
 
 @NgModule({
   declarations: [
-    DayaheadComponent
+    DayaheadComponent,
+    WeekaheadComponent,
+    MonthaheadComponent,
+    YearaheadComponent
     
   ],
   imports: [

@@ -46,6 +46,7 @@ import { DatePipe } from '@angular/common';
 import { SharedModule } from 'src/app/shared/shared.module';
 import { ViewDayaheadComponent } from './view-dayahead/view-dayahead.component';
 import { ViewFileuploadsRoutingModule } from './viewuploads-routing.module';
+import { ViewWeekaheadComponent } from './view-weekahead/view-weekahead.component';
 
 // // Component Pages
 // import { AppsRoutingModule } from "./apps-routing.module";
@@ -73,7 +74,8 @@ import { ViewFileuploadsRoutingModule } from './viewuploads-routing.module';
 
 @NgModule({
   declarations: [
-    ViewDayaheadComponent
+    ViewDayaheadComponent,
+    ViewWeekaheadComponent
     
   ],
   imports: [

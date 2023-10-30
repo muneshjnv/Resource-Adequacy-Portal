@@ -156,10 +156,21 @@ def fetchRevisions():
     else:
         return jsonify(status="failure", message="There are no Uploads on {0}".format(date))
     
+
     
+@app.route('/api/fetchweekrevisions', methods=['POST'])
+def fetchWeekRevisions():
+    params = request.get_json()
+    from_date = params["from_date"]
+    to_date = params["to_date"]
+    cursor.execute("select revision_no from week_ahead_file_uploads where state_id = {0} and from_date = to_date('{1}', 'DD/MM/YYYY') and to_date=to_date('{2}', 'DD/MM/YYYY')".format(params["state"], from_date, to_date))
+    revisions_data = cursor.fetchall()
+    revision_list = [i[0] for i in revisions_data]
 
-
-
+    if len(revision_list) > 0:
+        return jsonify(status="success", message="Fetched Successfully for '{0}'-'{1}'".format(from_date, to_date), revisions=revision_list, from_date=from_date, to_date=to_date)
+    else:
+        return jsonify(status="failure", message="There are no Uploads for '{0}'-'{1}'".format(from_date, to_date))    
 
 
 
@@ -204,8 +215,8 @@ def allowed_file(filename):
 state_revision_numbers = {}
 
 
-@app.route('/api/upload', methods=['POST'])
-def upload_data_and_file():
+@app.route('/api/uploaddayahead', methods=['POST'])
+def uploadDayAheadDataAndFile():
     # print(request.get_json())
     # print(request["form_data"])
     # print(request["data"])
@@ -383,6 +394,51 @@ def pendingTimingEntries():
         print(exc_type, fname, exc_tb.tb_lineno)
         return jsonify(status="failure", message="There is a problem in fetching the data, Please contact SRLDC IT!")
     
+
+@app.route('/api/weekaheadformat')
+@jwt_required()
+def weekAheadFormat():
+    try:
+        # Function to find the date of the next Monday
+        def next_monday(d):
+            # Calculate the number of days until the next Monday
+            days_til_monday = (7 - d.weekday()) % 7
+            if days_til_monday == 0:
+                # If today is Monday, add 7 days to get the next Monday
+                days_til_monday = 7
+            return d + timedelta(days=days_til_monday)
+
+# Function to create the 2D list
+        def create_2d_list(start_date, num_days, num_blocks_per_day):
+            data = []
+
+            for day in range(num_days):
+                current_date = start_date + timedelta(days=day)
+                for block in range(num_blocks_per_day):
+                    current_time = (datetime.min + timedelta(minutes=block * 15)).time()
+                    next_time = (datetime.min + timedelta(minutes=(block + 1) * 15)).time()
+                    timestamp = f"{current_time:%H:%M} - {next_time:%H:%M}"
+                    row = [current_date.strftime('%Y-%m-%d'), block + 1, timestamp] + [0] * 19
+                    data.append(row)
+
+            return data
+
+        # Find the next Monday
+        today = datetime.now()
+        next_monday_date = next_monday(today)
+
+        # Create the 2D list for 7 days with 96 blocks each
+        num_days = 7
+        num_blocks_per_day = 96
+        data = create_2d_list(next_monday_date, num_days, num_blocks_per_day)
+
+        
+        return jsonify(status="success", data=data)
+    
+    except Exception as error:
+        return jsonify(msg="Problem in fetching the data, Please contact SRLDC IT", status="failure")
+    
+    
 @app.route('/api/submitentries', methods=['POST'])
 @jwt_required()
 def submitTimingEntries():
@@ -413,6 +469,133 @@ def submitTimingEntries():
     except Exception as error:
         print(error)
         return jsonify(status="failure", message="There is a problem, Please contact SRLDC IT!")
+    
+
+@app.route('/api/weeekaheadforecast', methods=['POST'])
+@jwt_required()
+def weekAheadForecast():
+    try: 
+        return jsonify(msg="Successful!", status="failure")
+    except Exception as error:
+        return jsonify(msg="There is some problem, Please contact SRLDC IT!")
+    
+
+
+@app.route('/api/uploadweekahead', methods=['POST'])
+def uploadWeekAheadDataAndFile():
+    # print(request.get_json())
+    # print(request["form_data"])
+    # print(request["data"])
+    header_data = dict(request.headers)
+    # print(header_data)
+    state = request.form.get('state')
+    # print("state",state)
+    fromDate = request.form.get('fromDate')
+
+    toDate = request.form.get('toDate')
+    # print(disabledDate)
+    data = request.form.get('data')
+    data = json.loads(data)
+
+    # print(disabledDate, "Date range")
+
+    data = json.dumps(data)
+    # print(data[0])
+
+    token = header_data['Authorization'].split()[1]
+    x = decode_token(token, csrf_value=None, allow_expired=False)
+
+    username = x['sub']
+    # print(username, "username")
+    role = x['role']
+    
+
+    cursor.execute("select state_name, acronym from states where state_id='{0}'".format(state))
+
+    state_name = cursor.fetchall()[0][0]
+
+
+        
+
+
+    # date_string = disabledDate
+
+# Define the format of the input date string
+    # date_format = "%a %b %d %Y %H:%M:%S GMT%z (%Z)"
+
+# Parse the date string into a datetime object
+    # disabledDate = (datetime.strptime(date_string, date_format)).strftime("%Y-%m-%d")
+
+    # print(state, type(disabledDate) )
+    # print("Data Received")
+
+
+    if 'excelFile' not in request.files:
+        return jsonify({'error': 'No file part'})
+
+    file = request.files['excelFile']
+
+    if file.filename == '':
+        return jsonify({'error': 'No selected file'})
+
+    if file and allowed_file(file.filename):
+        file_name = secure_filename(file.filename)
+
+        current_directory = os.getcwd()
+        drive_name, path = os.path.splitdrive(current_directory)
+
+        print(drive_name)
+
+        from_date = datetime.strptime(fromDate, '%d/%m/%Y').strftime('%d.%m.%Y')
+        to_date = datetime.strptime(toDate, '%d/%m/%Y').strftime('%d.%m.%Y')
+
+        directory_path = os.path.join(drive_name,"\\","Week_Ahead_Forecast_Files", from_date+"-"+ to_date, state_name)
+
+        cursor.execute("select * from week_ahead_file_uploads where from_date = to_date('{0}', 'DD/MM/YYYY') and to_date = to_date('{1}','DD/MM/YYYY') and state_id = {2}".format(fromDate,toDate,  state))
+
+        existing_revs = cursor.fetchall()
+
+
+        # Create the directory if it doesn't exist
+        os.makedirs(directory_path, exist_ok=True)
+
+        # Get the current revision number for the state and increment it
+        filename = f"{from_date}_{to_date}_{state_name}_rev{len(existing_revs) + 1}.xlsx"
+
+        # Generate the filename based on the current revision number
+
+        file_path = os.path.join(directory_path, filename)
+
+        print(directory_path, "This is the directory path")
+
+        print("file path", file_path)
+
+        # Save the uploaded file in the directory
+        if 'excelFile' in request.files:
+            file = request.files['excelFile']
+            if file.filename != '':
+                print("entered in save")
+                file.save(file_path)
+                if len(existing_revs) > 0:
+                    cursor.execute("insert into week_ahead_file_uploads (state_id, from_date,to_date, upload_time, file_name, revision_no, uploaded_by, file_data) values({0}, to_date('{1}', 'DD/MM/YYYY'),to_date('{2}','DD/MM/YYYY'), to_timestamp('{3}', 'YYYY-MM-DD HH24:MI:SS'), '{4}', {5}, '{6}', '{7}')".format(state, fromDate, toDate, datetime.now().strftime('%Y-%m-%d %H:%M:%S'), file_path, len(existing_revs)+1, role, data))
+                    # cursor.execute("update file_contents set file_data =  '{0}' where state_id = {1} and upload_date = to_date('{2}', 'YYYY-MM-DD')".format( data, state, disabledDate))
+                    return jsonify({'message': 'Data and file uploaded successfully. Uploaded {0} times'.format(len(existing_revs)+1)})
+
+                else:
+                    cursor.execute("insert into week_ahead_file_uploads (state_id, from_date,to_date, upload_time, file_name, revision_no, uploaded_by, file_data) values({0}, to_date('{1}', 'DD/MM/YYYY'),to_date('{2}','DD/MM/YYYY'), to_timestamp('{3}', 'YYYY-MM-DD HH24:MI:SS'), '{4}', {5}, '{6}', '{7}')".format(state, fromDate,toDate, datetime.now().strftime('%Y-%m-%d %H:%M:%S'), file_path, len(existing_revs)+1, role, data))
+                    # cursor.execute("insert into file_contents (state_id, upload_date, file_data) values({0}, to_date('{1}', 'YYYY-MM-DD'), '{2}')".format(state, disabledDate, data))
+                    return jsonify({'message': 'Data and file uploaded successfully, File Uploaded for the first time'})
+
+        # file.save("D:\\forecast_excel_store\\"+file_name)
+        print("file saved successfully")
+        # Process the form data and uploaded file as needed
+        # You can access 'name' and 'email' here
+
+        # return jsonify({'message': 'Data and file uploaded successfully'})
+    else:
+        return jsonify({'error': 'Invalid file type'})
+
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0',debug=True)

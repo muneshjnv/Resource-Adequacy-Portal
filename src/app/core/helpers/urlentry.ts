@@ -1,1 +1,1 @@
-export const api_url = 'https://gridopn.srldc.in/api'
+export const api_url = 'http://192.168.1.5:5000/api'

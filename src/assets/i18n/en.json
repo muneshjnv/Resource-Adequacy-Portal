@@ -25,6 +25,9 @@
       "TEXT": "Forecast File Upload",
       "LIST": {
         "DAYAHEAD": "Day Ahead Forecast",
+        "WEEKAHEAD": "Week Ahead Forecast",
+        "MONTHAHEAD": "Month Ahead Forecast",
+        "YEARAHEAD": "Year Ahead Forecast",
         "CALENDAR": "Calendar",
         "CHAT": "Chat",
         "EMAIL": "Email",
@@ -104,7 +107,8 @@
     "VIEWUPLOADS": {
       "TEXT": "Past File Uploads",
       "LIST": {
-        "DAYAHEAD":"Day Ahead Forecast"
+        "DAYAHEAD":"Day Ahead Forecast",
+        "WEEKAHEAD": "Week Ahead Forecast"
       }
     },
     "TIMINGENTRY":{

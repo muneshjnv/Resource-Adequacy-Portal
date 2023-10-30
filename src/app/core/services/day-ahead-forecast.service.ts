@@ -18,7 +18,7 @@ export class DayAheadForecastService {
   constructor(private http: HttpClient) { }
 
   uploadDayAheadFile(formData: any) {
-    return this.http.post<any>(this.url + '/upload', formData)
+    return this.http.post<any>(this.url + '/uploaddayahead', formData)
   }
 
   fetchRevisions(state: any, date: any) {

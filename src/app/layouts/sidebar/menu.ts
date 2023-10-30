@@ -66,6 +66,24 @@ export const MENU: MenuItem[] = [
         link: 'fileuploads/dayahead',
         parentId: 8
       },
+      {
+        id: 10,
+        label: 'MENUITEMS.APPS.LIST.WEEKAHEAD',
+        link: 'fileuploads/weekahead',
+        parentId: 8
+      },
+      {
+        id: 11,
+        label: 'MENUITEMS.APPS.LIST.MONTHAHEAD',
+        link: 'fileuploads/monthahead',
+        parentId: 8
+      },
+      {
+        id: 12,
+        label: 'MENUITEMS.APPS.LIST.YEARAHEAD',
+        link: 'fileuploads/yearahead',
+        parentId: 8
+      }
       // {
       //   id: 10,
       //   label: 'MENUITEMS.APPS.LIST.CHAT',
@@ -510,6 +528,12 @@ export const MENU: MenuItem[] = [
         label: 'MENUITEMS.VIEWUPLOADS.LIST.DAYAHEAD',
         parentId: 10000,
         link: 'viewuploads/dayahead'
+      },
+      {
+        id: 10004,
+        label: 'MENUITEMS.VIEWUPLOADS.LIST.WEEKAHEAD',
+        parentId: 10000,
+        link: 'viewuploads/weekahead'
       }
     ]
   },
