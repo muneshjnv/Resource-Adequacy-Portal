@@ -534,6 +534,18 @@ export const MENU: MenuItem[] = [
         label: 'MENUITEMS.VIEWUPLOADS.LIST.WEEKAHEAD',
         parentId: 10000,
         link: 'viewuploads/weekahead'
+      },
+      {
+        id: 10005,
+        label: 'MENUITEMS.VIEWUPLOADS.LIST.MONTHAHEAD',
+        parentId: 10000,
+        link: 'viewuploads/monthahead'
+      },
+      {
+        id: 10006,
+        label: 'MENUITEMS.VIEWUPLOADS.LIST.YEARAHEAD',
+        parentId: 10000,
+        link: 'viewuploads/yearahead'
       }
     ]
   },

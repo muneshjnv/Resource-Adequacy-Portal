@@ -47,6 +47,8 @@ import { SharedModule } from 'src/app/shared/shared.module';
 import { ViewDayaheadComponent } from './view-dayahead/view-dayahead.component';
 import { ViewFileuploadsRoutingModule } from './viewuploads-routing.module';
 import { ViewWeekaheadComponent } from './view-weekahead/view-weekahead.component';
+import { ViewMonthaheadComponent } from './view-monthahead/view-monthahead.component';
+import { ViewYearaheadComponent } from './view-yearahead/view-yearahead.component';
 
 // // Component Pages
 // import { AppsRoutingModule } from "./apps-routing.module";
@@ -75,7 +77,9 @@ import { ViewWeekaheadComponent } from './view-weekahead/view-weekahead.componen
 @NgModule({
   declarations: [
     ViewDayaheadComponent,
-    ViewWeekaheadComponent
+    ViewWeekaheadComponent,
+    ViewMonthaheadComponent,
+    ViewYearaheadComponent
     
   ],
   imports: [

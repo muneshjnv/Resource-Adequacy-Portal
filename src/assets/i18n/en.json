@@ -108,7 +108,9 @@
       "TEXT": "Past File Uploads",
       "LIST": {
         "DAYAHEAD":"Day Ahead Forecast",
-        "WEEKAHEAD": "Week Ahead Forecast"
+        "WEEKAHEAD": "Week Ahead Forecast",
+        "MONTHAHEAD": "Month Ahead Forecast",
+        "YEARAHEAD":"Year Ahead Forecast"
       }
     },
     "TIMINGENTRY":{

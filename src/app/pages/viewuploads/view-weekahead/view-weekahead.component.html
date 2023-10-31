@@ -73,7 +73,7 @@
                         </div> -->
 
                         <div class="col-md-3 position-relative">
-                            <label for="validationTooltip05" class="form-label">Upload for Week</label>
+                            <label for="validationTooltip05" class="form-label">Fetch for Week</label>
                             <input class="form-control flatpickr-input" type="text" mwlFlatpickr [altInput]="true" [convertModelValue]="true" mode="range" altFormat="d M, Y" dateFormat="d M, Y" formControlName="fetchDate" data-week-number>
                     </div>
 
@@ -144,7 +144,11 @@
     
                     
                     <div class="col-md-2">
-                        <label for="validationCustom04" class="form-label">Upload Date: {{ uploadDate }}</label>       
+                        <label for="validationCustom04" class="form-label">From Date: {{ fromDate }}</label>       
+                    </div>
+
+                    <div class="col-md-2">
+                        <label for="validationCustom04" class="form-label">To Date: {{ toDate }}</label>       
                     </div>
 
                     <div class="col-md-2">

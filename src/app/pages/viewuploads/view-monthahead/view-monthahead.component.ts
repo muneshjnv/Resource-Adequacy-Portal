@@ -1,21 +1,21 @@
-import { DatePipe } from '@angular/common';
 import { Component, ElementRef, ViewChild } from '@angular/core';
 import { UntypedFormBuilder, UntypedFormGroup, Validators } from '@angular/forms';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
-import { ToastService } from 'src/app/account/login/toast-service';
-import { DayAheadForecastService } from 'src/app/core/services/day-ahead-forecast.service';
+import { ToastService } from '../../timingentry/timingentry-pending/toast-service';
+import { DatePipe } from '@angular/common';
+import { MonthAheadForecastService } from 'src/app/core/services/month-ahead-forecast.service';
 import { TokenStorageService } from 'src/app/core/services/token-storage.service';
 import Swal from 'sweetalert2';
-import * as jspreadsheet from "jspreadsheet-ce";
-import { WeekAheadForecastService } from 'src/app/core/services/week-ahead-forecast.service';
+import * as jspreadsheet from 'jspreadsheet-ce';
 
 
 @Component({
-  selector: 'app-view-weekahead',
-  templateUrl: './view-weekahead.component.html',
-  styleUrls: ['./view-weekahead.component.scss']
+  selector: 'app-view-monthahead',
+  templateUrl: './view-monthahead.component.html',
+  styleUrls: ['./view-monthahead.component.scss']
 })
-export class ViewWeekaheadComponent {
+export class ViewMonthaheadComponent {
+
 
   userData: any;
 
@@ -43,14 +43,14 @@ export class ViewWeekaheadComponent {
 
   @ViewChild("spreadsheet", {static: true}) spreadsheet !: ElementRef<any>;
 
-  constructor(private modalService: NgbModal, private formBuilder: UntypedFormBuilder,public toastService: ToastService, private TokenStorageService: TokenStorageService , private weekAheadForecast: WeekAheadForecastService ,private datePipe: DatePipe) { }
+  constructor(private modalService: NgbModal, private formBuilder: UntypedFormBuilder,public toastService: ToastService, private TokenStorageService: TokenStorageService , private monthAheadForecast: MonthAheadForecastService ,private datePipe: DatePipe) { }
 
 
 
   ngOnInit(): void {
     this.breadCrumbItems = [
       { label: 'Past Uploads' },
-      { label: 'Week Ahead Forecast', active: true }
+      { label: 'Month Ahead Forecast', active: true }
     ];
 
     this.userData = this.TokenStorageService.getUser();
@@ -62,7 +62,7 @@ export class ViewWeekaheadComponent {
       // city: ['', [Validators.required, Validators.pattern('[a-zA-Z0-9]+')]],
       state: ['', [Validators.required, Validators.pattern('[a-zA-Z0-9]+')]],
       // zip: ['', [Validators.required, Validators.pattern('[a-zA-Z0-9]+')]],
-      fetchDate: [{"from": this.getNextMonday(), "to":new Date(this.getNextMonday().getTime() + 6*24 * 60 * 60 * 1000) }],
+      fetchDate: [{"from": this.getNextMonthDates()["startDate"], "to":this.getNextMonthDates()["endDate"] }],
       revisions: ['', [Validators.required]]
     });
 
@@ -116,7 +116,7 @@ export class ViewWeekaheadComponent {
     // Replace with your API endpoint
 
     // Make an API call
-    this.weekAheadForecast.fetchRevisions(state, from_date.toLocaleDateString('en-GB'), to_date.toLocaleDateString('en-GB')).subscribe((data: any) => {
+    this.monthAheadForecast.fetchRevisions(state, from_date.toLocaleDateString('en-GB'), to_date.toLocaleDateString('en-GB')).subscribe((data: any) => {
       // Update the dropdownData array with the response
       if(data["status"] == "success") {
         this.revisionsData = data['revisions'];
@@ -151,7 +151,7 @@ export class ViewWeekaheadComponent {
     fetchData() {
       if(this.validationform.valid) {
         // console.log("ngsubmit hit!")
-        this.weekAheadForecast.fetchRevisionsData(this.validationform.get('state')!.value, this.validationform.get('fetchDate')!.value["from"].toLocaleDateString('en-GB'),this.validationform.get('fetchDate')!.value["to"].toLocaleDateString('en-GB'), this.validationform.get('revisions')!.value).subscribe((data: any)=> {
+        this.monthAheadForecast.fetchRevisionsData(this.validationform.get('state')!.value, this.validationform.get('fetchDate')!.value["from"].toLocaleDateString('en-GB'),this.validationform.get('fetchDate')!.value["to"].toLocaleDateString('en-GB'), this.validationform.get('revisions')!.value).subscribe((data: any)=> {
           if(data["status"] == "failure") {
 
             Swal.fire({
@@ -649,5 +649,26 @@ export class ViewWeekaheadComponent {
   }
 
 
+  getNextMonthDates() {
+    // Get the current date
+    const currentDate = new Date();
+
+    // Calculate the next month's starting date
+    const nextMonthStartDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1);
+
+    // Calculate the next month's ending date
+    const nextMonthEndDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 2, 0);
+
+    // Format the dates as strings (in "YYYY-MM-DD" format)
+    const nextMonthStartDateString = nextMonthStartDate.toISOString().split('T')[0];
+    const nextMonthEndDateString = nextMonthEndDate.toISOString().split('T')[0];
+
+    return {
+        startDate: nextMonthStartDate,
+        endDate: nextMonthEndDate
+    };
+
+    
+}
 
 }
