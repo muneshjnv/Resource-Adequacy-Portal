@@ -730,7 +730,7 @@ export class MonthaheadComponent {
     const a = document.createElement('a');
     a.href = excelFilePath;
     a.download = 'sample.xlsx'; // Specify the desired file name
-  
+  74
     // Programmatically trigger a click event to initiate the download
     a.click();
   }
@@ -918,6 +918,9 @@ export class MonthaheadComponent {
 
     
 }
+
+
+
 
 
 areStartingAndEndingDatesOfSameMonth(fromDate:Date, toDate: Date) {

@@ -136,7 +136,9 @@ export class TimingentryPendingComponent {
    
     
     this.ListJsList.subscribe(x => {
+
       this.ListJsDatas = Object.assign([], x);
+      // console.log(this.ListJsDatas)
     });
 
     
@@ -371,13 +373,13 @@ export class TimingentryPendingComponent {
 
 
   ngAfterViewInit() {
-    $(document).ready(function () {
-      $('#employeeTable').DataTable({
-        // Enable sorting and searching
-        order: [[0, 'asc']], // Sort by the first column (0) in ascending order
-        searching: true,      // Enable searching
-      });
-    });
+    // $(document).ready(function () {
+    //   $('#employeeTable').DataTable({
+    //     // Enable sorting and searching
+    //     order: [[0, 'asc']], // Sort by the first column (0) in ascending order
+    //     searching: true,      // Enable searching
+    //   });
+    // });
   }
 
 }
