@@ -1007,6 +1007,60 @@ def uploadYearAheadDataAndFile():
 
 
 
+@app.route('/api/fetchyearlyrevisionsdata', methods=['POST'])
+@jwt_required()
+def fetchYearlyRevisionsData():
+    params = request.get_json()
+    print(params)
+    cursor.execute("select file_data, from_date, to_date, upload_time, uploaded_by, revision_no from year_ahead_file_uploads where state_id = {0} and from_date = to_date('{1}', 'DD/MM/YYYY') and to_date=to_date('{2}', 'DD/MM/YYYY') and revision_no={3}".format(params["state"], params["from_date"], params["to_date"], int(params["revision"])))
+    data = cursor.fetchall()
+
+    file_data = []
+    uploaded_time = ''
+    from_date = ''
+    to_date = ''
+    uploaded_by = ''
+    # role = ''
+    revision_no = int()
+
+
+
+    if len(data) > 0:
+        file_data = data[0][0]
+        from_date = data[0][1].strftime('%d-%b-%Y')
+        to_date = data[0][2].strftime('%d-%b-%Y')
+        uploaded_time = data[0][3].strftime('%d-%b-%Y %H:%M:%S %p')
+        uploaded_by = data[0][4]
+        revision_no = data[0][5]
+
+        print(len(file_data), len(file_data[0]))
+        return jsonify(status="success", data=file_data, time=uploaded_time, from_date=from_date,to_date=to_date, revision=revision_no, role=uploaded_by)
+    else:
+        return jsonify(status="failure", message="There is a Problem in fetching the data, Please contact SRLDC IT!")
+        
+
+    return jsonify(message="Fetched Successfully")
+
+
+
+@app.route('/api/fetchyearrevisions', methods=['POST'])
+def fetchYearRevisions():
+    params = request.get_json()
+    from_date = params["from_date"]
+    to_date = params["to_date"]
+    cursor.execute("select revision_no from year_ahead_file_uploads where state_id = {0} and from_date = to_date('{1}', 'DD/MM/YYYY') and to_date=to_date('{2}', 'DD/MM/YYYY')".format(params["state"], from_date, to_date))
+    revisions_data = cursor.fetchall()
+    revision_list = [i[0] for i in revisions_data]
+
+    if len(revision_list) > 0:
+        return jsonify(status="success", message="Fetched Successfully for '{0}'-'{1}'".format(from_date, to_date), revisions=revision_list, from_date=from_date, to_date=to_date)
+    else:
+        return jsonify(status="failure", message="There are no Uploads for '{0}'-'{1}'".format(from_date, to_date))    
+    
+
+
+
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0',debug=True)
 

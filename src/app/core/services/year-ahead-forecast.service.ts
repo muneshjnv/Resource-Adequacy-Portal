@@ -19,4 +19,13 @@ export class YearAheadForecastService {
   uploadYearAheadFile(formData: any) {
     return this.http.post<any>(this.url + '/uploadyearahead', formData)
   }
+
+  fetchRevisions(state: any, from_date: any, to_date: any) {
+    return this.http.post<any>(this.url + '/fetchyearrevisions', {"state": state, "from_date": from_date, "to_date": to_date})
+  }
+
+  
+  fetchRevisionsData(state: any, from_date: any, to_date: any, revision: any) {
+    return this.http.post<any>(this.url + '/fetchyearlyrevisionsdata', {"state": state, "from_date": from_date, "to_date": to_date, "revision": revision})
+  }
 }

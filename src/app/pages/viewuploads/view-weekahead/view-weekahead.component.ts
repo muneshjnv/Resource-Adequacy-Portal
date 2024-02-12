@@ -3,7 +3,7 @@ import { Component, ElementRef, ViewChild } from '@angular/core';
 import { UntypedFormBuilder, UntypedFormGroup, Validators } from '@angular/forms';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import { ToastService } from 'src/app/account/login/toast-service';
-import { DayAheadForecastService } from 'src/app/core/services/day-ahead-forecast.service';
+// import { DayAheadForecastService } from 'src/app/core/services/day-ahead-forecast.service';
 import { TokenStorageService } from 'src/app/core/services/token-storage.service';
 import Swal from 'sweetalert2';
 import * as jspreadsheet from "jspreadsheet-ce";
