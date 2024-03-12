@@ -35,6 +35,9 @@ export class ViewWeekaheadComponent {
   toDate: any = '-';
 
 
+  loading: boolean = false;
+
+
 
   breadCrumbItems!: Array<{}>;
   validationform!: UntypedFormGroup;
@@ -149,9 +152,11 @@ export class ViewWeekaheadComponent {
   }
 
     fetchData() {
+      this.loading = true;
       if(this.validationform.valid) {
         // console.log("ngsubmit hit!")
         this.weekAheadForecast.fetchRevisionsData(this.validationform.get('state')!.value, this.validationform.get('fetchDate')!.value["from"].toLocaleDateString('en-GB'),this.validationform.get('fetchDate')!.value["to"].toLocaleDateString('en-GB'), this.validationform.get('revisions')!.value).subscribe((data: any)=> {
+          this.loading = false;
           if(data["status"] == "failure") {
 
             Swal.fire({

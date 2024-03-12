@@ -16,6 +16,8 @@ import { DatePipe } from '@angular/common';
 export class ViewYearaheadComponent {
 
 
+  loading: boolean = false;
+
   userData: any;
 
   // data: number[][] = new Array<Array<number>>();
@@ -148,9 +150,11 @@ export class ViewYearaheadComponent {
   }
 
     fetchData() {
+      this.loading = true;
       if(this.validationform.valid) {
         // console.log("ngsubmit hit!")
         this.yearAheadForecast.fetchRevisionsData(this.validationform.get('state')!.value, this.validationform.get('fetchDate')!.value["from"].toLocaleDateString('en-GB'),this.validationform.get('fetchDate')!.value["to"].toLocaleDateString('en-GB'), this.validationform.get('revisions')!.value).subscribe((data: any)=> {
+          this.loading = false;
           if(data["status"] == "failure") {
 
             Swal.fire({

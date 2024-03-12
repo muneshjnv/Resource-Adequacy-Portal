@@ -20,6 +20,9 @@ import { ToastService } from './toast-service';
  */
 export class LoginComponent implements OnInit {
 
+
+  loading: boolean= false;
+
   // Login Form
   loginForm!: UntypedFormGroup;
   submitted = false;
@@ -59,10 +62,13 @@ export class LoginComponent implements OnInit {
    * Form submit
    */
    onSubmit() {
+    this.loading = true;
     this.submitted = true;
      // Login Api
-     this.authenticationService.login(this.f['email'].value, this.f['password'].value).subscribe((data:any) => {      
+     this.authenticationService.login(this.f['email'].value, this.f['password'].value).subscribe((data:any) => {   
+      this.loading = false;   
       // if(data.status == 'success'){
+        
         // localStorage.setItem('toast', 'true');
         // localStorage.setItem('currentUser', JSON.stringify(data.data));
         // localStorage.setItem('token', data.token);

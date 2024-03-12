@@ -98,8 +98,19 @@
                         <div class="col-12 d-flex justify-content-center">
                             <br>
                         <br>
+
+                        <button class="btn btn-outline-primary btn-load" *ngIf="loading">
+                            <span class="d-flex align-items-center">
+                                <span class="spinner-border flex-shrink-0" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </span>
+                                <span class="flex-grow-1 ms-2">
+                                    Loading...
+                                </span>
+                            </span>
+                        </button>
                        
-                            <button class="btn btn-primary" type="submit" (click)="fetchData()">Fetch Data</button>
+                            <button class="btn btn-primary" type="submit" (click)="fetchData()" *ngIf="!loading">Fetch Data</button>
                         </div>
                     </form>
                 </div>

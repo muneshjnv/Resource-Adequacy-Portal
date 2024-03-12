@@ -252,7 +252,7 @@ export class DayaheadComponent {
       jspreadsheet(this.spreadsheet.nativeElement, {
       data: this.data,
       // freezeColumns: 2,
-      footers: [[ ' ','Total MUs', '=ROUND(SUM(C1:C96),2)' , '=ROUND(SUM(D1:D96),2)' , '=ROUND(SUM(E1:E96),2)','=ROUND(SUM(F1:F96),2)' , '=ROUND(SUM(G1:G96),2)' , '=ROUND(SUM(H1:H96),2)','=ROUND(SUM(I1:I96),2)' , '=ROUND(SUM(J1:J96),2)' , '=ROUND(SUM(K1:K96),2)','=ROUND(SUM(L1:L96),2)' , '=ROUND(SUM(M1:M96),2)' , '=ROUND(SUM(N1:N96),2)','=ROUND(SUM(O1:O96),2)' , '=ROUND(SUM(P1:P96),2)' , '=ROUND(SUM(Q1:Q96),2)','=ROUND(SUM(R1:R96),2)' , '=ROUND(SUM(S1:S96),2)' , '=ROUND(SUM(T1:T96),2)', '=ROUND(SUM(U1:U96),2)' ]],
+      footers: [[ ' ','Total MUs', '=ROUND(SUM(C1:C96)/4000,2)' , '=ROUND(SUM(D1:D96)/4000,2)' , '=ROUND(SUM(E1:E96)/4000,2)','=ROUND(SUM(F1:F96)/4000,2)' , '=ROUND(SUM(G1:G96)/4000,2)' , '=ROUND(SUM(H1:H96)/4000,2)','=ROUND(SUM(I1:I96)/4000,2)' , '=ROUND(SUM(J1:J96)/4000,2)' , '=ROUND(SUM(K1:K96)/4000,2)','=ROUND(SUM(L1:L96)/4000,2)' , '=ROUND(SUM(M1:M96)/4000,2)' , '=ROUND(SUM(N1:N96)/4000,2)','=ROUND(SUM(O1:O96)/4000,2)' , '=ROUND(SUM(P1:P96)/4000,2)' , '=ROUND(SUM(Q1:Q96)/4000,2)','=ROUND(SUM(R1:R96)/4000,2)' , '=ROUND(SUM(S1:S96)/4000,2)' , '=ROUND(SUM(T1:T96)/4000,2)', '=ROUND(SUM(U1:U96)/4000,2)' ]],
   
       tableOverflow: true,
       tableWidth: '1200px',
@@ -615,7 +615,7 @@ export class DayaheadComponent {
   
     updateTable(instance, cell, colIndex, rowIndex, value, displayedValue, cellName) {
   
-      if(colIndex == 2) {
+      if(colIndex == 2 ||colIndex == 3 || colIndex == 4 || colIndex == 5 || colIndex == 6 || colIndex == 7 || colIndex == 8 || colIndex == 9 || colIndex == 10 || colIndex == 11 || colIndex == 12 || colIndex == 13 || colIndex == 14 || colIndex == 15 || colIndex == 16 || colIndex == 17 || colIndex == 18 || colIndex == 19 || colIndex == 20) {
         const exactValue = value.toString()
         console.log(typeof value);
         if(typeof value !== 'number' && Number.isNaN(Number.parseInt(exactValue))){

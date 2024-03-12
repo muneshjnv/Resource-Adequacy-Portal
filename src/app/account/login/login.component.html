@@ -40,12 +40,12 @@
                                 <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
   
                                     <div class="mb-3">
-                                      <label class="form-label" for="username">Email</label>
+                                      <label class="form-label" for="username">Username</label>
                                       <input type="email" class="form-control" id="email" formControlName="email"
                                       [ngClass]="{ 'is-invalid': submitted && f['email'].errors }"
                                       placeholder="Enter email">
                                       <div *ngIf="submitted && f['email'].errors" class="invalid-feedback">
-                                          <div *ngIf="f['email'].errors['required']">Email is required</div>
+                                          <div *ngIf="f['email'].errors['required']">Username is required</div>
                                           <div *ngIf="f['email'].errors['email']">Email must be a valid email address
                                           </div>
                                       </div>
@@ -67,7 +67,18 @@
   
   
                                     <div class="mt-4">
-                                        <button class="btn btn-success w-100" type="submit">Sign In</button>
+                                        <button type="button" class="btn btn-success btn-load w-100" *ngIf="loading">
+                                            <span class="d-flex align-items-center justify-content-center">
+                                                <span class="spinner-border flex-shrink-0" role="status">
+                                                    <span class="visually-hidden">Loading...</span>
+                                                </span>
+                                                <span class="ms-2">
+                                                    Please wait...
+                                                </span>
+                                            </span>
+                                        </button>
+
+                                        <button class="btn btn-success w-100" type="submit" *ngIf="!loading">Sign In</button>
                                     </div>
   
                                     

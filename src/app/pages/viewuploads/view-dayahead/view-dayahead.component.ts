@@ -23,6 +23,9 @@ export class ViewDayaheadComponent {
 
   userData: any;
 
+
+  loading: boolean = false;
+
   // data: number[][] = new Array<Array<number>>();
 
   submit!: boolean;
@@ -142,9 +145,12 @@ export class ViewDayaheadComponent {
   }
 
     fetchData() {
+      this.loading = true;
       if(this.validationform.valid) {
         // console.log("ngsubmit hit!")
         this.dayAheadForecast.fetchRevisionsData(this.validationform.get('state')!.value, this.validationform.get('fetchDate')!.value.toLocaleDateString('en-GB'), this.validationform.get('revisions')!.value).subscribe((data: any)=> {
+          
+          this.loading = false;
           if(data["status"] == "failure") {
 
             Swal.fire({
