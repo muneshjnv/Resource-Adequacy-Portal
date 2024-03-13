@@ -146,14 +146,19 @@ def fetchRevisions():
     params = request.get_json()
     date = params["date"]
     params["date"] = date
+    state = params["state"]
     cursor.execute("select revision_no from file_uploads where state_id = {0} and upload_date = to_date('{1}', 'DD/MM/YYYY')".format(params["state"], params["date"]))
     revisions_data = cursor.fetchall()
+
     revision_list = [i[0] for i in revisions_data]
+
+    cursor.execute("select state_name from states where state_id = {0}".format(state))
+    state_name = cursor.fetchall()[0][0]
 
     if len(revision_list) > 0:
         return jsonify(status="success", message="Fetched Successfully for {0}".format(date), revisions=revision_list)
     else:
-        return jsonify(status="failure", message="There are no Uploads on {0}".format(date))
+        return jsonify(status="failure", message="There are no Uploads for {0} state for date {1}".format(state_name, date))
     
 
     
@@ -162,14 +167,19 @@ def fetchWeekRevisions():
     params = request.get_json()
     from_date = params["from_date"]
     to_date = params["to_date"]
+    state = params["state"]
     cursor.execute("select revision_no from week_ahead_file_uploads where state_id = {0} and from_date = to_date('{1}', 'DD/MM/YYYY') and to_date=to_date('{2}', 'DD/MM/YYYY')".format(params["state"], from_date, to_date))
     revisions_data = cursor.fetchall()
     revision_list = [i[0] for i in revisions_data]
 
+    cursor.execute("select state_name from states where state_id = {0}".format(state))
+    state_name = cursor.fetchall()[0][0]
+
+
     if len(revision_list) > 0:
         return jsonify(status="success", message="Fetched Successfully for '{0}'-'{1}'".format(from_date, to_date), revisions=revision_list, from_date=from_date, to_date=to_date)
     else:
-        return jsonify(status="failure", message="There are no Uploads for '{0}'-'{1}'".format(from_date, to_date))    
+        return jsonify(status="failure", message="There are no Uploads for state {0} for week '{1}'-'{2}'".format(state_name, from_date, to_date))    
     
 
 @app.route('/api/fetchweeklyrevisionsdata', methods=['POST'])
@@ -267,6 +277,9 @@ def uploadDayAheadDataAndFile():
     data = json.dumps(data)
     # print(data[0])
 
+    print(data)
+    print("data received!")
+
     token = header_data['Authorization'].split()[1]
     x = decode_token(token, csrf_value=None, allow_expired=False)
 
@@ -294,6 +307,8 @@ def uploadDayAheadDataAndFile():
     # print(state, type(disabledDate) )
     # print("Data Received")
 
+    # print(data)
+    # print("Data recieived!")
 
     if 'excelFile' not in request.files:
         return jsonify({'error': 'No file part'})
@@ -317,7 +332,8 @@ def uploadDayAheadDataAndFile():
         os.makedirs(directory_path, exist_ok=True)
 
         # Get the current revision number for the state and increment it
-        filename = f"{disabledDate}_{state_name}_rev{len(existing_revs) + 1}.xlsx"
+       
+        filename = f"{disabledDate}_{state_name}_rev{len(existing_revs)}.xlsx"
 
         # Generate the filename based on the current revision number
 
@@ -334,14 +350,14 @@ def uploadDayAheadDataAndFile():
                 print("entered in save")
                 file.save(file_path)
                 if len(existing_revs) > 0:
-                    cursor.execute("insert into file_uploads (state_id, upload_date, upload_time, file_name, revision_no, uploaded_by, file_data) values({0}, to_date('{1}', 'YYYY-MM-DD'), to_timestamp('{2}', 'YYYY-MM-DD HH24:MI:SS'), '{3}', {4}, '{5}', '{6}')".format(state, disabledDate, datetime.now().strftime('%Y-%m-%d %H:%M:%S'), file_path, len(existing_revs)+1, role, data))
-                    cursor.execute("update file_contents set file_data =  '{0}' where state_id = {1} and upload_date = to_date('{2}', 'YYYY-MM-DD')".format( data, state, disabledDate))
-                    return jsonify({'message': 'Data and file uploaded successfully. Uploaded {0} times'.format(len(existing_revs)+1)})
+                    cursor.execute("insert into file_uploads (state_id, upload_date, upload_time, file_name, revision_no, uploaded_by, file_data) values({0}, to_date('{1}', 'YYYY-MM-DD'), to_timestamp('{2}', 'YYYY-MM-DD HH24:MI:SS'), '{3}', {4}, '{5}', '{6}')".format(state, disabledDate, datetime.now().strftime('%Y-%m-%d %H:%M:%S'), file_path, len(existing_revs), role, data))
+                    # cursor.execute("update file_contents set file_data =  '{0}' where state_id = {1} and upload_date = to_date('{2}', 'YYYY-MM-DD')".format( data, state, disabledDate))
+                    return jsonify({'message': 'Data and file uploaded successfully. Uploaded for Revision-{0}'.format(len(existing_revs))})
 
                 else:
-                    cursor.execute("insert into file_uploads (state_id, upload_date, upload_time, file_name, revision_no, uploaded_by, file_data) values({0}, to_date('{1}', 'YYYY-MM-DD'), to_timestamp('{2}', 'YYYY-MM-DD HH24:MI:SS'), '{3}', {4}, '{5}', '{6}')".format(state, disabledDate, datetime.now().strftime('%Y-%m-%d %H:%M:%S'), file_path, len(existing_revs)+1, role, data))
-                    cursor.execute("insert into file_contents (state_id, upload_date, file_data) values({0}, to_date('{1}', 'YYYY-MM-DD'), '{2}')".format(state, disabledDate, data))
-                    return jsonify({'message': 'Data and file uploaded successfully, File Uploaded for the first time'})
+                    cursor.execute("insert into file_uploads (state_id, upload_date, upload_time, file_name, revision_no, uploaded_by, file_data) values({0}, to_date('{1}', 'YYYY-MM-DD'), to_timestamp('{2}', 'YYYY-MM-DD HH24:MI:SS'), '{3}', {4}, '{5}', '{6}')".format(state, disabledDate, datetime.now().strftime('%Y-%m-%d %H:%M:%S'), file_path, len(existing_revs), role, data))
+                    # cursor.execute("insert into file_contents (state_id, upload_date, file_data) values({0}, to_date('{1}', 'YYYY-MM-DD'), '{2}')".format(state, disabledDate, data))
+                    return jsonify({'message': 'Data and file uploaded successfully. Uploaded for Revision-{0}'.format(len(existing_revs))})
 
         # file.save("D:\\forecast_excel_store\\"+file_name)
         print("file saved successfully")
@@ -841,14 +857,19 @@ def fetchMonthRevisions():
     params = request.get_json()
     from_date = params["from_date"]
     to_date = params["to_date"]
+    state = params["state"]
     cursor.execute("select revision_no from month_ahead_file_uploads where state_id = {0} and from_date = to_date('{1}', 'DD/MM/YYYY') and to_date=to_date('{2}', 'DD/MM/YYYY')".format(params["state"], from_date, to_date))
     revisions_data = cursor.fetchall()
     revision_list = [i[0] for i in revisions_data]
 
+    cursor.execute("select state_name from states where state_id = {0}".format(state))
+    state_name = cursor.fetchall()[0][0]
+
+
     if len(revision_list) > 0:
         return jsonify(status="success", message="Fetched Successfully for '{0}'-'{1}'".format(from_date, to_date), revisions=revision_list, from_date=from_date, to_date=to_date)
     else:
-        return jsonify(status="failure", message="There are no Uploads for '{0}'-'{1}'".format(from_date, to_date))    
+        return jsonify(status="failure", message="There are no Uploads for state {0} for the month '{1}'-'{2}'".format(state_name, from_date, to_date))    
     
 
 @app.route('/api/fetchmonthlyrevisionsdata', methods=['POST'])
@@ -1048,14 +1069,19 @@ def fetchYearRevisions():
     params = request.get_json()
     from_date = params["from_date"]
     to_date = params["to_date"]
+    state = params["state"]
     cursor.execute("select revision_no from year_ahead_file_uploads where state_id = {0} and from_date = to_date('{1}', 'DD/MM/YYYY') and to_date=to_date('{2}', 'DD/MM/YYYY')".format(params["state"], from_date, to_date))
     revisions_data = cursor.fetchall()
     revision_list = [i[0] for i in revisions_data]
 
+    cursor.execute("select state_name from states where state_id = {0}".format(state))
+    state_name = cursor.fetchall()[0][0]
+
+
     if len(revision_list) > 0:
         return jsonify(status="success", message="Fetched Successfully for '{0}'-'{1}'".format(from_date, to_date), revisions=revision_list, from_date=from_date, to_date=to_date)
     else:
-        return jsonify(status="failure", message="There are no Uploads for '{0}'-'{1}'".format(from_date, to_date))    
+        return jsonify(status="failure", message="There are no Uploads for state {0} for the year '{1}'-'{2}'".format(state_name, from_date, to_date))    
     
 
 
