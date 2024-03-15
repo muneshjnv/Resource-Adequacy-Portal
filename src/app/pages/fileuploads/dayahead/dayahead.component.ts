@@ -930,7 +930,9 @@ export class DayaheadComponent {
     const data: any[] = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
     const headerRow = data[0];
     const headerMap = new Map<number, any>();
-  
+    
+    // console.log(headerRow);
+    // console.log("After headerRow day ahead")
     // Map headers to their respective columns
     headerRow.forEach((header: any, index: any) => {
       if (!headerMap.has(index)) {

@@ -9,3 +9,6 @@ configBackend.py
 
 # Ignore the dist directory
 dist/
+
+# Ignore the Forecast Files 
+Day_Ahead_Forecast_Files/

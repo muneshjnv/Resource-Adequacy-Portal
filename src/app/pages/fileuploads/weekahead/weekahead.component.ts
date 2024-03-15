@@ -542,7 +542,7 @@ export class WeekaheadComponent {
   
       if(colIndex == 3) {
         const exactValue = value.toString()
-        console.log(typeof value);
+        // console.log(typeof value);
         if(typeof value !== 'number' && Number.isNaN(Number.parseInt(exactValue))){
           cell.style.background = '#ffcccb'
           Swal.fire({text:'Your Data has some errors, They are highlighted. Please check and Update',confirmButtonColor: 'rgb(3, 142, 220)',});
@@ -685,7 +685,7 @@ export class WeekaheadComponent {
     }
     if(this.validationform.valid) {
   
-      console.log(this.validationform.get('disabledDate')!.value);
+      // console.log(this.validationform.get('disabledDate')!.value);
   
       const formData = new FormData();
     formData.append('state', this.validationform.get('state')!.value);
@@ -750,7 +750,7 @@ export class WeekaheadComponent {
   
   handleFileInput(event: any) {
 
-    console.log(this.spreadsheet.nativeElement.jexcel);
+    // console.log(this.spreadsheet.nativeElement.jexcel);
     const file = event.target.files[0];
     this.validationform.get('excelFile')!.setValue(file);
     if (!file) return;
@@ -759,13 +759,14 @@ export class WeekaheadComponent {
     reader.onload = (e: any) => {
       const binaryString = e.target.result;
       const workbook = XLSX.read(binaryString, { type: 'binary' });
-      console.log(workbook.SheetNames);
-      const firstSheetName = workbook.SheetNames[1];
+      // console.log(workbook.SheetNames);
+      // console.log("sheetnames above")
+      const firstSheetName = workbook.SheetNames[0];
       const worksheet = workbook.Sheets[firstSheetName];
   
       // Convert worksheet data to a nested header structure
       this.excelData = this.convertSheetData(worksheet);
-      console.log(this.excelData);
+      // console.log(this.excelData);
 
       let flag: boolean = false;
 
@@ -791,7 +792,7 @@ export class WeekaheadComponent {
         this.tempData[i][0] = new Date((this.tempData[i][0] - 25569) * 86400 * 1000).toLocaleDateString('en-GB');
       }
 
-      console.log(this.tempData)
+      // console.log(this.tempData)
 
       let totalCount = this.getTotalElements(this.tempData);
 
@@ -803,12 +804,14 @@ export class WeekaheadComponent {
       // console.log(totalCount)
 
       
-      if(totalCount == 96*21*7) {
+      if(totalCount == 96*22*7) {
           Swal.fire({text:'Data is successfully loaded, you can now preview the data!',confirmButtonColor: 'rgb(3, 142, 220)',});
 
       }
 
       else {
+        // console.log(totalCount)
+        // console.log(96*22*7);
         Swal.fire({text:'The data you have uploaded is not in the proper format, Please upload based on the format provided above.',confirmButtonColor: 'rgb(3, 142, 220)',});   
 
       }
@@ -876,9 +879,13 @@ export class WeekaheadComponent {
   
   convertSheetData(worksheet: XLSX.WorkSheet): { header: any[]; rows: any[] } {
     const data: any[] = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+    console.log(data);
     const headerRow = data[0];
     const headerMap = new Map<number, any>();
-  
+    
+    console.log(headerRow);
+    console.log("After printing!")
+
     // Map headers to their respective columns
     headerRow.forEach((header: any, index: any) => {
       if (!headerMap.has(index)) {
