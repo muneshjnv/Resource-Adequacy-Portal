@@ -49,6 +49,14 @@ ALLOWED_EXTENSIONS = {'xlsx', 'xls'}
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
+
+def subtract_months(source_date, months):
+    month = source_date.month - 1 - months
+    year = source_date.year + month // 12
+    month = month % 12 + 1
+    day = min(source_date.day, [31, 29 if year % 4 == 0 and not year % 400 == 0 else 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][month-1])
+    return datetime(year, month, day)
+
 @app.route("/api/login", methods=["POST"])
 def login():
     try:
@@ -329,7 +337,7 @@ def uploadDayAheadDataAndFile():
             current_directory = os.getcwd()
             drive_name, path = os.path.splitdrive(current_directory)
 
-            directory_path = os.path.join(drive_name,"Day_Ahead_Forecast_Files", disabledDate,  state_name)
+            directory_path = os.path.join(shared_drive_path,"DAY_AHEAD_FORECAST_FILES", disabledDate,  state_name)
 
             cursor.execute("select * from file_uploads where upload_date = to_date('{0}', 'YYYY-MM-DD') and state_id = {1}".format(disabledDate, state))
 
@@ -629,6 +637,7 @@ def weekAheadForecast():
 
 
 @app.route('/api/uploadweekahead', methods=['POST'])
+@jwt_required()
 def uploadWeekAheadDataAndFile():
     # print(request.get_json())
     # print(request["form_data"])
@@ -662,21 +671,6 @@ def uploadWeekAheadDataAndFile():
     state_name = cursor.fetchall()[0][0]
 
 
-        
-
-
-    # date_string = disabledDate
-
-# Define the format of the input date string
-    # date_format = "%a %b %d %Y %H:%M:%S GMT%z (%Z)"
-
-# Parse the date string into a datetime object
-    # disabledDate = (datetime.strptime(date_string, date_format)).strftime("%Y-%m-%d")
-
-    # print(state, type(disabledDate) )
-    # print("Data Received")
-
-
     if 'excelFile' not in request.files:
         return jsonify({'error': 'No file part'})
 
@@ -696,7 +690,7 @@ def uploadWeekAheadDataAndFile():
         from_date = datetime.strptime(fromDate, '%d/%m/%Y').strftime('%d.%m.%Y')
         to_date = datetime.strptime(toDate, '%d/%m/%Y').strftime('%d.%m.%Y')
 
-        directory_path = os.path.join(drive_name,"\\","Week_Ahead_Forecast_Files", from_date+"-"+ to_date, state_name)
+        directory_path = os.path.join(shared_drive_path,"WEEK_AHEAD_FORECAST_FILES", from_date+"-"+ to_date, state_name)
 
         cursor.execute("select * from week_ahead_file_uploads where from_date = to_date('{0}', 'DD/MM/YYYY') and to_date = to_date('{1}','DD/MM/YYYY') and state_id = {2}".format(fromDate,toDate,  state))
 
@@ -707,15 +701,11 @@ def uploadWeekAheadDataAndFile():
         os.makedirs(directory_path, exist_ok=True)
 
         # Get the current revision number for the state and increment it
-        filename = f"{from_date}_{to_date}_{state_name}_rev{len(existing_revs) + 1}.xlsx"
+        filename = f"{from_date}_{to_date}_{state_name}_rev{len(existing_revs)}.xlsx"
 
         # Generate the filename based on the current revision number
 
         file_path = os.path.join(directory_path, filename)
-
-        print(directory_path, "This is the directory path")
-
-        print("file path", file_path)
 
         # Save the uploaded file in the directory
         if 'excelFile' in request.files:
@@ -735,16 +725,14 @@ def uploadWeekAheadDataAndFile():
 
         # file.save("D:\\forecast_excel_store\\"+file_name)
         print("file saved successfully")
-        # Process the form data and uploaded file as needed
-        # You can access 'name' and 'email' here
 
-        # return jsonify({'message': 'Data and file uploaded successfully'})
     else:
         return jsonify({'error': 'Invalid file type'})
     
 
 
 @app.route('/api/uploadmonthahead', methods=['POST'])
+@jwt_required()
 def uploadMonthAheadDataAndFile():
     # print(request.get_json())
     # print(request["form_data"])
@@ -807,12 +795,11 @@ def uploadMonthAheadDataAndFile():
         current_directory = os.getcwd()
         drive_name, path = os.path.splitdrive(current_directory)
 
-        print(drive_name)
 
         from_date = datetime.strptime(fromDate, '%d/%m/%Y').strftime('%d.%m.%Y')
         to_date = datetime.strptime(toDate, '%d/%m/%Y').strftime('%d.%m.%Y')
 
-        directory_path = os.path.join(drive_name,"\\","Month_Ahead_Forecast_Files", from_date+"-"+ to_date, state_name)
+        directory_path = os.path.join(shared_drive_path,"MONTH_AHEAD_FORECAST_FILES", from_date+"-"+ to_date, state_name)
 
         cursor.execute("select * from month_ahead_file_uploads where from_date = to_date('{0}', 'DD/MM/YYYY') and to_date = to_date('{1}','DD/MM/YYYY') and state_id = {2}".format(fromDate,toDate,  state))
 
@@ -840,27 +827,23 @@ def uploadMonthAheadDataAndFile():
                 print("entered in save")
                 file.save(file_path)
                 if len(existing_revs) > 0:
-                    cursor.execute("insert into month_ahead_file_uploads (state_id, from_date,to_date, upload_time, file_name, revision_no, uploaded_by, file_data) values({0}, to_date('{1}', 'DD/MM/YYYY'),to_date('{2}','DD/MM/YYYY'), to_timestamp('{3}', 'YYYY-MM-DD HH24:MI:SS'), '{4}', {5}, '{6}', '{7}')".format(state, fromDate, toDate, datetime.now().strftime('%Y-%m-%d %H:%M:%S'), file_path, len(existing_revs)+1, role, data))
+                    cursor.execute("insert into month_ahead_file_uploads (state_id, from_date,to_date, upload_time, file_name, revision_no, uploaded_by, file_data) values({0}, to_date('{1}', 'DD/MM/YYYY'),to_date('{2}','DD/MM/YYYY'), to_timestamp('{3}', 'YYYY-MM-DD HH24:MI:SS'), '{4}', {5}, '{6}', '{7}')".format(state, fromDate, toDate, datetime.now().strftime('%Y-%m-%d %H:%M:%S'), file_path, len(existing_revs), role, data))
                     # cursor.execute("update file_contents set file_data =  '{0}' where state_id = {1} and upload_date = to_date('{2}', 'YYYY-MM-DD')".format( data, state, disabledDate))
-                    return jsonify({'message': 'Data and file uploaded successfully. Uploaded {0} times'.format(len(existing_revs)+1)})
+                    return jsonify({'message': 'Data and file uploaded successfully. Uploaded with Revision-{0}'.format(len(existing_revs))})
 
                 else:
-                    cursor.execute("insert into month_ahead_file_uploads (state_id, from_date,to_date, upload_time, file_name, revision_no, uploaded_by, file_data) values({0}, to_date('{1}', 'DD/MM/YYYY'),to_date('{2}','DD/MM/YYYY'), to_timestamp('{3}', 'YYYY-MM-DD HH24:MI:SS'), '{4}', {5}, '{6}', '{7}')".format(state, fromDate,toDate, datetime.now().strftime('%Y-%m-%d %H:%M:%S'), file_path, len(existing_revs)+1, role, data))
+                    cursor.execute("insert into month_ahead_file_uploads (state_id, from_date,to_date, upload_time, file_name, revision_no, uploaded_by, file_data) values({0}, to_date('{1}', 'DD/MM/YYYY'),to_date('{2}','DD/MM/YYYY'), to_timestamp('{3}', 'YYYY-MM-DD HH24:MI:SS'), '{4}', {5}, '{6}', '{7}')".format(state, fromDate,toDate, datetime.now().strftime('%Y-%m-%d %H:%M:%S'), file_path, len(existing_revs), role, data))
                     # cursor.execute("insert into file_contents (state_id, upload_date, file_data) values({0}, to_date('{1}', 'YYYY-MM-DD'), '{2}')".format(state, disabledDate, data))
-                    return jsonify({'message': 'Data and file uploaded successfully, File Uploaded for the first time'})
+                    return jsonify({'message': 'Data and file uploaded successfully. Uploaded with Revision-{0}'.format(len(existing_revs))})
 
-        # file.save("D:\\forecast_excel_store\\"+file_name)
-        print("file saved successfully")
-        # Process the form data and uploaded file as needed
-        # You can access 'name' and 'email' here
 
-        # return jsonify({'message': 'Data and file uploaded successfully'})
     else:
         return jsonify({'error': 'Invalid file type'})
 
 
 
 @app.route('/api/fetchmonthrevisions', methods=['POST'])
+@jwt_required()
 def fetchMonthRevisions():
     params = request.get_json()
     from_date = params["from_date"]
@@ -918,6 +901,7 @@ def fetchMonthlyRevisionsData():
 
 
 @app.route('/api/uploadyearahead', methods=['POST'])
+@jwt_required()
 def uploadYearAheadDataAndFile():
     # print(request.get_json())
     # print(request["form_data"])
@@ -985,7 +969,7 @@ def uploadYearAheadDataAndFile():
         from_date = datetime.strptime(fromDate, '%d/%m/%Y').strftime('%d.%m.%Y')
         to_date = datetime.strptime(toDate, '%d/%m/%Y').strftime('%d.%m.%Y')
 
-        directory_path = os.path.join(drive_name,"\\","Year_Ahead_Forecast_Files", from_date+"-"+ to_date, state_name)
+        directory_path = os.path.join(shared_drive_path,"Year_Ahead_Forecast_Files", from_date+"-"+ to_date, state_name)
 
         cursor.execute("select * from year_ahead_file_uploads where from_date = to_date('{0}', 'DD/MM/YYYY') and to_date = to_date('{1}','DD/MM/YYYY') and state_id = {2}".format(fromDate,toDate,  state))
 
@@ -1013,15 +997,14 @@ def uploadYearAheadDataAndFile():
                 print("entered in save")
                 file.save(file_path)
                 if len(existing_revs) > 0:
-                    cursor.execute("insert into year_ahead_file_uploads (state_id, from_date,to_date, upload_time, file_name, revision_no, uploaded_by, file_data) values({0}, to_date('{1}', 'DD/MM/YYYY'),to_date('{2}','DD/MM/YYYY'), to_timestamp('{3}', 'YYYY-MM-DD HH24:MI:SS'), '{4}', {5}, '{6}', '{7}')".format(state, fromDate, toDate, datetime.now().strftime('%Y-%m-%d %H:%M:%S'), file_path, len(existing_revs)+1, role, data))
+                    cursor.execute("insert into year_ahead_file_uploads (state_id, from_date,to_date, upload_time, file_name, revision_no, uploaded_by, file_data) values({0}, to_date('{1}', 'DD/MM/YYYY'),to_date('{2}','DD/MM/YYYY'), to_timestamp('{3}', 'YYYY-MM-DD HH24:MI:SS'), '{4}', {5}, '{6}', '{7}')".format(state, fromDate, toDate, datetime.now().strftime('%Y-%m-%d %H:%M:%S'), file_path, len(existing_revs), role, data))
                     # cursor.execute("update file_contents set file_data =  '{0}' where state_id = {1} and upload_date = to_date('{2}', 'YYYY-MM-DD')".format( data, state, disabledDate))
-                    return jsonify({'message': 'Data and file uploaded successfully. Uploaded {0} times'.format(len(existing_revs)+1)})
+                    return jsonify({'message': 'Data and file uploaded successfully. Uploaded with Revision-{0}'.format(len(existing_revs))})
 
                 else:
-                    cursor.execute("insert into year_ahead_file_uploads (state_id, from_date,to_date, upload_time, file_name, revision_no, uploaded_by, file_data) values({0}, to_date('{1}', 'DD/MM/YYYY'),to_date('{2}','DD/MM/YYYY'), to_timestamp('{3}', 'YYYY-MM-DD HH24:MI:SS'), '{4}', {5}, '{6}', '{7}')".format(state, fromDate,toDate, datetime.now().strftime('%Y-%m-%d %H:%M:%S'), file_path, len(existing_revs)+1, role, data))
+                    cursor.execute("insert into year_ahead_file_uploads (state_id, from_date,to_date, upload_time, file_name, revision_no, uploaded_by, file_data) values({0}, to_date('{1}', 'DD/MM/YYYY'),to_date('{2}','DD/MM/YYYY'), to_timestamp('{3}', 'YYYY-MM-DD HH24:MI:SS'), '{4}', {5}, '{6}', '{7}')".format(state, fromDate,toDate, datetime.now().strftime('%Y-%m-%d %H:%M:%S'), file_path, len(existing_revs), role, data))
                     # cursor.execute("insert into file_contents (state_id, upload_date, file_data) values({0}, to_date('{1}', 'YYYY-MM-DD'), '{2}')".format(state, disabledDate, data))
-                    return jsonify({'message': 'Data and file uploaded successfully, File Uploaded for the first time'})
-
+                    return jsonify({'message': 'Data and file uploaded successfully. Uploaded with Revision-{0}'.format(len(existing_revs))})
         # file.save("D:\\forecast_excel_store\\"+file_name)
         print("file saved successfully")
         # Process the form data and uploaded file as needed
@@ -1073,6 +1056,7 @@ def fetchYearlyRevisionsData():
 
 
 @app.route('/api/fetchyearrevisions', methods=['POST'])
+@jwt_required()
 def fetchYearRevisions():
     params = request.get_json()
     from_date = params["from_date"]
@@ -1092,6 +1076,228 @@ def fetchYearRevisions():
         return jsonify(status="failure", message="There are no Uploads for state {0} for the year '{1}'-'{2}'".format(state_name, from_date, to_date))    
     
 
+
+@app.route('/api/uploadstatus')
+@jwt_required()
+def scatterPlotUploadStatus():
+    try:
+        end_date = datetime.now()
+        start_date = end_date - timedelta(days=30)
+
+        sql_query = """
+            SELECT 
+        states.state_name,
+        COALESCE(file_uploads.upload_date, %s) AS upload_date,
+        COUNT(file_uploads.state_id) AS upload_count
+    FROM 
+        states
+    LEFT JOIN 
+        file_uploads ON states.state_id = file_uploads.state_id
+        AND file_uploads.upload_date BETWEEN %s AND %s
+    WHERE states.username not in  ('admin', 'pgcil_sr_1', 'pgcil_sr_2')
+    GROUP BY 
+        states.state_name, 
+        file_uploads.upload_date
+    ORDER BY
+        states.state_name,
+        upload_date DESC
+        """
+        cursor.execute(sql_query, (end_date, start_date, end_date))
+        results = cursor.fetchall()
+
+        # print(results)
+
+        # Process the results and format them into the desired JSON structure
+        data = []
+
+        # Create a date range for the last 30 days
+        date_range = [end_date - timedelta(days=i) for i in range(30)]
+
+        # Get unique state names
+        state_names = set(result[0] for result in results)
+
+        # print(state_names)
+
+
+
+        # Iterate over all state names to populate the data list
+        for state_name in state_names:
+
+            state_data = {"name": state_name, "data": []}
+            for date in date_range:
+                date_str = date.strftime('%Y-%m-%d')
+                # Check if there is a result for the current state name and date
+                found_result = False
+                
+                for result in results:
+                    if result[0] == state_name and result[1].strftime("%Y-%m-%d") == date.strftime("%Y-%m-%d"):
+                        upload_count = result[2]
+                        found_result = True
+                        break
+                # If no result found, set upload count to 0
+                if not found_result:
+                    upload_count = 0
+                state_data["data"].append({'x': date_str, 'y': upload_count})
+            data.append(state_data)
+
+        
+        day_data = data
+
+        # Print or return the JSON data
+        # print(data)
+
+        #######################################################################################################################################
+        #######################################################################################################################################
+        # Now implementing week ahead forecast data for dashboard 
+
+                
+        today = datetime.now()
+        end_date = today - timedelta(days=(today.weekday() + 1) % 7)  # Adjust to get the last Sunday
+        start_date = end_date - timedelta(weeks=5)  # Start date 5 weeks ago
+
+        # Debugging: Print start and end dates
+        print("Start Date:", start_date)
+        print("End Date:", end_date)
+
+        # SQL query to fetch data
+        sql_query = """
+            SELECT 
+                states.state_name,
+                week_ahead_file_uploads.from_date AS week_start_date,
+                COUNT(week_ahead_file_uploads.state_id) AS upload_count
+            FROM 
+                states
+            LEFT JOIN 
+                week_ahead_file_uploads ON states.state_id = week_ahead_file_uploads.state_id
+                AND week_ahead_file_uploads.from_date BETWEEN %s AND %s
+            WHERE states.username not in ('admin', 'pgcil_sr_1', 'pgcil_sr_2')
+            GROUP BY 
+                states.state_name, 
+                week_ahead_file_uploads.from_date
+            ORDER BY
+                states.state_name,
+                week_start_date DESC
+        """
+        cursor.execute(sql_query, (start_date, end_date))
+        results = cursor.fetchall()
+
+        # Ensure all states are included
+        cursor.execute("SELECT state_name FROM states WHERE username not in ('admin', 'pgcil_sr_1', 'pgcil_sr_2')")
+        all_states = [row[0] for row in cursor.fetchall()]
+
+        # print(all_states)
+
+        # Create a list of the starting Mondays for each week in the range
+        week_range = [(end_date - timedelta(days=i * 7)).date() for i in range(5)]
+
+        # Prepare data structure for JSON output
+        data = []
+        for state_name in all_states:
+            state_data = {"name": state_name, "data": []}
+            for week_start in week_range:
+                week_start_date = (week_start - timedelta(days=week_start.weekday()))
+                week_end_date = week_start_date + timedelta(days=6)
+                week_range_str = f"{week_start_date.strftime('%Y-%m-%d')} to {week_end_date.strftime('%Y-%m-%d')}"
+
+                # Initialize upload count for the week
+                upload_count = 0
+                found_result = False
+                for result in results:
+                    if result[0] == state_name and result[1] is not None and week_start_date <= result[1] <= week_end_date:
+                        upload_count = result[2]
+                        found_result = True
+                        break
+
+                # If no result found, set upload count to 0
+                if not found_result:
+                    upload_count = 0
+                state_data["data"].append({'x': week_range_str, 'y': upload_count})
+            data.append(state_data)
+                
+        week_data = data
+
+
+
+        #######################################################################################################################################
+        #######################################################################################################################################
+        # Now implementing month ahead forecast data for dashboard 
+
+
+        today = datetime.now()
+        # Ensure that 'today' is set to a specific date for your scenario
+        # today = datetime(2024, 4, 24)
+
+        # Start of the current month
+        start_of_current_month = today.replace(day=1)
+
+        # Creating list of start dates for the last three complete months
+        month_ranges = [subtract_months(start_of_current_month, i) for i in range(1, 4)]
+
+        # SQL query to fetch upload counts by state and month
+        sql_query = """
+            SELECT 
+                states.state_name,
+                DATE_TRUNC('month', month_ahead_file_uploads.from_date) AS month_start_date,
+                COUNT(month_ahead_file_uploads.state_id) AS upload_count
+            FROM 
+                states
+            LEFT JOIN 
+                month_ahead_file_uploads ON states.state_id = month_ahead_file_uploads.state_id
+                AND month_ahead_file_uploads.from_date BETWEEN %s AND %s
+            WHERE states.username NOT IN ('admin', 'pgcil_sr_1', 'pgcil_sr_2')
+            GROUP BY 
+                states.state_name, 
+                month_start_date
+            ORDER BY
+                states.state_name,
+                month_start_date DESC
+        """
+        cursor.execute(sql_query, (month_ranges[-1], start_of_current_month - timedelta(days=1)))
+        results = cursor.fetchall()
+
+        # Fetch all states
+        cursor.execute("SELECT state_name FROM states WHERE username NOT IN ('admin', 'pgcil_sr_1', 'pgcil_sr_2')")
+        all_states = [row[0] for row in cursor.fetchall()]
+
+        # Data structure for JSON output
+        data = []
+        for state_name in all_states:
+            state_data = {"name": state_name, "data": []}
+            for month_start in month_ranges:
+                month_end = (month_start + timedelta(days=31)).replace(day=1) - timedelta(days=1)
+                month_range_str = f"{month_start.strftime('%Y-%m-%d')} to {month_end.strftime('%Y-%m-%d')}"
+
+                upload_count = 0
+                found_result = False
+                for result in results:
+                    result_month_start = result[1]
+                    if result[0] == state_name and result_month_start == month_start:
+                        upload_count = result[2]
+                        found_result = True
+                        break
+
+                if not found_result:
+                    upload_count = 0
+                state_data["data"].append({'x': month_range_str, 'y': upload_count})
+            data.append(state_data)
+
+        month_data = data
+
+        
+        
+        return jsonify(day=day_data, week=week_data, month = month_data)
+    except Exception as error:
+        print(error)
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        print(exc_type, fname, exc_tb.tb_lineno)
+        return jsonify(message="There is a problem, please contact SRLDC IT!")
+
+
+# @app.route('/api/mapechart')
+# @jwt_required()
+# def mapeChart():
+    
 
 
 

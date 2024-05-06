@@ -770,6 +770,9 @@ export class WeekaheadComponent {
 
       let flag: boolean = false;
 
+      console.log(this.data);
+      console.log("before this is data!")
+
       const secondColumnValues: any[] = this.data.map((row:any) => row[2]);
 
       secondColumnValues.push('23:45 - 24:00')

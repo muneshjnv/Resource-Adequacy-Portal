@@ -747,7 +747,7 @@ export class MonthaheadComponent {
     reader.onload = (e: any) => {
       const binaryString = e.target.result;
       const workbook = XLSX.read(binaryString, { type: 'binary' });
-      console.log(workbook.SheetNames);
+      // console.log(workbook.SheetNames);
       const firstSheetName = workbook.SheetNames[0];
       const worksheet = workbook.Sheets[firstSheetName];
   
@@ -788,6 +788,14 @@ export class MonthaheadComponent {
 
       // console.log(totalCount)
       // console.log(96*22*this.daysInMonth(this.validationform.get('disabledDate')!.value["from"]))
+
+      console.log("Total number count (has to be)")
+
+      console.log(96*22*this.daysInMonth(this.validationform.get('disabledDate')!.value["from"]))
+
+      console.log(totalCount)
+
+      console.log("total number count (is)")
 
 
       

@@ -1,3 +1,59 @@
 <!-- Start Breadcrumbs -->
 <app-breadcrumbs title="DASHBOARD" [breadcrumbItems]="breadCrumbItems"></app-breadcrumbs>
 <!-- End Breadcrumbs -->
+
+
+<div class="row">
+    
+
+    <div class="col-xl-6">
+        <div class="card card-height-100">
+            <div class="card-header align-items-center d-flex">
+                <h4 class="card-title mb-0 flex-grow-1">File Upload Status</h4> 
+
+                <div class="btn-group" role="group" aria-label="Basic radio toggle button group">
+                    <input type="radio" class="btn-check" name="btnradio" id="btnradio1" checked="" [(ngModel)]="selectedOption" value="day">
+                    <label class="btn btn-outline-secondary mb-0" for="btnradio1">Day Ahead</label>
+
+                    <input type="radio" class="btn-check" name="btnradio" id="btnradio2" [(ngModel)]="selectedOption" value="week">
+                    <label class="btn btn-outline-secondary mb-0" for="btnradio2">Week Ahead</label>
+
+                    <input type="radio" class="btn-check" name="btnradio" id="btnradio3" [(ngModel)]="selectedOption" value="month">
+                    <label class="btn btn-outline-secondary mb-0" for="btnradio3">Month Ahead</label>
+                </div>
+                
+            </div><!-- end card header -->
+            <div *ngIf="selectedOption === 'day'">
+            <div class="card-body p-0">
+                <div class="mb-n2" *ngIf="dataArrived">
+                    <apx-chart [series]="basicHeatmapChart.series" [chart]="basicHeatmapChart.chart"
+                        [dataLabels]="basicHeatmapChart.dataLabels" [legend]="basicHeatmapChart.legend" [plotOptions]="basicHeatmapChart.plotOptions"
+                        [colors]="basicHeatmapChart.colors" [tooltip]="basicHeatmapChart.tooltip" dir="ltr"></apx-chart>
+                </div>
+            </div><!-- end cardbody -->
+        </div>
+
+        <div *ngIf="selectedOption === 'week'">
+            <div class="card-body p-0">
+                <div class="mb-n2" *ngIf="dataArrived">
+                    <apx-chart [series]="basicWeekHeatmapChart.series" [chart]="basicWeekHeatmapChart.chart"
+                        [dataLabels]="basicWeekHeatmapChart.dataLabels" [legend]="basicWeekHeatmapChart.legend" [plotOptions]="basicWeekHeatmapChart.plotOptions"
+                        [colors]="basicWeekHeatmapChart.colors" [tooltip]="basicWeekHeatmapChart.tooltip" dir="ltr"></apx-chart>
+                </div>
+            </div><!-- end cardbody -->
+        </div>
+
+        <div *ngIf="selectedOption === 'month'">
+            <div class="card-body p-0">
+                <div class="mb-n2" *ngIf="dataArrived">
+                    <apx-chart [series]="basicMonthHeatmapChart.series" [chart]="basicMonthHeatmapChart.chart"
+                        [dataLabels]="basicMonthHeatmapChart.dataLabels" [legend]="basicMonthHeatmapChart.legend" [plotOptions]="basicMonthHeatmapChart.plotOptions"
+                        [colors]="basicMonthHeatmapChart.colors" [tooltip]="basicMonthHeatmapChart.tooltip" dir="ltr"></apx-chart>
+                </div>
+            </div><!-- end cardbody -->
+        </div>
+        </div><!-- end card -->
+    </div><!-- end col -->
+</div><!-- end row -->
+
+
