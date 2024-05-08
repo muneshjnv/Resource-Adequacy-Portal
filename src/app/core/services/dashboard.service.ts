@@ -17,6 +17,11 @@ export class DashboardService {
   }
 
 
+  mapeChart(formData: any) {
+    return this.http.post<any>(this.url+'/mapechart', {"params":formData})
+  }
+
+
 
 
 }

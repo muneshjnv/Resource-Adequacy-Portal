@@ -20,10 +20,12 @@ import { NgbToastModule } from '@ng-bootstrap/ng-bootstrap';
 //Module
 import { DashboardsRoutingModule } from "./dashboards-routing.module";
 import { SharedModule } from '../../shared/shared.module';
+import { DashboardComponent } from './dashboard/dashboard.component';
 
 
 @NgModule({
   declarations: [
+    DashboardComponent
   ],
   imports: [
     CommonModule,

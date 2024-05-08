@@ -31,7 +31,7 @@ import { TimingEntryModule } from './timingentry/timingentry.module';
 
 @NgModule({
   declarations: [
-    DashboardComponent,
+    // DashboardComponent,
   ],
   imports: [
     CommonModule,
