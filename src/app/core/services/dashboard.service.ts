@@ -23,5 +23,17 @@ export class DashboardService {
 
 
 
+  fetchDayRangeStatus(formDate:any) {
+    return this.http.post<any>(this.url + '/dayrangestatus', {"params":formDate}) 
+  }
+
+  fetchWeekRangeStatus(formDate:any) {
+    return this.http.post<any>(this.url + '/weekrangestatus', {"params":formDate}) 
+  }
+
+  fetchMonthRangeStatus(formDate:any) {
+    return this.http.post<any>(this.url + '/monthrangestatus', {"params":formDate}) 
+  }
+
 
 }

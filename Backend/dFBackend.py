@@ -24,7 +24,7 @@ import json
 import jwt
 from flask_cors import CORS
 import psycopg2
-
+from calendar import monthrange
 
 
 import datetime
@@ -338,7 +338,7 @@ def uploadDayAheadDataAndFile():
             drive_name, path = os.path.splitdrive(current_directory)
 
 
-            directory_path = os.path.join(path,"DAY_AHEAD_FORECAST_FILES", disabledDate,  state_name)
+            directory_path = os.path.join(path,"DAY_AHEAD", disabledDate,  state_name)
 
             # print(directory_path)
 
@@ -1080,10 +1080,255 @@ def fetchYearRevisions():
     
 
 
+# @app.route('/api/uploadstatus')
+# @jwt_required()
+# def scatterPlotUploadStatus():
+#     try:
+#         end_date = datetime.now() + timedelta(days=1)
+#         start_date = end_date - timedelta(days=30)
+
+#         sql_query = """
+#             SELECT 
+#                 states.state_name,
+#                 COALESCE(file_uploads.upload_date, %s) AS upload_date,
+#                 COALESCE(file_uploads.upload_time, NULL) AS upload_time,
+#                 CASE
+#                     WHEN file_uploads.upload_time IS NULL THEN 2  -- Not Uploaded
+#                     WHEN file_uploads.upload_date < %s AND (file_uploads.upload_date + INTERVAL '1 day') <= %s THEN 0  -- Uploaded
+#                     ELSE 1  -- Late Upload
+#                 END AS upload_status_code,
+#                 COUNT(file_uploads.state_id) AS upload_count
+#             FROM 
+#                 states
+#             LEFT JOIN 
+#                 file_uploads ON states.state_id = file_uploads.state_id
+#                 AND file_uploads.upload_date BETWEEN %s AND %s
+#             WHERE states.username NOT IN ('admin', 'pgcil_sr_1', 'pgcil_sr_2')
+#             GROUP BY 
+#                 states.state_name, 
+#                 file_uploads.upload_date,
+#                 file_uploads.upload_time  
+#             ORDER BY
+#                 states.state_name,
+#                 upload_date DESC
+#         """
+#         cursor.execute(sql_query, (end_date, end_date, end_date, start_date, end_date))
+#         results = cursor.fetchall()
+
+#         data = []
+#         date_range = [end_date - timedelta(days=i) for i in range(30)]
+#         state_names = set(result[0] for result in results)
+
+#         for state_name in state_names:
+#             state_data = {"name": state_name, "data": []}
+#             for date in date_range:
+#                 date_str = date.strftime('%Y-%m-%d')
+#                 found_result = False
+#                 for result in results:
+#                     if result[0] == state_name and result[1].strftime("%Y-%m-%d") == date.strftime("%Y-%m-%d"):
+#                         upload_count = result[4]
+#                         upload_time = result[2].strftime("%d/%m/%Y %H:%M:%S %p") if result[2] is not None else None
+#                         upload_status_code = result[3]
+#                         found_result = True
+#                         break
+#                 if not found_result:
+#                     upload_count = 0
+#                     upload_time = None
+#                     # For dates with no uploads, consider them as "Not Uploaded"
+#                     upload_status_code = 2  # Not Uploaded
+#                 state_data["data"].append({'x': date_str, 'y': upload_status_code, 'upload_time': upload_time, 'upload_count': upload_count})  
+#             data.append(state_data)
+
+#         day_data = data
+
+#         day_dates = {}
+
+#         day_dates["start_date"] = start_date
+#         day_dates["end_date"] = end_date
+#         # Print or return the JSON data
+#         # print(data)
+
+#         #######################################################################################################################################
+#         #######################################################################################################################################
+#         # Now implementing week ahead forecast data for dashboard 
+
+                
+#         today = datetime.now()
+#         end_date = today - timedelta(days=(today.weekday() + 1) % 7)  # Adjust to get the last Sunday
+#         start_date = end_date - timedelta(weeks=5)  # Start date 5 weeks ago
+
+
+
+#         # SQL query to fetch data for week ahead
+#         sql_query = """
+#             SELECT 
+#                 states.state_name,
+#                 week_ahead_file_uploads.from_date AS week_start_date,
+#                 COALESCE(week_ahead_file_uploads.upload_time, NULL) AS upload_time,
+#                 CASE
+#                     WHEN week_ahead_file_uploads.upload_time IS NULL THEN 2  -- Not Uploaded
+#                     WHEN week_ahead_file_uploads.from_date < %s AND (week_ahead_file_uploads.from_date + INTERVAL '7 day') <= %s THEN 0  -- Uploaded
+#                     ELSE 1  -- Late Upload
+#                 END AS upload_status_code,
+#                 COUNT(week_ahead_file_uploads.state_id) AS upload_count
+#             FROM 
+#                 states
+#             LEFT JOIN 
+#                 week_ahead_file_uploads ON states.state_id = week_ahead_file_uploads.state_id
+#                 AND week_ahead_file_uploads.from_date BETWEEN %s AND %s
+#             WHERE states.username not in ('admin', 'pgcil_sr_1', 'pgcil_sr_2')
+#             GROUP BY 
+#                 states.state_name, 
+#                 week_ahead_file_uploads.from_date,
+#                 week_ahead_file_uploads.upload_time
+#             ORDER BY
+#                 states.state_name,
+#                 week_start_date DESC
+#         """
+#         cursor.execute(sql_query, (end_date, end_date, start_date, end_date))
+#         results = cursor.fetchall()
+
+#         # Ensure all states are included
+#         cursor.execute("SELECT state_name FROM states WHERE username not in ('admin', 'pgcil_sr_1', 'pgcil_sr_2')")
+#         all_states = [row[0] for row in cursor.fetchall()]
+
+#         # Create a list of the starting Mondays for each week in the range
+#         week_range = [(end_date - timedelta(days=i * 7)).date() for i in range(5)]
+
+#         # Prepare data structure for JSON output
+#         data = []
+#         for state_name in all_states:
+#             state_data = {"name": state_name, "data": []}
+#             for week_start in week_range:
+#                 week_start_date = (week_start - timedelta(days=week_start.weekday()))
+#                 week_end_date = week_start_date + timedelta(days=6)
+#                 week_range_str = f"{week_start_date.strftime('%Y-%m-%d')} to {week_end_date.strftime('%Y-%m-%d')}"
+
+#                 # Initialize upload count, upload status code, and upload time for the week
+#                 upload_count = 0
+#                 upload_status_code = 2  # Default to Not Uploaded
+#                 upload_time = None
+#                 found_result = False
+#                 for result in results:
+#                     if result[0] == state_name and result[1] == week_start_date:
+#                         upload_count = result[4]
+#                         upload_time = result[2].strftime("%d/%m/%Y %H:%M:%S %p") if result[2] is not None else None
+#                         upload_status_code = result[3]
+#                         found_result = True
+#                         break
+
+#                 # If no result found, set upload count to 0 and upload status code to 2
+#                 if not found_result:
+#                     upload_count = 0
+#                     upload_status_code = 2  # Not Uploaded
+#                 state_data["data"].append({'x': week_range_str, 'y': upload_status_code, 'upload_time': upload_time, 'upload_count': upload_count})
+#             data.append(state_data)
+
+#         week_data = data
+
+
+#         week_dates = {}
+#         week_dates["start_date"] = end_date
+#         week_dates["end_date"] = start_date
+
+
+
+#         #######################################################################################################################################
+#         #######################################################################################################################################
+#         # Now implementing month ahead forecast data for dashboard 
+
+
+#         today = datetime.now()
+#         # Ensure that 'today' is set to a specific date for your scenario
+#         # today = datetime(2024, 4, 24)
+
+#         # Start of the current month
+#         start_of_current_month = today.replace(day=1)
+
+#         # Creating list of start dates for the last three complete months
+#         month_ranges = [subtract_months(start_of_current_month, i) for i in range(1, 4)]
+
+#         # SQL query to fetch upload counts by state and month
+#         sql_query = """
+#             SELECT 
+#                 states.state_name,
+#                 DATE_TRUNC('month', month_ahead_file_uploads.from_date) AS month_start_date,
+#                 COALESCE(month_ahead_file_uploads.upload_time, NULL) AS upload_time,
+#                 CASE
+#                     WHEN month_ahead_file_uploads.upload_time IS NULL THEN 2  -- Not Uploaded
+#                     WHEN month_ahead_file_uploads.from_date < %s AND (month_ahead_file_uploads.from_date + INTERVAL '30 day') <= %s THEN 0  -- Uploaded
+#                     ELSE 1  -- Late Upload
+#                 END AS upload_status_code,
+#                 COUNT(month_ahead_file_uploads.state_id) AS upload_count
+#             FROM 
+#                 states
+#             LEFT JOIN 
+#                 month_ahead_file_uploads ON states.state_id = month_ahead_file_uploads.state_id
+#                 AND month_ahead_file_uploads.from_date BETWEEN %s AND %s
+#             WHERE states.username NOT IN ('admin', 'pgcil_sr_1', 'pgcil_sr_2')
+#             GROUP BY 
+#                 states.state_name, 
+#                 month_start_date,
+#                 month_ahead_file_uploads.upload_time,
+#                 month_ahead_file_uploads.from_date  -- Include from_date in GROUP BY clause
+#             ORDER BY
+#                 states.state_name,
+#                 month_start_date DESC
+#         """
+#         cursor.execute(sql_query, (month_ranges[-1], start_of_current_month - timedelta(days=1), month_ranges[-1], start_of_current_month - timedelta(days=1)))
+#         results = cursor.fetchall()
+
+#         # Fetch all states
+#         cursor.execute("SELECT state_name FROM states WHERE username NOT IN ('admin', 'pgcil_sr_1', 'pgcil_sr_2')")
+#         all_states = [row[0] for row in cursor.fetchall()]
+
+#         # Data structure for JSON output
+#         data = []
+#         for state_name in all_states:
+#             state_data = {"name": state_name, "data": []}
+#             for month_start in month_ranges:
+#                 month_end = (month_start + timedelta(days=31)).replace(day=1) - timedelta(days=1)
+#                 month_range_str = f"{month_start.strftime('%Y-%m-%d')} to {month_end.strftime('%Y-%m-%d')}"
+
+#                 upload_count = 0
+#                 upload_status_code = 2  # Default to Not Uploaded
+#                 upload_time = None
+#                 found_result = False
+#                 for result in results:
+#                     result_month_start = result[1]
+#                     if result[0] == state_name and result_month_start == month_start:
+#                         upload_count = result[4]
+#                         upload_time = result[2].strftime("%d/%m/%Y %H:%M:%S %p") if result[2] is not None else None
+#                         upload_status_code = result[3]
+#                         found_result = True
+#                         break
+
+#                 if not found_result:
+#                     upload_count = 0
+#                 state_data["data"].append({'x': month_range_str, 'y': upload_status_code, 'upload_time': upload_time, 'upload_count': upload_count})
+#             data.append(state_data)
+
+#         month_data = data
+
+        
+        
+#         return jsonify(day=day_data, week=week_data, month = month_data)
+#     except Exception as error:
+#         print(error)
+#         exc_type, exc_obj, exc_tb = sys.exc_info()
+#         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+#         print(exc_type, fname, exc_tb.tb_lineno)
+#         return jsonify(message="There is a problem, please contact SRLDC IT!")
+
+
+
+
+
 @app.route('/api/uploadstatus')
 @jwt_required()
 def scatterPlotUploadStatus():
     try:
+        # Day Ahead Data Processing
         end_date = datetime.now() + timedelta(days=1)
         start_date = end_date - timedelta(days=30)
 
@@ -1115,7 +1360,7 @@ def scatterPlotUploadStatus():
         cursor.execute(sql_query, (end_date, end_date, end_date, start_date, end_date))
         results = cursor.fetchall()
 
-        data = []
+        day_data = []
         date_range = [end_date - timedelta(days=i) for i in range(30)]
         state_names = set(result[0] for result in results)
 
@@ -1125,36 +1370,32 @@ def scatterPlotUploadStatus():
                 date_str = date.strftime('%Y-%m-%d')
                 found_result = False
                 for result in results:
-                    if result[0] == state_name and result[1].strftime("%Y-%m-%d") == date.strftime("%Y-%m-%d"):
+                    if result[0] == state_name and result[1].strftime("%Y-%m-%d") == date_str:
                         upload_count = result[4]
-                        upload_time = result[2].strftime("%d/%m/%Y %H:%M:%S %p") if result[2] is not None else None
+                        upload_time = result[2].strftime("%Y-%m-%d %H:%M:%S") if result[2] is not None else None
                         upload_status_code = result[3]
                         found_result = True
                         break
                 if not found_result:
                     upload_count = 0
                     upload_time = None
-                    # For dates with no uploads, consider them as "Not Uploaded"
                     upload_status_code = 2  # Not Uploaded
-                state_data["data"].append({'x': date_str, 'y': upload_status_code, 'upload_time': upload_time, 'upload_count': upload_count})  
-            data.append(state_data)
+                state_data["data"].append({'x': date_str, 'y': upload_status_code, 'upload_time': upload_time, 'upload_count': upload_count})
+            day_data.append(state_data)
 
-        day_data = data
-        # Print or return the JSON data
-        # print(data)
+        day_dates = {
+            "start_date": (start_date + timedelta(days=1)).strftime('%Y-%m-%d'),
+            "end_date": end_date.strftime('%Y-%m-%d')
+        }
 
         #######################################################################################################################################
         #######################################################################################################################################
-        # Now implementing week ahead forecast data for dashboard 
-
+        # Week Ahead Data Processing
                 
         today = datetime.now()
         end_date = today - timedelta(days=(today.weekday() + 1) % 7)  # Adjust to get the last Sunday
         start_date = end_date - timedelta(weeks=5)  # Start date 5 weeks ago
 
-
-
-        # SQL query to fetch data for week ahead
         sql_query = """
             SELECT 
                 states.state_name,
@@ -1183,23 +1424,19 @@ def scatterPlotUploadStatus():
         cursor.execute(sql_query, (end_date, end_date, start_date, end_date))
         results = cursor.fetchall()
 
-        # Ensure all states are included
         cursor.execute("SELECT state_name FROM states WHERE username not in ('admin', 'pgcil_sr_1', 'pgcil_sr_2')")
         all_states = [row[0] for row in cursor.fetchall()]
 
-        # Create a list of the starting Mondays for each week in the range
         week_range = [(end_date - timedelta(days=i * 7)).date() for i in range(5)]
 
-        # Prepare data structure for JSON output
-        data = []
+        week_data = []
         for state_name in all_states:
             state_data = {"name": state_name, "data": []}
             for week_start in week_range:
-                week_start_date = (week_start - timedelta(days=week_start.weekday()))
+                week_start_date = week_start
                 week_end_date = week_start_date + timedelta(days=6)
                 week_range_str = f"{week_start_date.strftime('%Y-%m-%d')} to {week_end_date.strftime('%Y-%m-%d')}"
 
-                # Initialize upload count, upload status code, and upload time for the week
                 upload_count = 0
                 upload_status_code = 2  # Default to Not Uploaded
                 upload_time = None
@@ -1207,38 +1444,30 @@ def scatterPlotUploadStatus():
                 for result in results:
                     if result[0] == state_name and result[1] == week_start_date:
                         upload_count = result[4]
-                        upload_time = result[2].strftime("%d/%m/%Y %H:%M:%S %p") if result[2] is not None else None
+                        upload_time = result[2].strftime("%Y-%m-%d %H:%M:%S") if result[2] is not None else None
                         upload_status_code = result[3]
                         found_result = True
                         break
 
-                # If no result found, set upload count to 0 and upload status code to 2
                 if not found_result:
                     upload_count = 0
                     upload_status_code = 2  # Not Uploaded
                 state_data["data"].append({'x': week_range_str, 'y': upload_status_code, 'upload_time': upload_time, 'upload_count': upload_count})
-            data.append(state_data)
+            week_data.append(state_data)
 
-        week_data = data
-
-
+        week_dates = {
+            "start_date": (start_date + timedelta(weeks=1)).strftime('%Y-%m-%d'),
+            "end_date": end_date.strftime('%Y-%m-%d')
+        }
 
         #######################################################################################################################################
         #######################################################################################################################################
-        # Now implementing month ahead forecast data for dashboard 
-
+        # Month Ahead Data Processing
 
         today = datetime.now()
-        # Ensure that 'today' is set to a specific date for your scenario
-        # today = datetime(2024, 4, 24)
-
-        # Start of the current month
         start_of_current_month = today.replace(day=1)
-
-        # Creating list of start dates for the last three complete months
         month_ranges = [subtract_months(start_of_current_month, i) for i in range(1, 4)]
 
-        # SQL query to fetch upload counts by state and month
         sql_query = """
             SELECT 
                 states.state_name,
@@ -1268,16 +1497,15 @@ def scatterPlotUploadStatus():
         cursor.execute(sql_query, (month_ranges[-1], start_of_current_month - timedelta(days=1), month_ranges[-1], start_of_current_month - timedelta(days=1)))
         results = cursor.fetchall()
 
-        # Fetch all states
         cursor.execute("SELECT state_name FROM states WHERE username NOT IN ('admin', 'pgcil_sr_1', 'pgcil_sr_2')")
         all_states = [row[0] for row in cursor.fetchall()]
 
-        # Data structure for JSON output
-        data = []
+        month_data = []
         for state_name in all_states:
             state_data = {"name": state_name, "data": []}
             for month_start in month_ranges:
-                month_end = (month_start + timedelta(days=31)).replace(day=1) - timedelta(days=1)
+                last_day_of_month = monthrange(month_start.year, month_start.month)[1]
+                month_end = month_start.replace(day=last_day_of_month)
                 month_range_str = f"{month_start.strftime('%Y-%m-%d')} to {month_end.strftime('%Y-%m-%d')}"
 
                 upload_count = 0
@@ -1285,10 +1513,9 @@ def scatterPlotUploadStatus():
                 upload_time = None
                 found_result = False
                 for result in results:
-                    result_month_start = result[1]
-                    if result[0] == state_name and result_month_start == month_start:
+                    if result[0] == state_name and result[1] == month_start:
                         upload_count = result[4]
-                        upload_time = result[2].strftime("%d/%m/%Y %H:%M:%S %p") if result[2] is not None else None
+                        upload_time = result[2].strftime("%Y-%m-%d %H:%M:%S") if result[2] is not None else None
                         upload_status_code = result[3]
                         found_result = True
                         break
@@ -1296,19 +1523,22 @@ def scatterPlotUploadStatus():
                 if not found_result:
                     upload_count = 0
                 state_data["data"].append({'x': month_range_str, 'y': upload_status_code, 'upload_time': upload_time, 'upload_count': upload_count})
-            data.append(state_data)
+            month_data.append(state_data)
 
-        month_data = data
+        month_dates = {
+            "start_date": month_ranges[-1].strftime('%Y-%m-%d'),
+            "end_date": (start_of_current_month - timedelta(days=1)).strftime('%Y-%m-%d')
+        }
 
-        
-        
-        return jsonify(day=day_data, week=week_data, month = month_data)
+        return jsonify(day=day_data, week=week_data, month=month_data, day_dates=day_dates, week_dates=week_dates, month_dates=month_dates)
+    
     except Exception as error:
-        # print(error)
+        print(error)
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        # print(exc_type, fname, exc_tb.tb_lineno)
+        print(exc_type, fname, exc_tb.tb_lineno)
         return jsonify(message="There is a problem, please contact SRLDC IT!")
+
 
 
 @app.route('/api/mapechart', methods=['POST'])
@@ -1632,27 +1862,286 @@ def mapeChart():
         final_data.append(mape_dict)
 
 
-
-
-
-
-
-
-            
-
-
-    
-
-
-    
-
-
-
-
     return jsonify(status="success", data=final_data, title="MAPE for the data between {0} and {1} for {2}".format(from_date, to_date, state_name ))
 
     
 
+
+
+@app.route('/api/dayrangestatus', methods=['POST'])
+@jwt_required()
+def dayRangeStatus():
+    try:
+        # Retrieve date range from request
+        params = request.get_json()
+        print(params)
+
+        start_date = datetime.strptime(params["params"]["fromDate"], '%d/%m/%Y')
+        end_date = datetime.strptime(params["params"]["toDate"], '%d/%m/%Y')
+
+        # SQL query to fetch data within the specified date range
+        sql_query = """
+            SELECT 
+                states.state_name,
+                COALESCE(file_uploads.upload_date, %s) AS upload_date,
+                COALESCE(file_uploads.upload_time, NULL) AS upload_time,
+                CASE
+                    WHEN file_uploads.upload_time IS NULL THEN 2  -- Not Uploaded
+                    WHEN file_uploads.upload_date < %s AND (file_uploads.upload_date + INTERVAL '1 day') <= %s THEN 0  -- Uploaded
+                    ELSE 1  -- Late Upload
+                END AS upload_status_code,
+                COUNT(file_uploads.state_id) AS upload_count
+            FROM 
+                states
+            LEFT JOIN 
+                file_uploads ON states.state_id = file_uploads.state_id
+                AND file_uploads.upload_date BETWEEN %s AND %s
+            WHERE states.username NOT IN ('admin', 'pgcil_sr_1', 'pgcil_sr_2')
+            GROUP BY 
+                states.state_name, 
+                file_uploads.upload_date,
+                file_uploads.upload_time  
+            ORDER BY
+                states.state_name,
+                upload_date DESC
+        """
+        cursor.execute(sql_query, (end_date, end_date, end_date, start_date, end_date))
+        results = cursor.fetchall()
+
+        data = []
+        # Generate date range between start_date and end_date
+        date_range = [start_date + timedelta(days=i) for i in range((end_date - start_date).days + 1)]
+        state_names = set(result[0] for result in results)
+
+        for state_name in state_names:
+            state_data = {"name": state_name, "data": []}
+            for date in date_range:
+                date_str = date.strftime('%Y-%m-%d')
+                found_result = False
+                for result in results:
+                    if result[0] == state_name and result[1].strftime("%Y-%m-%d") == date.strftime("%Y-%m-%d"):
+                        upload_count = result[4]
+                        upload_time = result[2].strftime("%d/%m/%Y %H:%M:%S %p") if result[2] is not None else None
+                        upload_status_code = result[3]
+                        found_result = True
+                        break
+                if not found_result:
+                    upload_count = 0
+                    upload_time = None
+                    # For dates with no uploads, consider them as "Not Uploaded"
+                    upload_status_code = 2  # Not Uploaded
+                state_data["data"].append({'x': date_str, 'y': upload_status_code, 'upload_time': upload_time, 'upload_count': upload_count})  
+            data.append(state_data)
+
+        day_data = data
+        return jsonify(day=day_data)
+
+    except Exception as error:
+        print(error)
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        print(exc_type, fname, exc_tb.tb_lineno)
+        return jsonify(message="There is a problem, please contact SRLDC IT!")
+
+
+
+
+
+@app.route('/api/weekrangestatus', methods=['POST'])
+@jwt_required()
+def weekRangeStatus():
+    try:
+        # Retrieve date range from request
+        params = request.get_json()
+        print(params)
+
+        start_date = datetime.strptime(params["params"]["fromDate"], '%d/%m/%Y')
+        end_date = datetime.strptime(params["params"]["toDate"], '%d/%m/%Y')
+
+        # SQL query to fetch data for week ahead
+        sql_query = """
+            SELECT 
+                states.state_name,
+                week_ahead_file_uploads.from_date AS week_start_date,
+                COALESCE(week_ahead_file_uploads.upload_time, NULL) AS upload_time,
+                CASE
+                    WHEN week_ahead_file_uploads.upload_time IS NULL THEN 2  -- Not Uploaded
+                    WHEN week_ahead_file_uploads.from_date < %s AND (week_ahead_file_uploads.from_date + INTERVAL '7 day') <= %s THEN 0  -- Uploaded
+                    ELSE 1  -- Late Upload
+                END AS upload_status_code,
+                COUNT(week_ahead_file_uploads.state_id) AS upload_count
+            FROM 
+                states
+            LEFT JOIN 
+                week_ahead_file_uploads ON states.state_id = week_ahead_file_uploads.state_id
+                AND week_ahead_file_uploads.from_date BETWEEN %s AND %s
+            WHERE states.username not in ('admin', 'pgcil_sr_1', 'pgcil_sr_2')
+            GROUP BY 
+                states.state_name, 
+                week_ahead_file_uploads.from_date,
+                week_ahead_file_uploads.upload_time
+            ORDER BY
+                states.state_name,
+                week_start_date DESC
+        """
+        cursor.execute(sql_query, (end_date, end_date, start_date, end_date))
+        results = cursor.fetchall()
+
+        # Ensure all states are included
+        cursor.execute("SELECT state_name FROM states WHERE username not in ('admin', 'pgcil_sr_1', 'pgcil_sr_2')")
+        all_states = [row[0] for row in cursor.fetchall()]
+
+        # Create a list of the starting Mondays for each week in the range
+        week_range = []
+        current_week_start = start_date - timedelta(days=start_date.weekday())
+        while current_week_start <= end_date:
+            week_range.append(current_week_start)
+            current_week_start += timedelta(weeks=1)
+
+        # Prepare data structure for JSON output
+        data = []
+        for state_name in all_states:
+            state_data = {"name": state_name, "data": []}
+            for week_start in week_range:
+                week_start_date = week_start
+                week_end_date = week_start_date + timedelta(days=6)
+                week_range_str = f"{week_start_date.strftime('%Y-%m-%d')} to {week_end_date.strftime('%Y-%m-%d')}"
+
+                # Initialize upload count, upload status code, and upload time for the week
+                upload_count = 0
+                upload_status_code = 2  # Default to Not Uploaded
+                upload_time = None
+                found_result = False
+                for result in results:
+                    if result[0] == state_name and result[1] == week_start_date:
+                        upload_count = result[4]
+                        upload_time = result[2].strftime("%d/%m/%Y %H:%M:%S %p") if result[2] is not None else None
+                        upload_status_code = result[3]
+                        found_result = True
+                        break
+
+                # If no result found, set upload count to 0 and upload status code to 2
+                if not found_result:
+                    upload_count = 0
+                    upload_status_code = 2  # Not Uploaded
+                state_data["data"].append({'x': week_range_str, 'y': upload_status_code, 'upload_time': upload_time, 'upload_count': upload_count})
+            data.append(state_data)
+
+        week_data = data
+        return jsonify(week=week_data)
+
+    except Exception as error:
+        print(error)
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        print(exc_type, fname, exc_tb.tb_lineno)
+        return jsonify(message="There is a problem, please contact SRLDC IT!")
+
+
+
+
+@app.route('/api/monthrangestatus', methods=['POST'])
+@jwt_required()
+
+def monthRangeStatus():
+    try:
+        # Get the current date
+        today = datetime.now()
+
+        # Retrieve date range from request
+        params = request.get_json()
+        print(params)
+
+        start_date = datetime.strptime(params["params"]["fromDate"], '%d/%m/%Y')
+        end_date = datetime.strptime(params["params"]["toDate"], '%d/%m/%Y')
+
+        # Calculate the start of the first month in the custom range
+        start_of_first_month = start_date.replace(day=1)
+        end_of_last_month = end_date.replace(day=1)
+
+        # Create list of start dates for each month in the custom range
+        month_ranges = []
+        current_month = start_of_first_month
+        while current_month <= end_of_last_month:
+            month_ranges.append(current_month)
+            # Move to the next month
+            next_month = (current_month.month % 12) + 1
+            next_year = current_month.year + (current_month.month // 12)
+            current_month = current_month.replace(year=next_year, month=next_month, day=1)
+
+        # SQL query to fetch upload counts by state and month within the custom date range
+        sql_query = """
+            SELECT 
+                states.state_name,
+                DATE_TRUNC('month', month_ahead_file_uploads.from_date) AS month_start_date,
+                COALESCE(month_ahead_file_uploads.upload_time, NULL) AS upload_time,
+                CASE
+                    WHEN month_ahead_file_uploads.upload_time IS NULL THEN 2  -- Not Uploaded
+                    WHEN month_ahead_file_uploads.from_date < %s AND (month_ahead_file_uploads.from_date + INTERVAL '30 day') <= %s THEN 0  -- Uploaded
+                    ELSE 1  -- Late Upload
+                END AS upload_status_code,
+                COUNT(month_ahead_file_uploads.state_id) AS upload_count
+            FROM 
+                states
+            LEFT JOIN 
+                month_ahead_file_uploads ON states.state_id = month_ahead_file_uploads.state_id
+                AND month_ahead_file_uploads.from_date BETWEEN %s AND %s
+            WHERE states.username NOT IN ('admin', 'pgcil_sr_1', 'pgcil_sr_2')
+            GROUP BY 
+                states.state_name, 
+                month_start_date,
+                month_ahead_file_uploads.upload_time,
+                month_ahead_file_uploads.from_date
+            ORDER BY
+                states.state_name,
+                month_start_date DESC
+        """
+        cursor.execute(sql_query, (end_date, end_date, start_date, end_date))
+        results = cursor.fetchall()
+
+        # Fetch all states
+        cursor.execute("SELECT state_name FROM states WHERE username NOT IN ('admin', 'pgcil_sr_1', 'pgcil_sr_2')")
+        all_states = [row[0] for row in cursor.fetchall()]
+
+        # Data structure for JSON output
+        data = []
+        for state_name in all_states:
+            state_data = {"name": state_name, "data": []}
+            for month_start in month_ranges:
+                # Get the last day of the current month
+                last_day_of_month = monthrange(month_start.year, month_start.month)[1]
+                month_end = month_start.replace(day=last_day_of_month)
+                month_range_str = f"{month_start.strftime('%Y-%m-%d')} to {month_end.strftime('%Y-%m-%d')}"
+
+                upload_count = 0
+                upload_status_code = 2  # Default to Not Uploaded
+                upload_time = None
+                found_result = False
+                for result in results:
+                    result_month_start = result[1]
+                    if result[0] == state_name and result_month_start == month_start:
+                        upload_count = result[4]
+                        upload_time = result[2].strftime("%d/%m/%Y %H:%M:%S %p") if result[2] is not None else None
+                        upload_status_code = result[3]
+                        found_result = True
+                        break
+
+                if not found_result:
+                    upload_count = 0
+                state_data["data"].append({'x': month_range_str, 'y': upload_status_code, 'upload_time': upload_time, 'upload_count': upload_count})
+            data.append(state_data)
+
+        month_data = data
+        return jsonify(month=month_data)
+
+    except Exception as error:
+        print(error)
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        print(exc_type, fname, exc_tb.tb_lineno)
+        return jsonify(message="There is a problem, please contact SRLDC IT!")
+
+    
 
 
 if __name__ == '__main__':

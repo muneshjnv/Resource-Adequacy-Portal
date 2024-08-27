@@ -6,8 +6,8 @@
 <div class="row">
     
 
-    <div class="col-xl-6">
-        <div class="card card-height-100">
+    <div class="col-xl-12">
+        <div class="card card-height-50">
             <div class="card-header align-items-center d-flex">
                 <h4 class="card-title mb-0 flex-grow-1">File Upload Status</h4> 
 
@@ -24,6 +24,29 @@
                 
             </div><!-- end card header -->
             <div *ngIf="selectedOption === 'day'">
+
+                <form class="row g-3 needs-validation" novalidate  [formGroup]="dayForm">
+                    <div class="row">&nbsp;</div>
+                    <div class="row justify-content-end">
+                        
+
+                        
+    
+                        <div class="col-md-4 position-relative">
+                            <label for="validationTooltip05" class="form-label">Select Range</label>
+                            <input class="form-control flatpickr-input" type="text" mwlFlatpickr [altInput]="true" [convertModelValue]="true" mode="range" altFormat="d M, Y" dateFormat="d M, Y" formControlName="dayRange" data-week-number>
+                    </div>
+    
+                <!-- <div class="col-md-1"></div> -->
+    
+                <div class="col-md-1 d-flex align-items-end">
+                    <button class="btn btn-primary" type="submit" (click)="fetchForDay()">Submit</button>
+                </div>
+            
+                        
+                    </div>
+    
+                </form>
             <div class="card-body p-0">
                 <div class="mb-n2" *ngIf="dataArrived">
                     <apx-chart [series]="basicHeatmapChart.series" [chart]="basicHeatmapChart.chart"
@@ -34,6 +57,28 @@
         </div>
 
         <div *ngIf="selectedOption === 'week'">
+            <form class="row g-3 needs-validation" novalidate  [formGroup]="weekForm">
+                <div class="row">&nbsp;</div>
+                <div class="row justify-content-end">
+                    
+
+                    
+
+                    <div class="col-md-4 position-relative">
+                        <label for="validationTooltip05" class="form-label">Select Range</label>
+                        <input class="form-control flatpickr-input" type="text" mwlFlatpickr [altInput]="true" [convertModelValue]="true" mode="range" altFormat="d M, Y" dateFormat="d M, Y" formControlName="weekRange" data-week-number>
+                </div>
+
+            <!-- <div class="col-md-1"></div> -->
+
+            <div class="col-md-1 d-flex align-items-end">
+                <button class="btn btn-primary" type="submit" (click)="fetchForWeek()">Submit</button>
+            </div>
+        
+                    
+                </div>
+
+            </form>
             <div class="card-body p-0">
                 <div class="mb-n2" *ngIf="dataArrived">
                     <apx-chart [series]="basicWeekHeatmapChart.series" [chart]="basicWeekHeatmapChart.chart"
@@ -44,6 +89,29 @@
         </div>
 
         <div *ngIf="selectedOption === 'month'">
+
+            <form class="row g-3 needs-validation" novalidate  [formGroup]="monthForm">
+                <div class="row">&nbsp;</div>
+                <div class="row justify-content-end">
+                    
+
+                    
+
+                    <div class="col-md-4 position-relative">
+                        <label for="validationTooltip05" class="form-label">Select Range</label>
+                        <input class="form-control flatpickr-input" type="text" mwlFlatpickr [altInput]="true" [convertModelValue]="true" mode="range" altFormat="d M, Y" dateFormat="d M, Y" formControlName="monthRange" data-week-number>
+                </div>
+
+            <!-- <div class="col-md-1"></div> -->
+
+            <div class="col-md-1 d-flex align-items-end">
+                <button class="btn btn-primary" type="submit" (click)="fetchForMonth()">Submit</button>
+            </div>
+        
+                    
+                </div>
+
+            </form>
             <div class="card-body p-0">
                 <div class="mb-n2" *ngIf="dataArrived">
                     <apx-chart [series]="basicMonthHeatmapChart.series" [chart]="basicMonthHeatmapChart.chart"
@@ -55,17 +123,17 @@
         </div><!-- end card -->
     </div>
 
-    <div class="col-xl-6">
-        <div class="card card-height-100">
+    <div class="col-xl-12">
+        <div class="card card-height-50">
             <div class="card-header align-items-center d-flex">
-                <h4 class="card-title mb-0">Calculated MAPE </h4> 
+                <h4 class="card-title mb-0 flex-grow-1">Calculated MAPE </h4> 
 
                 <form class="row g-3 needs-validation" novalidate (ngSubmit)="validSubmit()" [formGroup]="validationform">
-                <div class="row justify-content-end">
+                <div class="row justify-content-center">
 
                     
 
-                    <div class="col-md-4">
+                    <div class="col-md-4 position-relative">
                         <label for="validationCustom04" class="form-label">State</label>
                         <select class="form-select" id="validationCustom04" required formControlName="state"
                             [ngClass]="{'is-invalid': submit && form['state'].errors}" >

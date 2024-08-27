@@ -42,6 +42,12 @@ export class DashboardComponent implements OnInit {
   mape_title: any = "MAPE"
 
 
+
+  dayForm!: UntypedFormGroup; // Define the form group
+  weekForm!: UntypedFormGroup; // Define the form group
+  monthForm!: UntypedFormGroup; // Define the form group
+
+
   validationform!: UntypedFormGroup;
 
   constructor(private dashboardService: DashboardService, private formBuilder: UntypedFormBuilder) {
@@ -58,11 +64,43 @@ export class DashboardComponent implements OnInit {
 
     this._marketplaceChart('["--vz-primary","--vz-success", "--vz-warning"]');
 
+
+          // Initialize the form group
+          this.dayForm = this.formBuilder.group({
+            dayRange: [{"from": this.getPreviousMonthDates()["startDate"], "to":this.getPreviousMonthDates()["endDate"] }] // Initialize the control for the date range picker
+          });
+    
+        this.weekForm = this.formBuilder.group({
+        weekRange: [{"from": this.getPreviousMonthDates()["startDate"], "to":this.getPreviousMonthDates()["endDate"] }] // Initialize the control for the date range picker
+        });
+    
+        this.monthForm = this.formBuilder.group({
+            monthRange: [{"from": this.getPreviousMonthDates()["startDate"], "to":this.getPreviousMonthDates()["endDate"] }] // Initialize the control for the date range picker
+            });
+        
+
     this.dashboardService.fetchDayUploadStatus().subscribe((data: any) => {
-      console.log(data);
+    //   console.log(data);
       this.day_data = data["day"];
       this.week_data = data["week"];
       this.month_data = data["month"];
+
+      console.log(data);
+
+      // Updating the form controls with the fetched dates
+  this.dayForm.patchValue({
+    dayRange: { from: new Date(data["day_dates"]["start_date"]), to: new Date(data["day_dates"]["end_date"]) }
+  });
+
+
+
+  this.weekForm.patchValue({
+    weekRange: { from: new Date(data["week_dates"]["start_date"]), to: new Date(data["week_dates"]["end_date"]) }
+  });
+
+  this.monthForm.patchValue({
+    monthRange: { from: new Date(data["month_dates"]["start_date"]), to: new Date(data["month_dates"]["end_date"]) }
+  });
       this._basicHeatmapChart('["--vz-success", "--vz-danger", "--vz-warning"]');
       this._basicWeekHeatmapChart('["--vz-success", "--vz-danger", "--vz-warning"]');
       this._basicMonthHeatmapChart('["--vz-success", "--vz-danger", "--vz-warning"]');
@@ -81,6 +119,7 @@ export class DashboardComponent implements OnInit {
         // zip: ['', [Validators.required, Validators.pattern('[a-zA-Z0-9]+')]],
         monthDate: [{"from": this.getPreviousMonthDates()["startDate"], "to":this.getPreviousMonthDates()["endDate"] }],
       });
+
 
 
 
@@ -459,6 +498,81 @@ getPreviousMonthDates() {
 }
 
 
+    fetchForDay() {
+
+        const formData = {
+            // state: this.validationform.get('state')!.value,
+            fromDate: this.dayForm.get('dayRange')?.value["from"].toLocaleDateString('en-GB'),
+            toDate: this.dayForm.get('dayRange')?.value["to"].toLocaleDateString('en-GB')
+          };
+
+          this.dashboardService.fetchDayRangeStatus(formData).subscribe((data: any) => {
+              console.log(data);
+              console.log("API Hit and Response receieved")
+              this.day_data = data["day"];
+            //   this.week_data = data["week"];
+            //   this.month_data = data["month"];
+              this._basicHeatmapChart('["--vz-success", "--vz-danger", "--vz-warning"]');
+            //   this._basicWeekHeatmapChart('["--vz-success", "--vz-danger", "--vz-warning"]');
+            //   this._basicMonthHeatmapChart('["--vz-success", "--vz-danger", "--vz-warning"]');
+              
+              this.dataArrived = true;
+        
+            })
+
+
+            
+    }
+
+    fetchForWeek() {
+
+        const formData = {
+            // state: this.validationform.get('state')!.value,
+            fromDate: this.weekForm.get('weekRange')?.value["from"].toLocaleDateString('en-GB'),
+            toDate: this.weekForm.get('weekRange')?.value["to"].toLocaleDateString('en-GB')
+          };
+
+          this.dashboardService.fetchWeekRangeStatus(formData).subscribe((data: any) => {
+              console.log(data);
+              console.log("API Hit and Response receieved")
+            //   this.day_data = data["day"];
+              this.week_data = data["week"];
+            //   this.month_data = data["month"];
+            //   this._basicHeatmapChart('["--vz-success", "--vz-danger", "--vz-warning"]');
+              this._basicWeekHeatmapChart('["--vz-success", "--vz-danger", "--vz-warning"]');
+            //   this._basicMonthHeatmapChart('["--vz-success", "--vz-danger", "--vz-warning"]');
+              
+              this.dataArrived = true;
+        
+            })
+
+    }
+
+    fetchForMonth() {
+
+        const formData = {
+            // state: this.validationform.get('state')!.value,
+            fromDate: this.monthForm.get('monthRange')?.value["from"].toLocaleDateString('en-GB'),
+            toDate: this.monthForm.get('monthRange')?.value["to"].toLocaleDateString('en-GB')
+          };
+
+          this.dashboardService.fetchMonthRangeStatus(formData).subscribe((data: any) => {
+              console.log(data);
+              console.log("API Hit and Response receieved")
+            //   this.day_data = data["day"];
+            //   this.week_data = data["week"];
+              this.month_data = data["month"];
+            //   this._basicHeatmapChart('["--vz-success", "--vz-danger", "--vz-warning"]');
+            //   this._basicWeekHeatmapChart('["--vz-success", "--vz-danger", "--vz-warning"]');
+              this._basicMonthHeatmapChart('["--vz-success", "--vz-danger", "--vz-warning"]');
+              
+              this.dataArrived = true;
+        
+            })
+
+    }
+
+
     confirm() {
         if ( !(this.areStartingAndEndingDatesOfSameMonth(this.validationform.get('monthDate')!.value["from"], this.validationform.get('monthDate')!.value["to"]))) {
             Swal.fire({text:'Please choose a Proper month (Starting and ending date)!',confirmButtonColor: 'rgb(3, 142, 220)',});
@@ -556,7 +670,10 @@ getPreviousMonthDates() {
 
 
 
-
+    // Utility function to format dates to 'YYYY-MM-DD'
+formatDateToYYYYMMDD(date: Date): string {
+    return date.toISOString().split('T')[0];
+  }
 
 
   
