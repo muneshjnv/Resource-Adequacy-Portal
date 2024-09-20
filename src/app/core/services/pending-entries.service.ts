@@ -19,5 +19,9 @@ export class PendingEntriesService {
     return this.http.post<any>(this.url + '/submitentries', {data: data})
   }
 
+  previousCodes (formDate:any) {
+    return this.http.post<any>(this.url + '/getelementpreviouscodes', {"params":formDate}) 
+  }
+
 
 }

@@ -109,7 +109,7 @@
                             </span>
                         </button>
                        
-                            <button class="btn btn-primary" type="submit" (click)="fetchData()" *ngIf="!loading">Fetch Data</button>
+                            <button class="btn btn-primary" type="submit" (click)="fetchData()" *ngIf="!loading" [disabled]="!validationform.get('revisions').valid">Fetch Data</button>
                         </div>
                     </form>
                 </div>
@@ -169,6 +169,12 @@
                     
                     <div class="col-md-2">
                         <label for="validationCustom04" class="form-label">Revision: {{ revision }}</label>       
+                    </div>
+
+                    <div class="col-md-2 d-flex align-items-end ">
+                        <div *ngIf="dataArrived">
+                            <button class="btn btn-sm btn-primary" type="submit" (click)="downloadFile()">Download File</button>
+                        </div>
                     </div>
 
                 </div>

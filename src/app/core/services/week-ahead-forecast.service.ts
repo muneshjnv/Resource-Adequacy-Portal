@@ -28,4 +28,10 @@ export class WeekAheadForecastService {
   fetchRevisionsData(state: any, from_date: any, to_date: any, revision: any) {
     return this.http.post<any>(this.url + '/fetchweeklyrevisionsdata', {"state": state, "from_date": from_date, "to_date": to_date, "revision": revision})
   }
+
+  downloadWeekAheadFile(state: any, from_date: any, to_date: any, revision: any) {
+    return this.http.post<any>(this.url + '/downloadweekahead', {"state": state, "from_date": from_date, "to_date": to_date, "revision": revision}, {
+      responseType: 'blob' as 'json'  // This is necessary to handle Blob data correctly
+    })
+  } 
 }

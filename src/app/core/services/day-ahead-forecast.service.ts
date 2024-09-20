@@ -34,6 +34,12 @@ export class DayAheadForecastService {
     return this.http.get<any>(this.url + '/pendingentries')
   }
 
+  downloadDayAheadReport(state: any, date: any, revision: any) {
+    return this.http.post<any>(this.url + '/downloaddayahead', {"state": state, "date": date, "revision": revision}, {
+      responseType: 'blob' as 'json'  // This is necessary to handle Blob data correctly
+    })
+  }
+
 
 
 }

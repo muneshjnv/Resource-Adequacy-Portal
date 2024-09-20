@@ -70,7 +70,7 @@ export class OrdersService {
 
   private _state: State = {
     page: 1,
-    pageSize: 50,
+    pageSize: 8,
     searchTerm: '',
     sortColumn: '',
     sortDirection: '',
@@ -179,4 +179,6 @@ export class OrdersService {
     countries = countries.slice(this._state.startIndex - 1, this._state.endIndex);
     return of({countries, total});
   }
+
+
 }

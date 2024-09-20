@@ -40,7 +40,17 @@
                 <!-- <div class="col-md-1"></div> -->
     
                 <div class="col-md-1 d-flex align-items-end">
-                    <button class="btn btn-primary" type="submit" (click)="fetchForDay()">Submit</button>
+                    <button class="btn btn-outline-primary btn-load" *ngIf="loading">
+                        <span class="d-flex align-items-center">
+                            <span class="spinner-border flex-shrink-0" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </span>
+                            <span class="flex-grow-1 ms-2">
+                                Loading...
+                            </span>
+                        </span>
+                    </button>
+                    <button class="btn btn-primary" type="submit" *ngIf="!loading" (click)="fetchForDay()">Submit</button>
                 </div>
             
                         
@@ -72,7 +82,17 @@
             <!-- <div class="col-md-1"></div> -->
 
             <div class="col-md-1 d-flex align-items-end">
-                <button class="btn btn-primary" type="submit" (click)="fetchForWeek()">Submit</button>
+                <button class="btn btn-outline-primary btn-load" *ngIf="weekloading">
+                    <span class="d-flex align-items-center">
+                        <span class="spinner-border flex-shrink-0" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </span>
+                        <span class="flex-grow-1 ms-2">
+                            Loading...
+                        </span>
+                    </span>
+                </button>
+                <button class="btn btn-primary" type="submit" *ngIf="!weekloading" (click)="fetchForWeek()">Submit</button>
             </div>
         
                     

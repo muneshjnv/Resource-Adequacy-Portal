@@ -29,4 +29,10 @@ export class MonthAheadForecastService {
   fetchRevisionsData(state: any, from_date: any, to_date: any, revision: any) {
     return this.http.post<any>(this.url + '/fetchmonthlyrevisionsdata', {"state": state, "from_date": from_date, "to_date": to_date, "revision": revision})
   }
+
+  downloadMonthAheadFile(state: any, from_date: any, to_date: any, revision: any) {
+    return this.http.post<any>(this.url + '/downloadmonthahead', {"state": state, "from_date": from_date, "to_date": to_date, "revision": revision}, {
+      responseType: 'blob' as 'json'  // This is necessary to handle Blob data correctly
+    })
+  } 
 }

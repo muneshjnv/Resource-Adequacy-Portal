@@ -29,29 +29,21 @@ export class AuthenticationService {
     private currentUserSubject: BehaviorSubject<any>;
     public currentUser: Observable<any>;  
 
-    login(username: string, password: string) {
-
- 
-      // console.log(username);
-
-
-      return this.http.post<any>(this.url + '/login', { username, password })
-          .pipe(map(user => {
-              // store user details and jwt token in local storage to keep user logged in between page refreshes
-            //   console.log(user);
-              if('error' in user) {
-                this.toastService.show(user['error'], { classname: 'bg-danger text-white', delay: 5000 });
-              }
-              else {
-
-                localStorage.setItem('currentUser', JSON.stringify(user));
-                // this.toastService.show(user['error'], { classname: 'bg-danger text-white', delay: 5000 });
-                this.currentUserSubject.next(user);
-                return user;
-              }
-              
-          }));
-  }
+    login(username: string, password: string, captchaToken: string) {
+      return this.http.post<any>(`${this.url}/login`, { username, password, recaptcha: captchaToken })
+        .pipe(
+          map(user => {
+            if ('error' in user) {
+              this.toastService.show(user['error'], { classname: 'bg-danger text-white', delay: 5000 });
+            } else {
+              localStorage.setItem('currentUser', JSON.stringify(user));
+              this.currentUserSubject.next(user);
+              return user;
+            }
+          }),
+          // catchError(this.handleError) // Add error handling if required
+        );
+    }
 
   public get currentUserValue(): any {
     return this.currentUserSubject.value;

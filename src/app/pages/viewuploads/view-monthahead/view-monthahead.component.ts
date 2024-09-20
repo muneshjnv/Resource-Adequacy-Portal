@@ -17,6 +17,17 @@ import * as jspreadsheet from 'jspreadsheet-ce';
 export class ViewMonthaheadComponent {
 
 
+  stateDict: { [key: string]: string } = {
+    '1': 'Karnataka',
+    '2': 'Tamilnadu',
+    '3': 'Telangana',
+    '4': 'Andhra Pradesh',
+    '5': 'Kerala',
+    '7': 'Pondicherry'
+  };
+
+  dataArrived:boolean = false;
+
   userData: any;
 
 
@@ -154,6 +165,7 @@ export class ViewMonthaheadComponent {
       this.loading = true;
       if(this.validationform.valid) {
         // console.log("ngsubmit hit!")
+        this.dataArrived = false;
         this.monthAheadForecast.fetchRevisionsData(this.validationform.get('state')!.value, this.validationform.get('fetchDate')!.value["from"].toLocaleDateString('en-GB'),this.validationform.get('fetchDate')!.value["to"].toLocaleDateString('en-GB'), this.validationform.get('revisions')!.value).subscribe((data: any)=> {
           this.loading = false;
           if(data["status"] == "failure") {
@@ -180,6 +192,7 @@ export class ViewMonthaheadComponent {
               this.uploadTime = data["time"]
               this.revision = data["revision"]
               this.uploadedBy = data["role"]
+              this.dataArrived = true;
 
             }
           }
@@ -198,6 +211,36 @@ export class ViewMonthaheadComponent {
       
       
 
+    }
+
+    
+    downloadFile(): void {
+      this.monthAheadForecast.downloadMonthAheadFile(this.validationform.get('state')!.value, this.validationform.get('fetchDate')!.value["from"].toLocaleDateString('en-GB'),this.validationform.get('fetchDate')!.value["to"].toLocaleDateString('en-GB'), this.validationform.get('revisions')!.value).subscribe(
+        (response: Blob) => {
+          // Create a Blob from the response
+          const blob = new Blob([response], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+          // console.log(response)
+          // Create a link element for downloading
+          const downloadLink = document.createElement('a');
+          const url = window.URL.createObjectURL(blob);
+
+          const state = this.stateDict[this.validationform.get('state')!.value];
+          const fetchFromDate = new Date(this.validationform.get('fetchDate')!.value['from']).toLocaleDateString('en-GB');
+          const fetchToDate = new Date(this.validationform.get('fetchDate')!.value['to']).toLocaleDateString('en-GB');
+          const revisions = this.validationform.get('revisions')!.value;
+            
+          downloadLink.href = url;
+          downloadLink.download = `Month_Ahead_Forecast_${state}_${fetchFromDate}-${fetchToDate}_Rev${revisions}.xlsx`;  // Specify file name for download
+  
+          // Append the link to the document and trigger the download
+          downloadLink.click();
+          window.URL.revokeObjectURL(url);  // Clean up URL
+        },
+        (error) => {
+          console.error('Error downloading the file', error);
+        }
+        
+      );
     }
 
     validSubmit() {

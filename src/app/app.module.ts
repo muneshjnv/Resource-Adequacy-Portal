@@ -19,6 +19,7 @@ import { JwtInterceptor } from './core/helpers/jwt.interceptor';
 import { TranslateHttpLoader } from '@ngx-translate/http-loader';
 import { TranslateModule, TranslateLoader } from '@ngx-translate/core';
 import { AuthGuard } from './core/guards/auth.guard';
+import { AccountModule } from './account/account.module';
 
 export function createTranslateLoader(http: HttpClient): any {
   return new TranslateHttpLoader(http, 'assets/i18n/', '.json');
@@ -50,6 +51,7 @@ if (environment.defaultauth === 'firebase') {
     AppRoutingModule,
     LayoutsModule,
     PagesModule,
+    AccountModule
     
   ],
   providers: [

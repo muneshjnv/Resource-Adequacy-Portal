@@ -23,6 +23,8 @@ export class MonthaheadComponent {
   spreadsheetData: any = [[]];
 
   loadedData: boolean = false;
+
+  uploading: boolean = false;
   
   // disabledDate: Date = new Date(today.getTime() + 24 * 60 * 60 * 1000);
  
@@ -627,8 +629,11 @@ export class MonthaheadComponent {
             formData.append('toDate', this.validationform.get('disabledDate')?.value["to"].toLocaleDateString('en-GB'));
             formData.append('excelFile', this.validationform.get('excelFile')!.value);
             formData.append('data', JSON.stringify(this.spreadsheet.nativeElement.jexcel.getData()))
+
+            this.uploading = true;
               
               this.monthAheadForecastService.uploadWeekAheadFile(formData).subscribe((res: any)=> {
+                this.uploading = false;
                 if('error' in res) {
                   // console.log(res['error'])
                 }
@@ -763,7 +768,7 @@ export class MonthaheadComponent {
 
       this.tempData = [];
       for(var i =0; i < this.excelData.rows.length; i++) {
-        if((this.excelData.rows[i][1] >= 1 && this.excelData.rows[i][1] <= 96) && secondColumnValues.includes(this.excelData.rows[i][2]) ){
+        if((this.excelData.rows[i][1] >= 0 && this.excelData.rows[i][1] <= 96)  ){
           
           this.tempData.push(this.excelData.rows[i].slice(0,22))
 
@@ -778,6 +783,8 @@ export class MonthaheadComponent {
         this.tempData[i][0] = new Date((this.tempData[i][0] - 25569) * 86400 * 1000).toLocaleDateString('en-GB');
       }
 
+      
+
 
       let totalCount = this.getTotalElements(this.tempData);
 
@@ -789,13 +796,16 @@ export class MonthaheadComponent {
       // console.log(totalCount)
       // console.log(96*22*this.daysInMonth(this.validationform.get('disabledDate')!.value["from"]))
 
-      console.log("Total number count (has to be)")
+      // console.log("Total number count (has to be)")
 
-      console.log(96*22*this.daysInMonth(this.validationform.get('disabledDate')!.value["from"]))
+      // console.log(96*22*this.daysInMonth(this.validationform.get('disabledDate')!.value["from"]))
 
-      console.log(totalCount)
+      // console.log(totalCount)
 
-      console.log("total number count (is)")
+      // console.log("total number count (is)")
+
+      // console.log("Length calculated using jexcel")
+      // console.log(this.spreadsheet.nativeElement.jexcel.getData().length * this.spreadsheet.nativeElement.jexcel.getData()[0].length)
 
 
       

@@ -22,7 +22,7 @@ const today = new Date();
 export class ViewDayaheadComponent {
 
   userData: any;
-
+  dataArrived: boolean = false;
 
   loading: boolean = false;
 
@@ -38,6 +38,15 @@ export class ViewDayaheadComponent {
   uploadDate: any = '-'
   revision: any = '-'
   uploadedBy: any = '-'
+
+  stateDict: { [key: string]: string } = {
+    '1': 'Karnataka',
+    '2': 'Tamilnadu',
+    '3': 'Telangana',
+    '4': 'Andhra Pradesh',
+    '5': 'Kerala',
+    '7': 'Pondicherry'
+  };
 
 
 
@@ -148,6 +157,7 @@ export class ViewDayaheadComponent {
       this.loading = true;
       if(this.validationform.valid) {
         // console.log("ngsubmit hit!")
+        this.dataArrived = false;
         this.dayAheadForecast.fetchRevisionsData(this.validationform.get('state')!.value, this.validationform.get('fetchDate')!.value.toLocaleDateString('en-GB'), this.validationform.get('revisions')!.value).subscribe((data: any)=> {
           
           this.loading = false;
@@ -173,6 +183,7 @@ export class ViewDayaheadComponent {
               this.uploadTime = data["time"]
               this.revision = data["revision"]
               this.uploadedBy = data["role"]
+              this.dataArrived = true;
 
             }
           }
@@ -204,6 +215,36 @@ export class ViewDayaheadComponent {
     formSubmit() {
       this.formsubmit = true;
     }
+
+
+    downloadReport(): void {
+      this.dayAheadForecast.downloadDayAheadReport(this.validationform.get('state')!.value, this.validationform.get('fetchDate')!.value.toLocaleDateString('en-GB'), this.validationform.get('revisions')!.value).subscribe(
+        (response: Blob) => {
+          // Create a Blob from the response
+          const blob = new Blob([response], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+          // console.log(response)
+          // Create a link element for downloading
+          const downloadLink = document.createElement('a');
+          const url = window.URL.createObjectURL(blob);
+
+          const state = this.stateDict[this.validationform.get('state')!.value];
+          const fetchDate = new Date(this.validationform.get('fetchDate')!.value).toLocaleDateString('en-GB');
+          const revisions = this.validationform.get('revisions')!.value;
+            
+          downloadLink.href = url;
+          downloadLink.download = `Day_Ahead_Forecast_${state}_${fetchDate}_Rev${revisions}.xlsx`;  // Specify file name for download
+  
+          // Append the link to the document and trigger the download
+          downloadLink.click();
+          window.URL.revokeObjectURL(url);  // Clean up URL
+        },
+        (error) => {
+          console.error('Error downloading the file', error);
+        }
+        
+      );
+    }
+  
 
     ngAfterViewInit() {
       jspreadsheet(this.spreadsheet.nativeElement, {

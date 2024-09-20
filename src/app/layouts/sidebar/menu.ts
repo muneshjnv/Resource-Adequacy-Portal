@@ -558,6 +558,23 @@ export const MENU: MenuItem[] = [
       label: 'MENUITEMS.TIMINGENTRY.LIST.PENDING',
       parentId: 10002, 
       link: 'timingentry/pending'
+    },
+    {
+      id: 10006,
+      label: 'MENUITEMS.TIMINGENTRY.LIST.PREVIOUSCODES',
+      parentId: 10002, 
+      link: 'timingentry/previouscodes'
+    }]
+  },
+  {
+    id: 10004,
+    label: 'MENUITEMS.REPORTS.TEXT',
+    icon: 'mdi mdi-form-select',
+    subItems: [{
+      id: 10005,
+      label: 'MENUITEMS.REPORTS.LIST.LINEFLOWS',
+      parentId: 10004, 
+      link: 'reports/lineflows'
     }]
   },
   // {

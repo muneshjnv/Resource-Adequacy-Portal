@@ -24,13 +24,15 @@ import { TimingentryPendingComponent } from './timingentry-pending/timingentry-p
 // Sorting page
 import{NgbdListSortableHeader} from './timingentry-pending/listjs-sortable.directive'
 import { TimingEntryRoutingModule } from './timingentry-routing.module';
-import { ToastsContainer } from '../timingentry/timingentry-pending/toasts-container.component'
+import { ToastsContainer } from '../timingentry/timingentry-pending/toasts-container.component';
+import { ElementPreviousCodesComponent } from './element-previous-codes/element-previous-codes.component'
 
 @NgModule({
   declarations: [
     TimingentryPendingComponent,
     NgbdListSortableHeader,
-    ToastsContainer
+    ToastsContainer,
+    ElementPreviousCodesComponent
     
   ],
   imports: [

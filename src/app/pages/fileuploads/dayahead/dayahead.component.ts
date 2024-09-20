@@ -42,6 +42,8 @@ export class DayaheadComponent {
 
   formsubmit!: boolean;
 
+  uploading: boolean = false;
+
   
 
   
@@ -705,8 +707,11 @@ export class DayaheadComponent {
             formData.append('disabledDate', this.validationform.get('disabledDate')!.value);
             formData.append('excelFile', this.validationform.get('excelFile')!.value);
             formData.append('data', JSON.stringify(this.spreadsheet.nativeElement.jexcel.getData()))
+
+            this.uploading = true;
               
               this.dayAheadForecast.uploadDayAheadFile(formData).subscribe((res: any)=> {
+                this.uploading = false;
                 if('error' in res) {
                   // console.log(res['error'])
                 }

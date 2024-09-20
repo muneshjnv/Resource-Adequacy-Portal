@@ -28,6 +28,7 @@ import { DayaheadComponent } from './fileuploads/dayahead/dayahead.component';
 import { FileuploadsModule } from './fileuploads/fileuploads.module';
 import { ViewFileuploadsModule } from './viewuploads/viewuploads.module';
 import { TimingEntryModule } from './timingentry/timingentry.module';
+import { ReportsModule } from './reports/reports.module';
 
 @NgModule({
   declarations: [
@@ -49,7 +50,8 @@ import { TimingEntryModule } from './timingentry/timingentry.module';
     DashboardsModule,
     FileuploadsModule,
     ViewFileuploadsModule,
-    TimingEntryModule
+    TimingEntryModule,
+    ReportsModule
   ],
   schemas: [CUSTOM_ELEMENTS_SCHEMA]
 })

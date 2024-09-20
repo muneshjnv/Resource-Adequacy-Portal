@@ -64,6 +64,11 @@
                                             </div>
                                         </div>
                                     </div>
+
+                                   <!-- reCAPTCHA widget --> <div class="d-flex justify-content-center">
+                                    <re-captcha (resolved)="onCaptchaResolved($event)" [siteKey]="siteKey"></re-captcha>
+                                   </div>
+
   
   
                                     <div class="mt-4">
@@ -78,7 +83,7 @@
                                             </span>
                                         </button>
 
-                                        <button class="btn btn-success w-100" type="submit" *ngIf="!loading">Sign In</button>
+                                        <button class="btn btn-success w-100" type="submit" *ngIf="!loading" [disabled]="!captchaResolved">Sign In</button>
                                     </div>
   
                                     

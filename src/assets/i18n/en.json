@@ -116,7 +116,14 @@
     "TIMINGENTRY":{
       "TEXT": "Timing Entry",
       "LIST": {
-        "PENDING": "Timing Entry Pending"
+        "PENDING": "Timing Entry Pending",
+        "PREVIOUSCODES": "Element Previous Codes"
+      }
+    },
+    "REPORTS": {
+      "TEXT": "Reports",
+      "LIST": {
+        "LINEFLOWS": "Line Flows Report"
       }
     },
     "PAGES": {

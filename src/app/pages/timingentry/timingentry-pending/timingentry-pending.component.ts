@@ -84,11 +84,20 @@ export class TimingentryPendingComponent {
     */
     
     
+    console.log(this.ListJsList)
+    console.log(this.total);
 
 
 
     this.ListJsList = this.service.countries$;
     this.total = this.service.total$;
+
+
+    
+    console.log("Above is before assignment and below is after assignment!")
+
+    console.log(this.ListJsList)
+    console.log(this.total);
 
     
 

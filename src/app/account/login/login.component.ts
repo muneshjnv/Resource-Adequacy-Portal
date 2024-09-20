@@ -22,6 +22,12 @@ export class LoginComponent implements OnInit {
 
 
   loading: boolean= false;
+  
+
+  siteKey: string = '6LftdjQqAAAAAO8bAfW50GrYNKlkXXwRSMEk7IXj';
+
+  captchaResolved: boolean = false;
+  captchaToken: string | null = null;
 
   // Login Form
   loginForm!: UntypedFormGroup;
@@ -33,7 +39,7 @@ export class LoginComponent implements OnInit {
   year: number = new Date().getFullYear();
 
   constructor(private formBuilder: UntypedFormBuilder,private authenticationService: AuthenticationService,private router: Router,
-    private authFackservice: AuthfakeauthenticationService,private route: ActivatedRoute, public toastService: ToastService) {
+    private authFackservice: AuthfakeauthenticationService,private route: ActivatedRoute, public toastService: ToastService, ) {
       // redirect to home if already logged in
       if (this.authenticationService.currentUserValue) {
         this.router.navigate(['/']);
@@ -58,6 +64,12 @@ export class LoginComponent implements OnInit {
   // convenience getter for easy access to form fields
   get f() { return this.loginForm.controls; }
 
+  onCaptchaResolved(token: string): void {
+    this.captchaResolved = true;
+    this.captchaToken = token;
+    console.log(`Resolved captcha with response: ${token}`);
+  }
+
   /**
    * Form submit
    */
@@ -65,7 +77,7 @@ export class LoginComponent implements OnInit {
     this.loading = true;
     this.submitted = true;
      // Login Api
-     this.authenticationService.login(this.f['email'].value, this.f['password'].value).subscribe((data:any) => {   
+     this.authenticationService.login(this.f['email'].value, this.f['password'].value, this.captchaToken as string).subscribe((data:any) => {   
       this.loading = false;   
       // if(data.status == 'success'){
         

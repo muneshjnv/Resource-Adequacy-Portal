@@ -142,6 +142,8 @@ export class YearaheadComponent {
 
   
   tempData: any = [];
+
+  uploading: boolean = false;
   
   
   validSubmit() {
@@ -622,8 +624,10 @@ export class YearaheadComponent {
             formData.append('toDate', this.validationform.get('disabledDate')?.value["to"].toLocaleDateString('en-GB'));
             formData.append('excelFile', this.validationform.get('excelFile')!.value);
             formData.append('data', JSON.stringify(this.spreadsheet.nativeElement.jexcel.getData()))
+            this.uploading = true;
               
               this.yearAheadForecastService.uploadYearAheadFile(formData).subscribe((res: any)=> {
+                this.uploading = false;
                 if('error' in res) {
                   // console.log(res['error'])
                 }
@@ -912,18 +916,26 @@ export class YearaheadComponent {
     const currentDate = new Date();
 
     // Calculate the next year's starting date
-    const nextYearStartDate = new Date(currentDate.getFullYear() + 1, 0, 1);
+    // const nextYearStartDate = new Date(currentDate.getFullYear() + 1, 0, 1);
 
     // Calculate the next year's ending date
-    const nextYearEndDate = new Date(currentDate.getFullYear() + 1, 11, 31);
+    // const nextYearEndDate = new Date(currentDate.getFullYear() + 1, 11, 31);
 
-    // Format the dates as strings (in "YYYY-MM-DD" format)
-    const nextYearStartDateString = nextYearStartDate.toISOString().split('T')[0];
-    const nextYearEndDateString = nextYearEndDate.toISOString().split('T')[0];
+    let nextFinancialYearStartDate, nextFinancialYearEndDate;
+
+    // If current month is March or later (April = 3 in JS, months are 0-based), start next financial year in the next year
+    if (currentDate.getMonth() >= 3) {
+      nextFinancialYearStartDate = new Date(currentDate.getFullYear() + 1, 3, 1); // April 1st next year
+      nextFinancialYearEndDate = new Date(currentDate.getFullYear() + 2, 2, 31); // March 31st the year after next
+  } else {
+      // Otherwise, next financial year starts this year
+      nextFinancialYearStartDate = new Date(currentDate.getFullYear(), 3, 1); // April 1st this year
+      nextFinancialYearEndDate = new Date(currentDate.getFullYear() + 1, 2, 31); // March 31st next year
+  }
 
     return {
-        startDate: nextYearStartDate,
-        endDate: nextYearEndDate
+        startDate: nextFinancialYearStartDate,
+        endDate: nextFinancialYearEndDate
     };
 }
 
@@ -938,13 +950,27 @@ export class YearaheadComponent {
   }
 
   areStartingAndEndingDatesOfSameYear(fromDate: Date, toDate: Date): boolean {
-    // Calculate the first day (starting date) of the same year as toDate
-    const firstDayOfYear = new Date(toDate.getFullYear(), 0, 1);
+     // Define the financial year start and end for fromDate
+     const startOfFinancialYearFromDate = fromDate.getMonth() >= 3
+     ? new Date(fromDate.getFullYear(), 3, 1)  // April 1 of current year
+     : new Date(fromDate.getFullYear() - 1, 3, 1);  // April 1 of previous year
 
-    // Calculate the last day (ending date) of the same year as fromDate
-    const lastDayOfYear = new Date(fromDate.getFullYear(), 11, 31);
+ const endOfFinancialYearFromDate = fromDate.getMonth() >= 3
+     ? new Date(fromDate.getFullYear() + 1, 2, 31)  // March 31 of next year
+     : new Date(fromDate.getFullYear(), 2, 31);  // March 31 of current year
 
-    return fromDate.getTime() === firstDayOfYear.getTime() && toDate.getTime() === lastDayOfYear.getTime();
+ // Define the financial year start and end for toDate
+ const startOfFinancialYearToDate = toDate.getMonth() >= 3
+     ? new Date(toDate.getFullYear(), 3, 1)  // April 1 of current year
+     : new Date(toDate.getFullYear() - 1, 3, 1);  // April 1 of previous year
+
+ const endOfFinancialYearToDate = toDate.getMonth() >= 3
+     ? new Date(toDate.getFullYear() + 1, 2, 31)  // March 31 of next year
+     : new Date(toDate.getFullYear(), 2, 31);  // March 31 of current year
+
+ // Check if fromDate and toDate are in the same financial year
+ return (fromDate.getTime() === startOfFinancialYearFromDate.getTime()) &&
+        (toDate.getTime() === endOfFinancialYearToDate.getTime());
 }
 
     

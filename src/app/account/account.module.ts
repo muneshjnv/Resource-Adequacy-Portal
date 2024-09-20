@@ -16,6 +16,8 @@ import { SigninModule } from "./auth/signin/signin.module";
 import { SignupModule } from "./auth/signup/signup.module";
 import { LoginComponent } from './login/login.component';
 
+import { RecaptchaModule } from 'ng-recaptcha';
+
 @NgModule({
   declarations: [
     LoginComponent,
@@ -27,7 +29,8 @@ import { LoginComponent } from './login/login.component';
     FormsModule,
     AccountRoutingModule,
     SigninModule,
-    NgbToastModule
+    NgbToastModule,
+    RecaptchaModule
   ],
   schemas: [CUSTOM_ELEMENTS_SCHEMA]
 })

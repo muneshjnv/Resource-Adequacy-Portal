@@ -2,6 +2,8 @@ import { Component, OnInit } from '@angular/core';
 import { UntypedFormBuilder, UntypedFormGroup, Validators } from '@angular/forms';
 import { DashboardService } from 'src/app/core/services/dashboard.service';
 import Swal from 'sweetalert2';
+import { catchError } from 'rxjs/operators';
+import { of } from 'rxjs';
 
 @Component({
   selector: 'app-dashboard',
@@ -26,6 +28,9 @@ export class DashboardComponent implements OnInit {
   breadCrumbItems!: Array<{}>;
   submit!: boolean;
   formsubmit!: boolean;
+
+  loading: boolean = false;
+  weekloading: boolean = false;
 
 
   public day_data:any = [];
@@ -80,34 +85,43 @@ export class DashboardComponent implements OnInit {
         
 
     this.dashboardService.fetchDayUploadStatus().subscribe((data: any) => {
-    //   console.log(data);
+    // //   console.log(data);
       this.day_data = data["day"];
       this.week_data = data["week"];
       this.month_data = data["month"];
 
-      console.log(data);
+    // //   console.log(data);
 
       // Updating the form controls with the fetched dates
-  this.dayForm.patchValue({
-    dayRange: { from: new Date(data["day_dates"]["start_date"]), to: new Date(data["day_dates"]["end_date"]) }
-  });
+        this.dayForm.patchValue({
+            dayRange: { from: new Date(data["day_dates"]["start_date"]), to: new Date(data["day_dates"]["end_date"]) }
+        });
 
 
 
-  this.weekForm.patchValue({
-    weekRange: { from: new Date(data["week_dates"]["start_date"]), to: new Date(data["week_dates"]["end_date"]) }
-  });
+    this.weekForm.patchValue({
+        weekRange: { from: new Date(data["week_dates"]["start_date"]), to: new Date(data["week_dates"]["end_date"]) }
+    });
 
-  this.monthForm.patchValue({
-    monthRange: { from: new Date(data["month_dates"]["start_date"]), to: new Date(data["month_dates"]["end_date"]) }
-  });
-      this._basicHeatmapChart('["--vz-success", "--vz-danger", "--vz-warning"]');
-      this._basicWeekHeatmapChart('["--vz-success", "--vz-danger", "--vz-warning"]');
-      this._basicMonthHeatmapChart('["--vz-success", "--vz-danger", "--vz-warning"]');
-      
-      this.dataArrived = true;
+    this.monthForm.patchValue({
+        monthRange: { from: new Date(data["month_dates"]["start_date"]), to: new Date(data["month_dates"]["end_date"]) }
+    });
+        this._basicHeatmapChart('["--vz-success", "--vz-danger", "--vz-warning"]');
+        this._basicWeekHeatmapChart('["--vz-success", "--vz-danger", "--vz-warning"]');
+        this._basicMonthHeatmapChart('["--vz-success", "--vz-danger", "--vz-warning"]');
+        
+        this.dataArrived = true;
 
-    })
+    //     })
+
+    // this.dashboardService.fetchDayUploadStatus().subscribe({
+    //     next: (data) => {
+    //         // handle data
+    //     },
+    //     error: (error) => {
+    //         console.error("Failed to fetch data:", error);
+    //     }
+    });
 
 
     this.validationform = this.formBuilder.group({
@@ -500,15 +514,21 @@ getPreviousMonthDates() {
 
     fetchForDay() {
 
+        
         const formData = {
             // state: this.validationform.get('state')!.value,
             fromDate: this.dayForm.get('dayRange')?.value["from"].toLocaleDateString('en-GB'),
             toDate: this.dayForm.get('dayRange')?.value["to"].toLocaleDateString('en-GB')
           };
 
+          this.loading = true
+
+
           this.dashboardService.fetchDayRangeStatus(formData).subscribe((data: any) => {
-              console.log(data);
-              console.log("API Hit and Response receieved")
+            this.loading = false;
+
+            //   console.log(data);
+            //   console.log("API Hit and Response receieved")
               this.day_data = data["day"];
             //   this.week_data = data["week"];
             //   this.month_data = data["month"];
@@ -532,7 +552,10 @@ getPreviousMonthDates() {
             toDate: this.weekForm.get('weekRange')?.value["to"].toLocaleDateString('en-GB')
           };
 
+          this.weekloading = true;
+
           this.dashboardService.fetchWeekRangeStatus(formData).subscribe((data: any) => {
+                this.weekloading = false;
               console.log(data);
               console.log("API Hit and Response receieved")
             //   this.day_data = data["day"];
@@ -595,6 +618,7 @@ getPreviousMonthDates() {
 
                     else {
                         console.log("Data Received!") 
+                        console.log(res);
 
                         this.MarketplaceChart.series = res["data"];
                         this.mape_title = res["title"];

@@ -45,7 +45,7 @@ export class WeekaheadComponent {
 
   formsubmit!: boolean;
 
-  
+  uploading: boolean = false;
 
   
 
@@ -638,8 +638,13 @@ export class WeekaheadComponent {
             formData.append('toDate', this.validationform.get('disabledDate')?.value["to"].toLocaleDateString('en-GB'));
             formData.append('excelFile', this.validationform.get('excelFile')!.value);
             formData.append('data', JSON.stringify(this.spreadsheet.nativeElement.jexcel.getData()))
+
+            this.uploading = true;
               
               this.weekAheadForecastService.uploadWeekAheadFile(formData).subscribe((res: any)=> {
+
+                this.uploading = false;
+
                 if('error' in res) {
                   // console.log(res['error'])
                 }
@@ -909,14 +914,15 @@ export class WeekaheadComponent {
   }
 
 
-   getNextMonday() {
+  getNextMonday() {
     const today = new Date();
     const currentDayOfWeek = today.getDay();
-    const daysUntilNextMonday = currentDayOfWeek === 1 ? 7 : 1 - currentDayOfWeek; // Calculate the number of days until the next Monday
+    const daysUntilNextMonday = (8 - currentDayOfWeek) % 7; // Ensure next Monday is always in the future
     const nextMonday = new Date(today);
-    nextMonday.setDate(today.getDate() + daysUntilNextMonday); // Add the days to the current date
+    nextMonday.setDate(today.getDate() + daysUntilNextMonday); // Add the calculated days to the current date
     return nextMonday;
-  }
+}
+
   
   
   
