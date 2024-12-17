@@ -21,7 +21,9 @@ export class DashboardService {
     return this.http.post<any>(this.url+'/mapechart', {"params":formData})
   }
 
-
+  actualForecastComp(formData: any) {
+    return this.http.post<any>(this.url+'/actualforecastcomp', {"params":formData})
+  }
 
   fetchDayRangeStatus(formDate:any) {
     return this.http.post<any>(this.url + '/dayrangestatus', {"params":formDate}) 
@@ -34,6 +36,11 @@ export class DashboardService {
   fetchMonthRangeStatus(formDate:any) {
     return this.http.post<any>(this.url + '/monthrangestatus', {"params":formDate}) 
   }
+
+  fetchYearRangeStatus(formDate:any) {
+    return this.http.post<any>(this.url + '/yearrangestatus', {"params":formDate}) 
+  }
+
 
 
 }

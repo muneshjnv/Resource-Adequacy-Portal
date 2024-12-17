@@ -57,7 +57,9 @@ function matches(country: ListJsModel, term: string, pipe: PipeTransform) {
   || country.switching.toLowerCase().includes(term.toLowerCase())
   || country.category.toLowerCase().includes(term.toLowerCase())
   || country.codeIssuedTo.toLowerCase().includes(term.toLowerCase())
-  || country.codeRequestedBy.toLowerCase().includes(term.toLowerCase());
+  || country.codeRequestedBy.toLowerCase().includes(term.toLowerCase())
+  || country.srldcCode.toLowerCase().includes(term.toLowerCase())
+  || country.nldcCode.toLowerCase().includes(term.toLowerCase());
 
 }
 
@@ -70,7 +72,7 @@ export class OrdersService1 {
 
   private _state: State = {
     page: 1,
-    pageSize: 8,
+    pageSize: 50,
     searchTerm: '',
     sortColumn: '',
     sortDirection: '',

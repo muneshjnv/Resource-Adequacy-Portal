@@ -35,6 +35,18 @@ export class ViewYearaheadComponent {
   fromDate: any = '-'
   toDate: any = '-';
 
+  dataArrived:boolean = false;
+
+  stateDict: { [key: string]: string } = {
+    '1': 'Karnataka',
+    '2': 'Tamilnadu',
+    '3': 'Telangana',
+    '4': 'Andhra Pradesh',
+    '5': 'Kerala',
+    '7': 'Pondicherry'
+  };
+
+
 
 
   breadCrumbItems!: Array<{}>;
@@ -153,6 +165,7 @@ export class ViewYearaheadComponent {
       this.loading = true;
       if(this.validationform.valid) {
         // console.log("ngsubmit hit!")
+        this.dataArrived = false;
         this.yearAheadForecast.fetchRevisionsData(this.validationform.get('state')!.value, this.validationform.get('fetchDate')!.value["from"].toLocaleDateString('en-GB'),this.validationform.get('fetchDate')!.value["to"].toLocaleDateString('en-GB'), this.validationform.get('revisions')!.value).subscribe((data: any)=> {
           this.loading = false;
           if(data["status"] == "failure") {
@@ -179,6 +192,7 @@ export class ViewYearaheadComponent {
               this.uploadTime = data["time"]
               this.revision = data["revision"]
               this.uploadedBy = data["role"]
+              this.dataArrived = true;
 
             }
           }
@@ -197,6 +211,35 @@ export class ViewYearaheadComponent {
       
       
 
+    }
+
+    downloadFile(): void {
+      this.yearAheadForecast.downloadYearAheadFile(this.validationform.get('state')!.value, this.validationform.get('fetchDate')!.value["from"].toLocaleDateString('en-GB'),this.validationform.get('fetchDate')!.value["to"].toLocaleDateString('en-GB'), this.validationform.get('revisions')!.value).subscribe(
+        (response: Blob) => {
+          // Create a Blob from the response
+          const blob = new Blob([response], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+          // console.log(response)
+          // Create a link element for downloading
+          const downloadLink = document.createElement('a');
+          const url = window.URL.createObjectURL(blob);
+
+          const state = this.stateDict[this.validationform.get('state')!.value];
+          const fetchFromDate = new Date(this.validationform.get('fetchDate')!.value['from']).toLocaleDateString('en-GB');
+          const fetchToDate = new Date(this.validationform.get('fetchDate')!.value['to']).toLocaleDateString('en-GB');
+          const revisions = this.validationform.get('revisions')!.value;
+            
+          downloadLink.href = url;
+          downloadLink.download = `Year_Ahead_Forecast_${state}_${fetchFromDate}-${fetchToDate}_Rev${revisions}.xlsx`;  // Specify file name for download
+  
+          // Append the link to the document and trigger the download
+          downloadLink.click();
+          window.URL.revokeObjectURL(url);  // Clean up URL
+        },
+        (error) => {
+          console.error('Error downloading the file', error);
+        }
+        
+      );
     }
 
     validSubmit() {
@@ -220,13 +263,35 @@ export class ViewYearaheadComponent {
       return nextMonday;
     }
     
-
     ngAfterViewInit() {
       jspreadsheet(this.spreadsheet.nativeElement, {
       data: this.data,
       // freezeColumns: 2,
-      footers: [[ ' ', ' ','Total LUs', '=ROUND(SUM(D1:D96),2)' , '=ROUND(SUM(E1:E96),2)' , '=ROUND(SUM(F1:F96),2)','=ROUND(SUM(G1:G96),2)' , '=ROUND(SUM(H1:H96),2)' , '=ROUND(SUM(I1:I96),2)','=ROUND(SUM(J1:J96),2)' , '=ROUND(SUM(K1:K96),2)' , '=ROUND(SUM(L1:L96),2)','=ROUND(SUM(M1:M96),2)' , '=ROUND(SUM(N1:N96),2)' , '=ROUND(SUM(O1:O96),2)','=ROUND(SUM(P1:P96),2)' , '=ROUND(SUM(Q1:Q96),2)' , '=ROUND(SUM(R1:R96),2)','=ROUND(SUM(S1:S96),2)' , '=ROUND(SUM(T1:T96),2)' , '=ROUND(SUM(T1:T96),2)', '=ROUND(SUM(U1:U96),2)' ]],
-  
+      footers: [
+        [
+            ' ', 
+            'Total MUs', 
+            '=ROUND(SUM(C1:C' + (this.daysInYear(this.validationform.get('fetchDate')!.value["from"]) * 24) + ')/4000, 2)', 
+            '=ROUND(SUM(D1:D' + (this.daysInYear(this.validationform.get('fetchDate')!.value["from"]) * 24) + ')/4000, 2)', 
+            '=ROUND(SUM(E1:E' + (this.daysInYear(this.validationform.get('fetchDate')!.value["from"]) * 24) + ')/4000, 2)', 
+            '=ROUND(SUM(F1:F' + (this.daysInYear(this.validationform.get('fetchDate')!.value["from"]) * 24) + ')/4000, 2)',
+            '=ROUND(SUM(G1:G' + (this.daysInYear(this.validationform.get('fetchDate')!.value["from"]) * 24) + ')/4000, 2)', 
+            '=ROUND(SUM(H1:H' + (this.daysInYear(this.validationform.get('fetchDate')!.value["from"]) * 24) + ')/4000, 2)', 
+            '=ROUND(SUM(I1:I' + (this.daysInYear(this.validationform.get('fetchDate')!.value["from"]) * 24) + ')/4000, 2)',
+            '=ROUND(SUM(J1:J' + (this.daysInYear(this.validationform.get('fetchDate')!.value["from"]) * 24) + ')/4000, 2)', 
+            '=ROUND(SUM(K1:K' + (this.daysInYear(this.validationform.get('fetchDate')!.value["from"]) * 24) + ')/4000, 2)', 
+            '=ROUND(SUM(L1:L' + (this.daysInYear(this.validationform.get('fetchDate')!.value["from"]) * 24) + ')/4000, 2)',
+            '=ROUND(SUM(M1:M' + (this.daysInYear(this.validationform.get('fetchDate')!.value["from"]) * 24) + ')/4000, 2)', 
+            '=ROUND(SUM(N1:N' + (this.daysInYear(this.validationform.get('fetchDate')!.value["from"]) * 24) + ')/4000, 2)', 
+            '=ROUND(SUM(O1:O' + (this.daysInYear(this.validationform.get('fetchDate')!.value["from"]) * 24) + ')/4000, 2)',
+            '=ROUND(SUM(P1:P' + (this.daysInYear(this.validationform.get('fetchDate')!.value["from"]) * 24) + ')/4000, 2)', 
+            '=ROUND(SUM(Q1:Q' + (this.daysInYear(this.validationform.get('fetchDate')!.value["from"]) * 24) + ')/4000, 2)', 
+            '=ROUND(SUM(R1:R' + (this.daysInYear(this.validationform.get('fetchDate')!.value["from"]) * 24) + ')/4000, 2)',
+            '=ROUND(SUM(S1:S' + (this.daysInYear(this.validationform.get('fetchDate')!.value["from"]) * 24) + ')/4000, 2)', 
+            '=ROUND(SUM(T1:T' + (this.daysInYear(this.validationform.get('fetchDate')!.value["from"]) * 24) + ')/4000, 2)', 
+            '=ROUND(SUM(U1:U' + (this.daysInYear(this.validationform.get('fetchDate')!.value["from"]) * 24) + ')/4000, 2)'
+        ]
+    ] , 
       tableOverflow: true,
       tableWidth: '1200px',
       tableHeight: '400px',
@@ -238,18 +303,12 @@ export class ViewYearaheadComponent {
         },
         {
             type: 'numeric',
-            title: 'Block',
-            width: '50',
+            title: 'Hour',
+            width: '70',
             readOnly: true
             
         },
-        {
-            type: 'text',
-            title: 'Period',
-            width: '150',
-            readOnly: true
-            
-        },
+        
         {
             type: 'numeric',
             title: 'MW',
@@ -376,7 +435,7 @@ export class ViewYearaheadComponent {
         [
             {
                 title: 'Time',
-                colspan: 3, 
+                colspan: 2, 
                 
             },
             {
@@ -421,7 +480,7 @@ export class ViewYearaheadComponent {
         [
             {
                 title: '',
-                colspan: 3,
+                colspan: 2,
             },
             {
               title: 'Forecasted Demand (A)',
@@ -590,10 +649,12 @@ export class ViewYearaheadComponent {
           
       ],
     ],
+
+    lazyLoading: true, 
   
     updateTable(instance, cell, colIndex, rowIndex, value, displayedValue, cellName) {
   
-      if(colIndex == 3) {
+      if(colIndex == 2) {
         const exactValue = value.toString()
         console.log(typeof value);
         if(typeof value !== 'number' && Number.isNaN(Number.parseInt(exactValue))){
@@ -650,30 +711,47 @@ export class ViewYearaheadComponent {
 
         
   }
+  
+  daysInYear(date: Date): number {
+    const year = date.getFullYear();
+  
+    // Check if it's a leap year
+    const isLeapYear = (year % 4 === 0 && year % 100 !== 0) || (year % 400 === 0);
+  
+    // Return the number of days in the year
+    return isLeapYear ? 366 : 365;
+  }
 
 
 
 
 
-getNextYearDates() {
-  // Get the current date
-  const currentDate = new Date();
+  getNextYearDates() {
+    // Get the current date
+    const currentDate = new Date();
 
-  // Calculate the next year's starting date
-  const nextYearStartDate = new Date(currentDate.getFullYear() + 1, 0, 1);
+    // Calculate the next year's starting date
+    // const nextYearStartDate = new Date(currentDate.getFullYear() + 1, 0, 1);
 
-  // Calculate the next year's ending date
-  const nextYearEndDate = new Date(currentDate.getFullYear() + 1, 11, 31);
+    // Calculate the next year's ending date
+    // const nextYearEndDate = new Date(currentDate.getFullYear() + 1, 11, 31);
 
-  // Format the dates as strings (in "YYYY-MM-DD" format)
-  const nextYearStartDateString = nextYearStartDate.toISOString().split('T')[0];
-  const nextYearEndDateString = nextYearEndDate.toISOString().split('T')[0];
+    let nextFinancialYearStartDate, nextFinancialYearEndDate;
 
-  return {
-      startDate: nextYearStartDate,
-      endDate: nextYearEndDate
-  };
+    // If current month is March or later (April = 3 in JS, months are 0-based), start next financial year in the next year
+    if (currentDate.getMonth() >= 3) {
+      nextFinancialYearStartDate = new Date(currentDate.getFullYear() + 1, 3, 1); // April 1st next year
+      nextFinancialYearEndDate = new Date(currentDate.getFullYear() + 2, 2, 31); // March 31st the year after next
+  } else {
+      // Otherwise, next financial year starts this year
+      nextFinancialYearStartDate = new Date(currentDate.getFullYear(), 3, 1); // April 1st this year
+      nextFinancialYearEndDate = new Date(currentDate.getFullYear() + 1, 2, 31); // March 31st next year
+  }
+
+    return {
+        startDate: nextFinancialYearStartDate,
+        endDate: nextFinancialYearEndDate
+    };
 }
-
 
 }

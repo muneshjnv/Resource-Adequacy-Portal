@@ -9,6 +9,11 @@ import { FuzzyList, dataattribute, existingList, paginationlist } from './data';
 import { OrdersService1 } from './listjs.service';
 import { listSortEvent } from './listjs-sortable.directive';
 import { DecimalPipe } from '@angular/common';
+import * as XLSX from 'xlsx';
+import { saveAs } from 'file-saver';
+
+const EXCEL_TYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8';
+const EXCEL_EXTENSION = '.xlsx';
 
 @Component({
   selector: 'app-element-previous-codes',
@@ -96,6 +101,7 @@ export class ElementPreviousCodesComponent {
       element_type: ['', [Validators.required]],
       element_name: ['', [Validators.required]],
       switching: ['', [Validators.required]],
+      nldc_code: ['', [Validators.required]],
       srldc_code: ['', [Validators.required]],
       category: ['', [Validators.required]],
       code_issued_to: ['', [Validators.required]],
@@ -212,6 +218,40 @@ export class ElementPreviousCodesComponent {
       }
     );
   }
+
+
+  exportTableToExcel(): void {
+    // Clone the data and remove `isSelected` and `id` from each entry
+    const filteredData = this.ListJsDatas.map((item: any) => {
+      const clonedItem = { ...item }; // Create a shallow copy
+      delete clonedItem.isSelected; // Remove `isSelected` property
+      delete clonedItem.id;         // Remove `id` property
+      return clonedItem;
+    });
+  
+    const ws: XLSX.WorkSheet = XLSX.utils.json_to_sheet(filteredData);
+  
+    // Make the header row bold
+    const headerKeys = Object.keys(filteredData[0]);
+    headerKeys.forEach((key, index) => {
+      const cellAddress = XLSX.utils.encode_cell({ r: 0, c: index });
+      if (ws[cellAddress]) {
+        ws[cellAddress].s = { font: { bold: true } };
+      }
+    });
+  
+    const wb: XLSX.WorkBook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Previous Codes');
+  
+    const excelBuffer: any = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+    this.saveAsExcelFile(excelBuffer, 'Previous_Codes');
+  }
+  
+  saveAsExcelFile(buffer: any, fileName: string): void {
+    const data: Blob = new Blob([buffer], { type: EXCEL_TYPE });
+    saveAs(data, fileName + EXCEL_EXTENSION);
+  }
+  
 }
 
 

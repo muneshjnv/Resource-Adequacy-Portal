@@ -7,11 +7,14 @@ import { SharedModule } from 'src/app/shared/shared.module';
 import { FlatpickrModule } from 'angularx-flatpickr';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { NgApexchartsModule } from 'ng-apexcharts';
+import { MdpComponent } from './mdp/mdp.component';
+import { NgSelectModule } from '@ng-select/ng-select';
 
 
 @NgModule({
   declarations: [
-    LineflowsComponent
+    LineflowsComponent,
+    MdpComponent
   ],
   imports: [
     CommonModule,
@@ -20,7 +23,8 @@ import { NgApexchartsModule } from 'ng-apexcharts';
     FlatpickrModule.forRoot(),
     FormsModule,
     ReactiveFormsModule,
-    NgApexchartsModule
+    NgApexchartsModule,
+    NgSelectModule
   ]
 })
 export class ReportsModule { }

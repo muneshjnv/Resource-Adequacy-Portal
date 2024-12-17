@@ -28,4 +28,10 @@ export class YearAheadForecastService {
   fetchRevisionsData(state: any, from_date: any, to_date: any, revision: any) {
     return this.http.post<any>(this.url + '/fetchyearlyrevisionsdata', {"state": state, "from_date": from_date, "to_date": to_date, "revision": revision})
   }
+
+  downloadYearAheadFile(state: any, from_date: any, to_date: any, revision: any) {
+    return this.http.post<any>(this.url + '/downloadyearahead', {"state": state, "from_date": from_date, "to_date": to_date, "revision": revision}, {
+      responseType: 'blob' as 'json'  // This is necessary to handle Blob data correctly
+    })
+  } 
 }

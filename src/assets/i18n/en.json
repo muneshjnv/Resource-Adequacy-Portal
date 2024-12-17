@@ -24,6 +24,7 @@
     "APPS": {
       "TEXT": "Forecast File Upload",
       "LIST": {
+        "INTRADAY": "Intraday Forecast",
         "DAYAHEAD": "Day Ahead Forecast",
         "WEEKAHEAD": "Week Ahead Forecast",
         "MONTHAHEAD": "Month Ahead Forecast",
@@ -107,6 +108,7 @@
     "VIEWUPLOADS": {
       "TEXT": "Past File Uploads",
       "LIST": {
+        "INTRADAY":"Intraday Forecast",
         "DAYAHEAD":"Day Ahead Forecast",
         "WEEKAHEAD": "Week Ahead Forecast",
         "MONTHAHEAD": "Month Ahead Forecast",
@@ -123,7 +125,8 @@
     "REPORTS": {
       "TEXT": "Reports",
       "LIST": {
-        "LINEFLOWS": "Line Flows Report"
+        "LINEFLOWS": "Line Flows Report",
+        "MDP": "MDP Data"
       }
     },
     "PAGES": {

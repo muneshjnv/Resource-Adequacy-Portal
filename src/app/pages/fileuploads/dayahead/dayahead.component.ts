@@ -62,7 +62,7 @@ export class DayaheadComponent {
   userData: any;
 
 
-  state_id_dict: any = {'kar_state': 1, 'tn_state':2, 'tg_state': 3, 'ap_state': 4, 'ker_state':5}
+  state_id_dict: any = {'kar_state': 1, 'tn_state':2, 'tg_state': 3, 'ap_state': 4, 'ker_state':5, 'pondy_state': 7}
 
   // Calendar click Event
   // formData!: UntypedFormGroup;
@@ -617,7 +617,7 @@ export class DayaheadComponent {
   
     updateTable(instance, cell, colIndex, rowIndex, value, displayedValue, cellName) {
   
-      if(colIndex == 2 ||colIndex == 3 || colIndex == 4 || colIndex == 5 || colIndex == 6 || colIndex == 7 || colIndex == 8 || colIndex == 9 || colIndex == 10 || colIndex == 11 || colIndex == 12 || colIndex == 13 || colIndex == 14 || colIndex == 15 || colIndex == 16 || colIndex == 17 || colIndex == 18 || colIndex == 19 || colIndex == 20) {
+      if(colIndex == 2 ) {
         const exactValue = value.toString()
         console.log(typeof value);
         if(typeof value !== 'number' && Number.isNaN(Number.parseInt(exactValue))){
@@ -858,6 +858,24 @@ export class DayaheadComponent {
       // console.log(this.tempData[0].length)
 
       // console.log(totalCount)
+
+        // Check if column 2 (index 1) contains all zeroes
+        let allZeroes = true;
+        for (let i = 0; i < this.tempData.length; i++) {
+          if (Number(this.tempData[i][2]) !== 0) { // Index 1 for second column
+            allZeroes = false;
+            break;
+          }
+        }
+
+        if (allZeroes) {
+          Swal.fire({
+            text: 'Forecasted Demand contains all zeroes. Please correct the data.',
+            confirmButtonColor: 'rgb(3, 142, 220)',
+          });
+          return;
+        }
+
 
       
       if(totalCount == 96*21) {

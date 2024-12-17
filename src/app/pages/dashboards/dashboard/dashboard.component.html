@@ -3,8 +3,7 @@
 <!-- End Breadcrumbs -->
 
 
-<div class="row">
-    
+<div class="row" *ngIf="![8,9,10,11,12,13,14,15,17].includes(userData['state_id'])">    
 
     <div class="col-xl-12">
         <div class="card card-height-50">
@@ -20,6 +19,9 @@
 
                     <input type="radio" class="btn-check" name="btnradio" id="btnradio3" [(ngModel)]="selectedOption" value="month">
                     <label class="btn btn-outline-secondary mb-0" for="btnradio3">Month Ahead</label>
+
+                    <input type="radio" class="btn-check" name="btnradio" id="btnradio4" [(ngModel)]="selectedOption" value="year">
+                    <label class="btn btn-outline-secondary mb-0" for="btnradio4">Year Ahead</label>
                 </div>
                 
             </div><!-- end card header -->
@@ -125,7 +127,18 @@
             <!-- <div class="col-md-1"></div> -->
 
             <div class="col-md-1 d-flex align-items-end">
-                <button class="btn btn-primary" type="submit" (click)="fetchForMonth()">Submit</button>
+                <button class="btn btn-outline-primary btn-load" *ngIf="monthloading">
+                    <span class="d-flex align-items-center">
+                        <span class="spinner-border flex-shrink-0" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </span>
+                        <span class="flex-grow-1 ms-2">
+                            Loading...
+                        </span>
+                    </span>
+                </button>
+                
+                <button class="btn btn-primary" type="submit" *ngIf="!monthloading" (click)="fetchForMonth()">Submit</button>
             </div>
         
                     
@@ -139,8 +152,57 @@
                         [colors]="basicMonthHeatmapChart.colors" [tooltip]="basicMonthHeatmapChart.tooltip" dir="ltr"></apx-chart>
                 </div>
             </div><!-- end cardbody -->
+
+
+            
         </div>
-        </div><!-- end card -->
+
+        <div *ngIf="selectedOption === 'year'">
+
+            <form class="row g-3 needs-validation" novalidate  [formGroup]="yearForm">
+                <div class="row">&nbsp;</div>
+                <div class="row justify-content-end">
+                    
+
+                    
+
+                    <div class="col-md-4 position-relative">
+                        <label for="validationTooltip05" class="form-label">Select Range</label>
+                        <input class="form-control flatpickr-input" type="text" mwlFlatpickr [altInput]="true" [convertModelValue]="true" mode="range" altFormat="d M, Y" dateFormat="d M, Y" formControlName="yearRange" data-week-number>
+                </div>
+
+
+            <div class="col-md-1 d-flex align-items-end">
+                <button class="btn btn-outline-primary btn-load" *ngIf="yearloading">
+                    <span class="d-flex align-items-center">
+                        <span class="spinner-border flex-shrink-0" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </span>
+                        <span class="flex-grow-1 ms-2">
+                            Loading...
+                        </span>
+                    </span>
+                </button>
+                
+                <button class="btn btn-primary" type="submit" *ngIf="!yearloading" (click)="fetchForYear()">Submit</button>
+            </div>
+        
+                    
+                </div>
+
+            </form>
+            <div class="card-body p-0">
+                <div class="mb-n2" *ngIf="dataArrived">
+                    <apx-chart [series]="basicYearHeatmapChart.series" [chart]="basicYearHeatmapChart.chart"
+                        [dataLabels]="basicYearHeatmapChart.dataLabels" [legend]="basicYearHeatmapChart.legend" [plotOptions]="basicYearHeatmapChart.plotOptions"
+                        [colors]="basicYearHeatmapChart.colors" [tooltip]="basicYearHeatmapChart.tooltip" dir="ltr"></apx-chart>
+                </div>
+            </div>
+            
+
+        
+        </div>
+        <!-- end card -->
     </div>
 
     <div class="col-xl-12">
@@ -158,12 +220,14 @@
                         <select class="form-select" id="validationCustom04" required formControlName="state"
                             [ngClass]="{'is-invalid': submit && form['state'].errors}" >
                             <option selected disabled value="">Select State</option>
+
                             <option value="1">Karnataka</option>
                             <option value="2">Tamilnadu</option>
                             <option value="3">Telangana</option>
                             <option value="4">Andhra Pradesh</option>
                             <option value="5">Kerala</option>
                             <option value="7">Pondicherry</option>
+                            <option value="6">Southern Region</option>
                         </select>
                         <div class="invalid-feedback">
                             Please select a valid state.
@@ -171,18 +235,29 @@
                     </div>
 
                     <div class="col-md-6 position-relative">
-                        <label for="validationTooltip05" class="form-label">Select Month</label>
+                        <label for="validationTooltip05" class="form-label">Select Range</label>
                         <input class="form-control flatpickr-input" type="text" mwlFlatpickr [altInput]="true" [convertModelValue]="true" mode="range" altFormat="d M, Y" dateFormat="d M, Y" formControlName="monthDate" data-week-number>
                 </div>
 
-            <!-- <div class="col-md-1"></div> -->
 
-            <div class="col-md-1 d-flex align-items-end">
-                <button class="btn btn-primary" type="submit" (click)="confirm()">Submit</button>
-            </div>
+                <div class="col-md-1 d-flex flex-wrap align-items-end">
+                    <button class="btn btn-outline-primary btn-load" *ngIf="mapeloading">
+                        <span class="d-flex align-items-center">
+                            <span class="spinner-border flex-shrink-0" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </span>
+                            <span class="flex-grow-1 ms-2">
+                                Loading...
+                            </span>
+                        </span>
+                    </button>
+                    <button class="btn btn-primary" type="submit" *ngIf="!mapeloading" (click)="confirm()">Submit</button>
+                </div>
+
+                <!-- <div class="col-md-2"></div> -->
         
                     
-                </div>
+            </div>
 
             </form>
 
@@ -193,8 +268,8 @@
             
                 
             </div><!-- end card header -->
-            <div class="d-flex justify-content-center title-text">
-                {{ mape_title }}
+            <div class="d-flex justify-content-center card-title">
+                <b>{{ mape_title }}</b>
             </div>
             
 
@@ -208,7 +283,80 @@
         </div>
         </div><!-- end card -->
     
-
+        <div class="col-xl-12">
+            <div class="card card-height-50">
+                <div class="card-header align-items-center d-flex">
+                    <h4 class="card-title mb-0 flex-grow-1">Forecast v/s Actual Comparison </h4> 
+    
+                    <!-- <form class="row g-3 needs-validation" novalidate (ngSubmit)="afValidSubmit()" [formGroup]="faform">
+                    <div class="row justify-content-center">
+    
+                        
+    
+                        <div class="col-md-4 position-relative">
+                            <label for="validationCustom04" class="form-label">State</label>
+                            <select class="form-select" id="validationCustom04" required formControlName="state"
+                                [ngClass]="{'is-invalid': afSubmit && afform['state'].errors}" >
+                                <option selected disabled value="">Select State</option>
+                                <option value="1">Karnataka</option>
+                                <option value="2">Tamilnadu</option>
+                                <option value="3">Telangana</option>
+                                <option value="4">Andhra Pradesh</option>
+                                <option value="5">Kerala</option>
+                                <option value="7">Pondicherry</option>
+                                <option value="6">SR</option>
+                            </select>
+                            <div class="invalid-feedback">
+                                Please select a valid state.
+                            </div>
+                        </div>
+    
+                        <div class="col-md-6 position-relative">
+                            <label for="validationTooltip05" class="form-label">Select Range</label>
+                            <input class="form-control flatpickr-input" type="text" mwlFlatpickr [altInput]="true" [convertModelValue]="true" mode="range" altFormat="d M, Y" dateFormat="d M, Y" formControlName="monthDate" data-week-number>
+                    </div>
+    
+    
+                <div class="col-md-1 d-flex flex-wrap align-items-end">
+                    <button class="btn btn-outline-primary btn-load" *ngIf="afloading">
+                        <span class="d-flex align-items-center">
+                            <span class="spinner-border flex-shrink-0" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </span>
+                            <span class="flex-grow-1 ms-2">
+                                Loading...
+                            </span>
+                        </span>
+                    </button>
+                    <button class="btn btn-primary" type="submit" *ngIf="!afloading" (click)="afConfirm()">Submit</button>
+                </div>
+            
+                        
+                    </div>
+    
+                </form>
+     -->
+                
+    
+                    
+    
+                
+                    
+                </div><!-- end card header -->
+                <div class="d-flex justify-content-center card-title">
+                    <b>{{ fa_compare_title }}</b>
+                </div>
+                
+    
+                <apx-chart [series]="MarketplaceChartAF.series" [chart]="MarketplaceChartAF.chart"
+                [dataLabels]="MarketplaceChartAF.dataLabels" [stroke]="MarketplaceChartAF.stroke" 
+                [xaxis]="MarketplaceChartAF.xaxis" [yaxis]="MarketplaceChartAF.yaxis" [title]="MarketplaceChartAF.title" [colors]="MarketplaceChartAF.colors" dir="ltr">
+            </apx-chart>
+    
+                
+                
+            </div>
+            </div><!-- end card -->
 
     
 </div>

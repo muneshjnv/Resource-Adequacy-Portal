@@ -22,4 +22,17 @@ export class ReportsService {
       return this.http.post(this.url + '/downloadlineflows', { "downloadLink": downloadLink}, { responseType: 'blob' });
     }
 
+
+    FetchDescription() {
+      return this.http.get<any>(this.url + '/fetchmdpdescription') 
+    }
+
+
+    fetchDescriptionBasedData(formData: any) {
+    
+      return this.http.post<any>(this.url + '/mdpdescriptiondata', {"params":formData}) 
+
+    }
+
+
 }

@@ -40,7 +40,9 @@
                                    altFormat="d M Y h:i K"  
                                    dateFormat="d M Y h:i K" 
                                    formControlName="dayRange" 
-                                   [enableTime]="true"      
+                                   [enableTime]="true"
+                                   [defaultHour]="0"  
+                                   [defaultMinute]="0"       
                                    time_24hr="false"         
                                    data-week-number>
                         </div>
@@ -108,8 +110,16 @@
                                             class="ri-delete-bin-2-line"></i></button> -->
                                 </div>
                             </div>
+                          
                             <div class="col-sm">
+                                
                                 <div class="d-flex justify-content-sm-end">
+                                    <button 
+                                            class="btn btn-success btn-sm" 
+                                            *ngIf="ListJsDatas && ListJsDatas.length > 0" 
+                                            (click)="exportTableToExcel()">
+                                            Export to Excel
+                                        </button>
                                     <div class="search-box ms-2">
                                         <input type="text" class="form-control search" placeholder="Search..."
                                             [(ngModel)]="service.searchTerm">
@@ -134,6 +144,7 @@
                                         <th class="sort" listsortable="elementType" (listsort)="onSort($event)">Element Type</th>
                                         <th class="sort" listsortable="elementName" (listsort)="onSort($event)">Element Name</th>
                                         <th class="sort" listsortable="switching" (listsort)="onSort($event)">Switching</th>
+                                        <th class="sort" listsortable="nldcCode" (listsort)="onSort($event)">NLDC Code</th>
                                         <th class="sort" listsortable="srldcCode" (listsort)="onSort($event)">SRLDC Code</th>
                                         <th class="sort" listsortable="category" (listsort)="onSort($event)">Category</th>
                                         <th class="sort" listsortable="codeIssuedTo" (listsort)="onSort($event)">Code Issued To</th>
@@ -161,6 +172,8 @@
                                         <td><ngb-highlight [result]="data.elementName"
                                                 [term]="service.searchTerm"></ngb-highlight></td>
                                         <td><ngb-highlight [result]="data.switching" [term]="service.searchTerm"></ngb-highlight>
+                                        </td>
+                                        <td><ngb-highlight [result]="data.nldcCode" [term]="service.searchTerm"></ngb-highlight>
                                         </td>
                                         <td><ngb-highlight [result]="data.srldcCode" [term]="service.searchTerm"></ngb-highlight>
                                         </td>

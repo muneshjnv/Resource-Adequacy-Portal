@@ -4,11 +4,16 @@ import { DayaheadComponent } from './dayahead/dayahead.component';
 import { WeekaheadComponent } from './weekahead/weekahead.component';
 import { MonthaheadComponent } from './monthahead/monthahead.component';
 import { YearaheadComponent } from './yearahead/yearahead.component';
+import { IntradayComponent } from './intraday/intraday.component';
 
 // Component pages
 
 
 const routes: Routes = [
+  {
+    path: "intraday",
+    component: IntradayComponent
+  },
   {
     path: "dayahead",
     component: DayaheadComponent

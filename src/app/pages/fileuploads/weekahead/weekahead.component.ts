@@ -172,7 +172,7 @@ export class WeekaheadComponent {
       jspreadsheet(this.spreadsheet.nativeElement, {
       data: this.data,
       // freezeColumns: 2,
-      footers: [[ ' ', ' ','Total LUs', '=ROUND(SUM(D1:D96),2)' , '=ROUND(SUM(E1:E96),2)' , '=ROUND(SUM(F1:F96),2)','=ROUND(SUM(G1:G96),2)' , '=ROUND(SUM(H1:H96),2)' , '=ROUND(SUM(I1:I96),2)','=ROUND(SUM(J1:J96),2)' , '=ROUND(SUM(K1:K96),2)' , '=ROUND(SUM(L1:L96),2)','=ROUND(SUM(M1:M96),2)' , '=ROUND(SUM(N1:N96),2)' , '=ROUND(SUM(O1:O96),2)','=ROUND(SUM(P1:P96),2)' , '=ROUND(SUM(Q1:Q96),2)' , '=ROUND(SUM(R1:R96),2)','=ROUND(SUM(S1:S96),2)' , '=ROUND(SUM(T1:T96),2)' , '=ROUND(SUM(T1:T96),2)', '=ROUND(SUM(U1:U96),2)' ]],
+      footers: [[ ' ', ' ','Total MUs', '=ROUND(SUM(D1:D672)/4000,2)' , '=ROUND(SUM(E1:E672)/4000,2)' , '=ROUND(SUM(F1:F672)/4000,2)','=ROUND(SUM(G1:G672)/4000,2)' , '=ROUND(SUM(H1:H672)/4000,2)' , '=ROUND(SUM(I1:I672)/4000,2)','=ROUND(SUM(J1:J672)/4000,2)' , '=ROUND(SUM(K1:K672)/4000,2)' , '=ROUND(SUM(L1:L672)/4000,2)','=ROUND(SUM(M1:M672)/4000,2)' , '=ROUND(SUM(N1:N672)/4000,2)' , '=ROUND(SUM(O1:O672)/4000,2)','=ROUND(SUM(P1:P672)/4000,2)' , '=ROUND(SUM(Q1:Q672)/4000,2)' , '=ROUND(SUM(R1:R672)/4000,2)','=ROUND(SUM(S1:S672)/4000,2)' , '=ROUND(SUM(T1:T672)/4000,2)' , '=ROUND(SUM(T1:T672)/4000,2)', '=ROUND(SUM(U1:U672)/4000,2)' ]],
   
       tableOverflow: true,
       tableWidth: '1200px',
@@ -811,6 +811,23 @@ export class WeekaheadComponent {
 
       // console.log(totalCount)
 
+       // Check if column 2 (index 1) contains all zeroes
+       let allZeroes = true;
+       for (let i = 0; i < this.tempData.length; i++) {
+         if (Number(this.tempData[i][3]) !== 0) { // Index 1 for second column
+           allZeroes = false;
+           break;
+         }
+       }
+
+       if (allZeroes) {
+         Swal.fire({
+           text: 'Forecasted Demand contains all zeroes. Please correct the data.',
+           confirmButtonColor: 'rgb(3, 142, 220)',
+         });
+         return;
+       }
+
       
       if(totalCount == 96*22*7) {
           Swal.fire({text:'Data is successfully loaded, you can now preview the data!',confirmButtonColor: 'rgb(3, 142, 220)',});
@@ -917,7 +934,7 @@ export class WeekaheadComponent {
   getNextMonday() {
     const today = new Date();
     const currentDayOfWeek = today.getDay();
-    const daysUntilNextMonday = (8 - currentDayOfWeek) % 7; // Ensure next Monday is always in the future
+    const daysUntilNextMonday = currentDayOfWeek === 1 ? 7 : (8 - currentDayOfWeek) % 7; // If today is Monday, go to next Monday
     const nextMonday = new Date(today);
     nextMonday.setDate(today.getDate() + daysUntilNextMonday); // Add the calculated days to the current date
     return nextMonday;

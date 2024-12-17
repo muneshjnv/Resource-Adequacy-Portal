@@ -2,6 +2,7 @@ import { HttpResponse } from '@angular/common/http';
 import { Component } from '@angular/core';
 import { UntypedFormBuilder, UntypedFormGroup } from '@angular/forms';
 import { ReportsService } from 'src/app/core/services/reports.service';
+import Swal from 'sweetalert2';
 
 @Component({
   selector: 'app-lineflows',
@@ -69,10 +70,14 @@ export class LineflowsComponent {
           console.log(res)
           this.MarketplaceChart.series = res["data"];
           this.lineflows_title = res["title"];
+
+          Swal.fire({text:'Data has been Fetched!',confirmButtonColor: 'rgb(3, 142, 220)'});
+
         }
 
         else {
           console.log(res['error'])
+          Swal.fire({text:'There is some Problem in Loading the Data, Please contact SRLDC IT!',confirmButtonColor: 'rgb(3, 142, 220)'});
         }
         // this.day_data = data["day"];
       //   this.week_data = data["week"];
@@ -145,7 +150,7 @@ private _marketplaceChart(colors: any) {
           labels: {
               show: true,
               formatter: function (y: number) {
-                  return y + "%";
+                  return y;
               },
               style: {
                   colors: '#333', // Adjust y-axis label color as needed

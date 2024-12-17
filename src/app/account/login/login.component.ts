@@ -67,17 +67,37 @@ export class LoginComponent implements OnInit {
   onCaptchaResolved(token: string): void {
     this.captchaResolved = true;
     this.captchaToken = token;
-    console.log(`Resolved captcha with response: ${token}`);
+    // console.log(`Resolved captcha with response: ${token}`);
   }
 
   /**
    * Form submit
    */
+
+  // Helper function to generate a UUID for device_id
+generateUUID() {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === 'x' ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+}
+
+
+
+
    onSubmit() {
+
+    // Example using JavaScript
+    if (!localStorage.getItem('device_id')) {
+      localStorage.setItem('device_id', this.generateUUID());
+    }
+
+    const device_id = localStorage.getItem('device_id');
     this.loading = true;
     this.submitted = true;
      // Login Api
-     this.authenticationService.login(this.f['email'].value, this.f['password'].value, this.captchaToken as string).subscribe((data:any) => {   
+     this.authenticationService.login(this.f['email'].value, this.f['password'].value, this.captchaToken as string, device_id).subscribe((data:any) => {   
       this.loading = false;   
       // if(data.status == 'success'){
         
@@ -88,6 +108,8 @@ export class LoginComponent implements OnInit {
 
       // }
     });
+
+    
 
     // stop here if form is invalid
     // if (this.loginForm.invalid) {

@@ -115,17 +115,20 @@ export class YearaheadComponent {
       this.validationform.get('disabledDate')!.disable()
     }
 
+
+
+
     this.yearAheadForecastService.fetchFormat().subscribe((res: any) => {
       if(res["status"] == "success") {
         this.data = res["data"];
         this.spreadsheet.nativeElement.jexcel.setData(this.data);
 
-        Swal.fire({text:'Data is prefilled with zeros, Please upload the file preview the data and then Upload!',confirmButtonColor: 'rgb(3, 142, 220)',});
+        Swal.fire({text:'Data is prefilled with zeros, Please upload the file preview the data and then Upload!',confirmButtonColor: 'rgb(3, 142, 220)'});
 
 
       }
       else {
-        Swal.fire({text:'There is a problem, Please contact SRLDC IT!',confirmButtonColor: 'rgb(3, 142, 220)',});
+        Swal.fire({text:'There is a problem, Please contact SRLDC IT!',confirmButtonColor: 'rgb(3, 142, 220)'});
 
       }
       
@@ -162,8 +165,33 @@ export class YearaheadComponent {
       jspreadsheet(this.spreadsheet.nativeElement, {
       data: this.data,
       // freezeColumns: 2,
-      footers: [[ ' ','Total MUs','=ROUND(SUM(C1:C96),2)', '=ROUND(SUM(D1:D96),2)' , '=ROUND(SUM(E1:E96),2)' , '=ROUND(SUM(F1:F96),2)','=ROUND(SUM(G1:G96),2)' , '=ROUND(SUM(H1:H96),2)' , '=ROUND(SUM(I1:I96),2)','=ROUND(SUM(J1:J96),2)' , '=ROUND(SUM(K1:K96),2)' , '=ROUND(SUM(L1:L96),2)','=ROUND(SUM(M1:M96),2)' , '=ROUND(SUM(N1:N96),2)' , '=ROUND(SUM(O1:O96),2)','=ROUND(SUM(P1:P96),2)' , '=ROUND(SUM(Q1:Q96),2)' , '=ROUND(SUM(R1:R96),2)','=ROUND(SUM(S1:S96),2)' , '=ROUND(SUM(T1:T96),2)' , '=ROUND(SUM(T1:T96),2)', '=ROUND(SUM(U1:U96),2)' ]],
-  
+      footers: [[ ' ','Total MUs', '=ROUND(SUM(C1:C96)/4000,2)' , '=ROUND(SUM(D1:D96)/4000,2)' , '=ROUND(SUM(E1:E96)/4000,2)','=ROUND(SUM(F1:F96)/4000,2)' , '=ROUND(SUM(G1:G96)/4000,2)' , '=ROUND(SUM(H1:H96)/4000,2)','=ROUND(SUM(I1:I96)/4000,2)' , '=ROUND(SUM(J1:J96)/4000,2)' , '=ROUND(SUM(K1:K96)/4000,2)','=ROUND(SUM(L1:L96)/4000,2)' , '=ROUND(SUM(M1:M96)/4000,2)' , '=ROUND(SUM(N1:N96)/4000,2)','=ROUND(SUM(O1:O96)/4000,2)' , '=ROUND(SUM(P1:P96)/4000,2)' , '=ROUND(SUM(Q1:Q96)/4000,2)','=ROUND(SUM(R1:R96)/4000,2)' , '=ROUND(SUM(S1:S96)/4000,2)' , '=ROUND(SUM(T1:T96)/4000,2)', '=ROUND(SUM(U1:U96)/4000,2)' ]],
+      
+    //   footers: [
+    //     [
+    //         ' ', 
+    //         'Total MUs', 
+    //         '=ROUND(SUM(C1:C' + (this.daysInYear(this.validationform.get('fetchDate')!.value["from"]) * 24) + ')/4000, 2)', 
+    //         '=ROUND(SUM(D1:D' + (this.daysInYear(this.validationform.get('fetchDate')!.value["from"]) * 24) + ')/4000, 2)', 
+    //         '=ROUND(SUM(E1:E' + (this.daysInYear(this.validationform.get('fetchDate')!.value["from"]) * 24) + ')/4000, 2)', 
+    //         '=ROUND(SUM(F1:F' + (this.daysInYear(this.validationform.get('fetchDate')!.value["from"]) * 24) + ')/4000, 2)',
+    //         '=ROUND(SUM(G1:G' + (this.daysInYear(this.validationform.get('fetchDate')!.value["from"]) * 24) + ')/4000, 2)', 
+    //         '=ROUND(SUM(H1:H' + (this.daysInYear(this.validationform.get('fetchDate')!.value["from"]) * 24) + ')/4000, 2)', 
+    //         '=ROUND(SUM(I1:I' + (this.daysInYear(this.validationform.get('fetchDate')!.value["from"]) * 24) + ')/4000, 2)',
+    //         '=ROUND(SUM(J1:J' + (this.daysInYear(this.validationform.get('fetchDate')!.value["from"]) * 24) + ')/4000, 2)', 
+    //         '=ROUND(SUM(K1:K' + (this.daysInYear(this.validationform.get('fetchDate')!.value["from"]) * 24) + ')/4000, 2)', 
+    //         '=ROUND(SUM(L1:L' + (this.daysInYear(this.validationform.get('fetchDate')!.value["from"]) * 24) + ')/4000, 2)',
+    //         '=ROUND(SUM(M1:M' + (this.daysInYear(this.validationform.get('fetchDate')!.value["from"]) * 24) + ')/4000, 2)', 
+    //         '=ROUND(SUM(N1:N' + (this.daysInYear(this.validationform.get('fetchDate')!.value["from"]) * 24) + ')/4000, 2)', 
+    //         '=ROUND(SUM(O1:O' + (this.daysInYear(this.validationform.get('fetchDate')!.value["from"]) * 24) + ')/4000, 2)',
+    //         '=ROUND(SUM(P1:P' + (this.daysInYear(this.validationform.get('fetchDate')!.value["from"]) * 24) + ')/4000, 2)', 
+    //         '=ROUND(SUM(Q1:Q' + (this.daysInYear(this.validationform.get('fetchDate')!.value["from"]) * 24) + ')/4000, 2)', 
+    //         '=ROUND(SUM(R1:R' + (this.daysInYear(this.validationform.get('fetchDate')!.value["from"]) * 24) + ')/4000, 2)',
+    //         '=ROUND(SUM(S1:S' + (this.daysInYear(this.validationform.get('fetchDate')!.value["from"]) * 24) + ')/4000, 2)', 
+    //         '=ROUND(SUM(T1:T' + (this.daysInYear(this.validationform.get('fetchDate')!.value["from"]) * 24) + ')/4000, 2)', 
+    //         '=ROUND(SUM(U1:U' + (this.daysInYear(this.validationform.get('fetchDate')!.value["from"]) * 24) + ')/4000, 2)'
+    //     ]
+    // ] , 
       tableOverflow: true,
       tableWidth: '1200px',
       tableHeight: '400px',
@@ -728,7 +756,7 @@ export class YearaheadComponent {
     // Trigger the download by creating a temporary <a> element
     const a = document.createElement('a');
     a.href = excelFilePath;
-    a.download = 'sample.xlsx'; // Specify the desired file name
+    a.download = 'YearAheadFormat.xlsx'; // Specify the desired file name
   
     // Programmatically trigger a click event to initiate the download
     a.click();
@@ -788,7 +816,23 @@ export class YearaheadComponent {
 
       // console.log(totalCount)
       // console.log(96*22*this.daysInMonth(this.validationform.get('disabledDate')!.value["from"]))
+      
+       // Check if column 2 (index 1) contains all zeroes
+       let allZeroes = true;
+       for (let i = 0; i < this.tempData.length; i++) {
+         if (Number(this.tempData[i][2]) !== 0) { // Index 1 for second column
+           allZeroes = false;
+           break;
+         }
+       }
 
+       if (allZeroes) {
+         Swal.fire({
+           text: 'Forecasted Demand contains all zeroes. Please correct the data.',
+           confirmButtonColor: 'rgb(3, 142, 220)',
+         });
+         return;
+       }
 
       
       if(totalCount == 24*21*this.daysInYear(this.validationform.get('disabledDate')!.value["from"])) {

@@ -61,6 +61,12 @@ export const MENU: MenuItem[] = [
     icon: 'mdi mdi-view-grid-plus-outline',
     subItems: [
       {
+        id: 13,
+        label: 'MENUITEMS.APPS.LIST.INTRADAY',
+        link: 'fileuploads/intraday',
+        parentId: 8
+      },
+      {
         id: 9,
         label: 'MENUITEMS.APPS.LIST.DAYAHEAD',
         link: 'fileuploads/dayahead',
@@ -524,6 +530,12 @@ export const MENU: MenuItem[] = [
     icon: 'mdi mdi-account-circle-outline',
     subItems: [
       {
+        id: 10008,
+        label: 'MENUITEMS.VIEWUPLOADS.LIST.INTRADAY',
+        parentId: 10000,
+        link: 'viewuploads/intraday'
+      },
+      {
         id: 10001,
         label: 'MENUITEMS.VIEWUPLOADS.LIST.DAYAHEAD',
         parentId: 10000,
@@ -575,6 +587,12 @@ export const MENU: MenuItem[] = [
       label: 'MENUITEMS.REPORTS.LIST.LINEFLOWS',
       parentId: 10004, 
       link: 'reports/lineflows'
+    },
+    {
+      id: 10007,
+      label: 'MENUITEMS.REPORTS.LIST.MDP',
+      parentId: 10004, 
+      link: 'reports/mdp'
     }]
   },
   // {

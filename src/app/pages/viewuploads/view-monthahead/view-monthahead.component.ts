@@ -269,7 +269,7 @@ export class ViewMonthaheadComponent {
       jspreadsheet(this.spreadsheet.nativeElement, {
       data: this.data,
       // freezeColumns: 2,
-      footers: [[ ' ','Total MUs','=ROUND(SUM(C1:C96),2)', '=ROUND(SUM(D1:D96),2)' , '=ROUND(SUM(E1:E96),2)' , '=ROUND(SUM(F1:F96),2)','=ROUND(SUM(G1:G96),2)' , '=ROUND(SUM(H1:H96),2)' , '=ROUND(SUM(I1:I96),2)','=ROUND(SUM(J1:J96),2)' , '=ROUND(SUM(K1:K96),2)' , '=ROUND(SUM(L1:L96),2)','=ROUND(SUM(M1:M96),2)' , '=ROUND(SUM(N1:N96),2)' , '=ROUND(SUM(O1:O96),2)','=ROUND(SUM(P1:P96),2)' , '=ROUND(SUM(Q1:Q96),2)' , '=ROUND(SUM(R1:R96),2)','=ROUND(SUM(S1:S96),2)' , '=ROUND(SUM(T1:T96),2)' , '=ROUND(SUM(T1:T96),2)', '=ROUND(SUM(U1:U96),2)' ]],
+      footers: [[ ' ', ' ','Total MUs', '=ROUND(SUM(D1:D2976)/4000,2)' , '=ROUND(SUM(E1:E2976)/4000,2)' , '=ROUND(SUM(F1:F2976)/4000,2)','=ROUND(SUM(G1:G2976)/4000,2)' , '=ROUND(SUM(H1:H2976)/4000,2)' , '=ROUND(SUM(I1:I2976)/4000,2)','=ROUND(SUM(J1:J2976)/4000,2)' , '=ROUND(SUM(K1:K2976)/4000,2)' , '=ROUND(SUM(L1:L2976)/4000,2)','=ROUND(SUM(M1:M2976)/4000,2)' , '=ROUND(SUM(N1:N2976)/4000,2)' , '=ROUND(SUM(O1:O2976)/4000,2)','=ROUND(SUM(P1:P2976)/4000,2)' , '=ROUND(SUM(Q1:Q2976)/4000,2)' , '=ROUND(SUM(R1:R2976)/4000,2)','=ROUND(SUM(S1:S2976)/4000,2)' , '=ROUND(SUM(T1:T2976)/4000,2)' , '=ROUND(SUM(T1:T2976)/4000,2)', '=ROUND(SUM(U1:U2976)/4000,2)' ]],
   
       tableOverflow: true,
       tableWidth: '1200px',
@@ -282,12 +282,18 @@ export class ViewMonthaheadComponent {
         },
         {
             type: 'numeric',
-            title: 'Hour',
+            title: 'Block',
             width: '50',
             readOnly: true
             
         },
-        
+        {
+            type: 'text',
+            title: 'Period',
+            width: '150',
+            readOnly: true
+            
+        },
         {
             type: 'numeric',
             title: 'MW',
@@ -414,7 +420,7 @@ export class ViewMonthaheadComponent {
         [
             {
                 title: 'Time',
-                colspan: 2, 
+                colspan: 3, 
                 
             },
             {
@@ -459,7 +465,7 @@ export class ViewMonthaheadComponent {
         [
             {
                 title: '',
-                colspan: 2,
+                colspan: 3,
             },
             {
               title: 'Forecasted Demand (A)',
@@ -628,12 +634,10 @@ export class ViewMonthaheadComponent {
           
       ],
     ],
-
-    lazyLoading: true, 
   
     updateTable(instance, cell, colIndex, rowIndex, value, displayedValue, cellName) {
   
-      if(colIndex == 2) {
+      if(colIndex == 3) {
         const exactValue = value.toString()
         console.log(typeof value);
         if(typeof value !== 'number' && Number.isNaN(Number.parseInt(exactValue))){
@@ -690,6 +694,7 @@ export class ViewMonthaheadComponent {
 
         
   }
+
 
 
   getNextMonthDates() {

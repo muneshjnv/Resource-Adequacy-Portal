@@ -109,7 +109,7 @@
                                     </span>
                                 </span>
                             </button>
-                            <button class="btn btn-primary" type="submit" *ngIf="uploading" (click)="confirm()" [disabled]="">Upload Data</button>
+                            <button class="btn btn-primary" type="submit" *ngIf="!uploading" (click)="confirm()" [disabled]="this.userData['state_id'] == 20">Upload Data</button>
                         </div>
                     </form>
                 </div>

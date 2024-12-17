@@ -163,7 +163,7 @@ export class MonthaheadComponent {
       jspreadsheet(this.spreadsheet.nativeElement, {
       data: this.data,
       // freezeColumns: 2,
-      footers: [[ ' ', ' ','Total LUs', '=ROUND(SUM(D1:D96),2)' , '=ROUND(SUM(E1:E96),2)' , '=ROUND(SUM(F1:F96),2)','=ROUND(SUM(G1:G96),2)' , '=ROUND(SUM(H1:H96),2)' , '=ROUND(SUM(I1:I96),2)','=ROUND(SUM(J1:J96),2)' , '=ROUND(SUM(K1:K96),2)' , '=ROUND(SUM(L1:L96),2)','=ROUND(SUM(M1:M96),2)' , '=ROUND(SUM(N1:N96),2)' , '=ROUND(SUM(O1:O96),2)','=ROUND(SUM(P1:P96),2)' , '=ROUND(SUM(Q1:Q96),2)' , '=ROUND(SUM(R1:R96),2)','=ROUND(SUM(S1:S96),2)' , '=ROUND(SUM(T1:T96),2)' , '=ROUND(SUM(T1:T96),2)', '=ROUND(SUM(U1:U96),2)' ]],
+      footers: [[ ' ', ' ','Total MUs', '=ROUND(SUM(D1:D2976)/4000,2)' , '=ROUND(SUM(E1:E2976)/4000,2)' , '=ROUND(SUM(F1:F2976)/4000,2)','=ROUND(SUM(G1:G2976)/4000,2)' , '=ROUND(SUM(H1:H2976)/4000,2)' , '=ROUND(SUM(I1:I2976)/4000,2)','=ROUND(SUM(J1:J2976)/4000,2)' , '=ROUND(SUM(K1:K2976)/4000,2)' , '=ROUND(SUM(L1:L2976)/4000,2)','=ROUND(SUM(M1:M2976)/4000,2)' , '=ROUND(SUM(N1:N2976)/4000,2)' , '=ROUND(SUM(O1:O2976)/4000,2)','=ROUND(SUM(P1:P2976)/4000,2)' , '=ROUND(SUM(Q1:Q2976)/4000,2)' , '=ROUND(SUM(R1:R2976)/4000,2)','=ROUND(SUM(S1:S2976)/4000,2)' , '=ROUND(SUM(T1:T2976)/4000,2)' , '=ROUND(SUM(T1:T2976)/4000,2)', '=ROUND(SUM(U1:U2976)/4000,2)' ]],
   
       tableOverflow: true,
       tableWidth: '1200px',
@@ -807,7 +807,22 @@ export class MonthaheadComponent {
       // console.log("Length calculated using jexcel")
       // console.log(this.spreadsheet.nativeElement.jexcel.getData().length * this.spreadsheet.nativeElement.jexcel.getData()[0].length)
 
+       // Check if column 2 (index 1) contains all zeroes
+       let allZeroes = true;
+       for (let i = 0; i < this.tempData.length; i++) {
+         if (Number(this.tempData[i][3]) !== 0) { // Index 1 for second column
+           allZeroes = false;
+           break;
+         }
+       }
 
+       if (allZeroes) {
+         Swal.fire({
+           text: 'Forecasted Demand contains all zeroes. Please correct the data.',
+           confirmButtonColor: 'rgb(3, 142, 220)',
+         });
+         return;
+       }
       
       if(totalCount == 96*22*this.daysInMonth(this.validationform.get('disabledDate')!.value["from"])) {
           Swal.fire({text:'Data is successfully loaded, you can now preview the data!',confirmButtonColor: 'rgb(3, 142, 220)',});

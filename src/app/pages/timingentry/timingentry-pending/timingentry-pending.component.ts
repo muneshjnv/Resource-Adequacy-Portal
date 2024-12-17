@@ -84,8 +84,8 @@ export class TimingentryPendingComponent {
     */
     
     
-    console.log(this.ListJsList)
-    console.log(this.total);
+    // console.log(this.ListJsList)
+    // console.log(this.total);
 
 
 
@@ -94,10 +94,10 @@ export class TimingentryPendingComponent {
 
 
     
-    console.log("Above is before assignment and below is after assignment!")
+    // console.log("Above is before assignment and below is after assignment!")
 
-    console.log(this.ListJsList)
-    console.log(this.total);
+    // console.log(this.ListJsList)
+    // console.log(this.total);
 
     
 
@@ -128,10 +128,11 @@ export class TimingentryPendingComponent {
 
     this.listJsForm = this.formBuilder.group({
       ids: [''],
-      customer_issue_time: ['', [Validators.required]],
+      code_issue_time: ['', [Validators.required]],
       element_type: ['', [Validators.required]],
       element_name: ['', [Validators.required]],
       switching: ['', [Validators.required]],
+      nldc_code: ['', [Validators.required]],
       srldc_code: ['', [Validators.required]],
       category: ['', [Validators.required]],
       code_issued_to: ['', [Validators.required]],
@@ -229,6 +230,9 @@ export class TimingentryPendingComponent {
 
 
 
+
+
+
   /**
 * Pagination
 */
@@ -240,6 +244,8 @@ export class TimingentryPendingComponent {
     }
     this.paginationDatas = paginationlist.slice(this.startIndex - 1, this.endIndex);
   }
+
+
 
   /**
   * Save saveListJs
@@ -374,6 +380,7 @@ export class TimingentryPendingComponent {
       }
       else {
         // console.log(res);
+        // this.toastService.show(res["message"], { classname: 'bg-warning text-white', delay: 3000 });
       }
 
     })
@@ -391,4 +398,17 @@ export class TimingentryPendingComponent {
     // });
   }
 
+
+  formatForTable(dateStr: string): string {
+    const date = new Date(dateStr);
+    const day = ('0' + date.getDate()).slice(-2);
+    const month = ('0' + (date.getMonth() + 1)).slice(-2);
+    const year = date.getFullYear();
+    const hours = ('0' + date.getHours()).slice(-2);
+    const minutes = ('0' + date.getMinutes()).slice(-2);
+    return `${day}/${month}/${year}, ${hours}:${minutes}`;
+  }
+
+  
+  
 }

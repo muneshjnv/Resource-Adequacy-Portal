@@ -49,6 +49,7 @@
                                     <th class="sort" listsortable="elementType" (listsort)="onSort($event)">Element Type</th>
                                     <th class="sort" listsortable="elementName" (listsort)="onSort($event)">Element Name</th>
                                     <th class="sort" listsortable="switching" (listsort)="onSort($event)">Switching</th>
+                                    <th class="sort" listsortable="nldcCode" (listsort)="onSort($event)">NLDC Code/Other Region Code</th>
                                     <th class="sort" listsortable="srldcCode" (listsort)="onSort($event)">SRLDC Code</th>
                                     <th class="sort" listsortable="category" (listsort)="onSort($event)">Category</th>
                                     <th class="sort" listsortable="codeIssuedTo" (listsort)="onSort($event)">Code Issued To</th>
@@ -61,48 +62,25 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr *ngFor="let data of ListJsDatas" id="lj_{{data.id}}">
+                                <tr *ngFor="let data of ListJsDatas" 
+                                    id="lj_{{data.id}}" 
+                                    (click)="data.state = !data.state"
+                                    [ngClass]="{'table-warning': data.state}">
                                     <th scope="row">
                                         <div class="form-check">
                                             <input class="form-check-input" type="checkbox" name="checkAll"
-                                                value="{{data.id}}" [(ngModel)]="data.state">
+                                                   value="{{data.id}}" [(ngModel)]="data.state" (click)="$event.stopPropagation()">
                                         </div>
                                     </th>
-                                   
-                                    <td><ngb-highlight [result]="data.codeIssueTime"
-                                            [term]="service.searchTerm"></ngb-highlight></td>
-                                    <td><ngb-highlight [result]="data.elementType"
-                                            [term]="service.searchTerm"></ngb-highlight></td>
-                                    <td><ngb-highlight [result]="data.elementName"
-                                            [term]="service.searchTerm"></ngb-highlight></td>
-                                    <td><ngb-highlight [result]="data.switching" [term]="service.searchTerm"></ngb-highlight>
-                                    </td>
-                                    <td><ngb-highlight [result]="data.srldcCode" [term]="service.searchTerm"></ngb-highlight>
-                                    </td>
-                                    <td><ngb-highlight [result]="data.category"
-                                        [term]="service.searchTerm"></ngb-highlight></td>
-                                        <td><ngb-highlight [result]="data.codeIssuedTo"
-                                            [term]="service.searchTerm"></ngb-highlight></td>
-                                            <td><ngb-highlight [result]="data.codeRequestedBy"
-                                                [term]="service.searchTerm"></ngb-highlight></td>
-
-                                    <!-- <td class="status"><span
-                                            class="badge bg-{{data.status_color}}-subtle text-{{data.status_color}} text-uppercase">{{data.status}}</span>
-                                    </td> -->
-                                    <!-- <td>
-                                        <div class="d-flex gap-2">
-                                            <div class="edit">
-                                                <button class="btn btn-sm btn-success edit-item-btn"
-                                                    data-bs-toggle="modal" data-bs-target="#showModal"
-                                                    (click)="editModal(content,data.id)">Edit</button>
-                                            </div>
-                                            <div class="remove">
-                                                <button class="btn btn-sm btn-danger remove-item-btn"
-                                                    data-bs-toggle="modal" data-bs-target="#deleteRecordModal"
-                                                    (click)="confirm(deleteModel,data.id)">Remove</button>
-                                            </div>
-                                        </div>
-                                    </td> -->
+                                    <td><ngb-highlight [result]="formatForTable(data.codeIssueTime)" [term]="service.searchTerm"></ngb-highlight></td>
+                                    <td><ngb-highlight [result]="data.elementType" [term]="service.searchTerm"></ngb-highlight></td>
+                                    <td><ngb-highlight [result]="data.elementName" [term]="service.searchTerm"></ngb-highlight></td>
+                                    <td><ngb-highlight [result]="data.switching" [term]="service.searchTerm"></ngb-highlight></td>
+                                    <td><ngb-highlight [result]="data.nldcCode" [term]="service.searchTerm"></ngb-highlight></td>
+                                    <td><ngb-highlight [result]="data.srldcCode" [term]="service.searchTerm"></ngb-highlight></td>
+                                    <td><ngb-highlight [result]="data.category" [term]="service.searchTerm"></ngb-highlight></td>
+                                    <td><ngb-highlight [result]="data.codeIssuedTo" [term]="service.searchTerm"></ngb-highlight></td>
+                                    <td><ngb-highlight [result]="data.codeRequestedBy" [term]="service.searchTerm"></ngb-highlight></td>
                                 </tr>
                             </tbody>
                         </table>
@@ -162,7 +140,7 @@
                         <th scope="col">Element Name</th>
                         <th scope="col">Category</th>
                         <th scope="col">Code</th>
-                        <th scope="col">Executed Time</th>
+                        <th scope="col">Executed Time (24 Hr Format)</th>
                         <th scope="col">Action</th>
                     </tr>
                 </thead>
@@ -172,8 +150,12 @@
                         <td>{{data.category}}</td>
                         <td>{{data.srldcCode}}</td>
                         <td><div>
-                            <input class="form-control flatpickr-input" type="text" mwlFlatpickr [altInput]="true" [enableTime]="true"  [allowInput]="true" [convertModelValue]="true" altFormat="d/m/y H:i" [dateFormat]="'d/m/Y, H:i'" [minuteIncrement]="1" [(ngModel)]="data.codeIssueTime">
-                        </div></td>
+                            <input
+                            type="datetime-local"
+                            class="form-control"
+                            [(ngModel)]="data.codeIssueTime"
+                            [min] = "data.codeIssueTime"
+                          />                        </div></td>
                         <!-- <td><span class="badge bg-success">Confirmed</span></td> -->
                         <td class="text-center"><div class="hstack gap-3 flex-wrap">
                             <a href="javascript:void(0);" class="link-danger fs-15"><i

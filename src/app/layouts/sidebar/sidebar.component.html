@@ -37,7 +37,7 @@
               
               <li class="menu-title" *ngIf="item.isTitle"><span data-key="t-menu">{{ item.label | translate }}</span></li>
 
-              <li class="nav-item" *ngIf="!item.isTitle && !item.isLayout &&   !((userData.state_id == 8 || userData.state_id == 9) && !(item.id == 2 || item.id == 10002)) && !(item.id == 10004 && userData.state_id != 6)">
+              <li class="nav-item" *ngIf="!item.isTitle && !item.isLayout &&   !([8,9,10,11,12,13,14,15,17].includes(userData['state_id']) && !(item.id == 2 || item.id == 10002)) && !(item.id == 10004 && userData.state_id != 6) && !( item.id == 10002 && userData['state_id'] == 20)">
                 <a *ngIf="hasItems(item)" href="javascript:void(0);" class="is-parent nav-link menu-link"
                   [ngClass]="{'has-arrow': !item.badge, 'has-dropdown': item.badge}" data-bs-toggle="collapse" aria-expanded="false" (click)="toggleItem($event)">
                   <i class="{{ item.icon }} icon nav-icon" class=""></i>

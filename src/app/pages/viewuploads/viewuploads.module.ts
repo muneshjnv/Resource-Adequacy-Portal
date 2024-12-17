@@ -49,6 +49,7 @@ import { ViewFileuploadsRoutingModule } from './viewuploads-routing.module';
 import { ViewWeekaheadComponent } from './view-weekahead/view-weekahead.component';
 import { ViewMonthaheadComponent } from './view-monthahead/view-monthahead.component';
 import { ViewYearaheadComponent } from './view-yearahead/view-yearahead.component';
+import { ViewIntradayComponent } from './view-intraday/view-intraday.component';
 
 // // Component Pages
 // import { AppsRoutingModule } from "./apps-routing.module";
@@ -79,7 +80,8 @@ import { ViewYearaheadComponent } from './view-yearahead/view-yearahead.componen
     ViewDayaheadComponent,
     ViewWeekaheadComponent,
     ViewMonthaheadComponent,
-    ViewYearaheadComponent
+    ViewYearaheadComponent,
+    ViewIntradayComponent
     
   ],
   imports: [

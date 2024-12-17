@@ -250,26 +250,25 @@ export class ViewDayaheadComponent {
       jspreadsheet(this.spreadsheet.nativeElement, {
       data: this.data,
       // freezeColumns: 2,
-      footers: [[ ' ','Total MUs', '=ROUND(SUM(C1:C96),2)' , '=ROUND(SUM(D1:D96),2)' , '=ROUND(SUM(E1:E96),2)','=ROUND(SUM(F1:F96),2)' , '=ROUND(SUM(G1:G96),2)' , '=ROUND(SUM(H1:H96),2)','=ROUND(SUM(I1:I96),2)' , '=ROUND(SUM(J1:J96),2)' , '=ROUND(SUM(K1:K96),2)','=ROUND(SUM(L1:L96),2)' , '=ROUND(SUM(M1:M96),2)' , '=ROUND(SUM(N1:N96),2)','=ROUND(SUM(O1:O96),2)' , '=ROUND(SUM(P1:P96),2)' , '=ROUND(SUM(Q1:Q96),2)','=ROUND(SUM(R1:R96),2)' , '=ROUND(SUM(S1:S96),2)' , '=ROUND(SUM(T1:T96),2)', '=ROUND(SUM(U1:U96),2)' ]],
+      footers: [[ ' ','Total MUs', '=ROUND(SUM(C1:C96)/4000,2)' , '=ROUND(SUM(D1:D96)/4000,2)' , '=ROUND(SUM(E1:E96)/4000,2)','=ROUND(SUM(F1:F96)/4000,2)' , '=ROUND(SUM(G1:G96)/4000,2)' , '=ROUND(SUM(H1:H96)/4000,2)','=ROUND(SUM(I1:I96)/4000,2)' , '=ROUND(SUM(J1:J96)/4000,2)' , '=ROUND(SUM(K1:K96)/4000,2)','=ROUND(SUM(L1:L96)/4000,2)' , '=ROUND(SUM(M1:M96)/4000,2)' , '=ROUND(SUM(N1:N96)/4000,2)','=ROUND(SUM(O1:O96)/4000,2)' , '=ROUND(SUM(P1:P96)/4000,2)' , '=ROUND(SUM(Q1:Q96)/4000,2)','=ROUND(SUM(R1:R96)/4000,2)' , '=ROUND(SUM(S1:S96)/4000,2)' , '=ROUND(SUM(T1:T96)/4000,2)', '=ROUND(SUM(U1:U96)/4000,2)' ]],
   
       tableOverflow: true,
       tableWidth: '1200px',
       tableHeight: '400px',
       columns: [
         {
-            type: 'numeric',
-            title: 'Block',
-            width: '50',
-            readOnly: true
-            
+          type: 'numeric',
+          title: 'Block',
+          width: '50'
         },
         {
             type: 'text',
             title: 'Period',
-            width: '150',
+            width: '120',
             readOnly: true
             
         },
+        
         {
             type: 'numeric',
             title: 'MW',
@@ -511,7 +510,7 @@ export class ViewDayaheadComponent {
         [
           {
               title: '',
-              colspan: 2,
+              colspan: 3,
           },
           {
             title: '',
@@ -610,14 +609,17 @@ export class ViewDayaheadComponent {
           
       ],
     ],
+
+    lazyLoading: true, 
   
     updateTable(instance, cell, colIndex, rowIndex, value, displayedValue, cellName) {
   
       if(colIndex == 2) {
         const exactValue = value.toString()
-        // console.log(typeof value);
+        console.log(typeof value);
         if(typeof value !== 'number' && Number.isNaN(Number.parseInt(exactValue))){
           cell.style.background = '#ffcccb'
+          Swal.fire({text:'Your Data has some errors, They are highlighted. Please check and Update',confirmButtonColor: 'rgb(3, 142, 220)',});
         }
   
         const modifiedValue = value.toString()
@@ -667,8 +669,8 @@ export class ViewDayaheadComponent {
     });
 
 
+        
   }
-
   
 
 }

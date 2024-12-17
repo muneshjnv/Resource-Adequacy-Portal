@@ -13,6 +13,7 @@ export interface ListJsModel {
   elementType: string,
   elementName: string,
   switching: string,
+  nldcCode: string,
   srldcCode: string,
   category: string,
   codeIssuedTo: string, 
@@ -27,6 +28,23 @@ export interface paginationModel {
   type: string;
   img: string;
 }
+
+
+export interface pendingEntryModel {
+  id: any,
+  codeIssueTime: string,
+  elementType: string,
+  elementName: string,
+  switching: string,
+  nldcCode: string,
+  srldcCode: string,
+  category: string,
+  codeIssuedTo: string, 
+  codeRequestedBy: string,
+  
+
+}
+
 
 
 export interface pendingEntryModel {

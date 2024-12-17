@@ -49,6 +49,7 @@ import { SharedModule } from 'src/app/shared/shared.module';
 import { WeekaheadComponent } from './weekahead/weekahead.component';
 import { MonthaheadComponent } from './monthahead/monthahead.component';
 import { YearaheadComponent } from './yearahead/yearahead.component';
+import { IntradayComponent } from './intraday/intraday.component';
 
 // // Component Pages
 // import { AppsRoutingModule } from "./apps-routing.module";
@@ -79,7 +80,8 @@ import { YearaheadComponent } from './yearahead/yearahead.component';
     DayaheadComponent,
     WeekaheadComponent,
     MonthaheadComponent,
-    YearaheadComponent
+    YearaheadComponent,
+    IntradayComponent
     
   ],
   imports: [
