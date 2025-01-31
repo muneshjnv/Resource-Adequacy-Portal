@@ -425,7 +425,7 @@ def login():
     except Exception as e:
         # Log the error (custom log_error function)
         log_error("login", e)
-        return jsonify({"error": "Problem in logging in, Please contact SRLDC IT!", "status": "failure"})
+        return jsonify({"error": "Problem in logging in, Please contact ERLDC IT!", "status": "failure"})
 
 
 
@@ -459,7 +459,7 @@ def fetchRevisions():
             return jsonify(status="failure", message="There are no Uploads for {0} state for date {1}".format(state_name, date))
     except Exception as e:
         log_error("fetchrevisions", e)
-        return jsonify(message="There is Some Problem, Please contact SRLDC IT")
+        return jsonify(message="There is Some Problem, Please contact ERLDC IT")
 
 
 @app.route('/api/fetchintradayrevisions', methods=['POST'])
@@ -490,7 +490,7 @@ def fetchIntradayRevisions():
             return jsonify(status="failure", message="There are no Uploads for {0} state for date {1}".format(state_name, date))
     except Exception as e:
         log_error("fetchrevisions", e)
-        return jsonify(message="There is Some Problem, Please contact SRLDC IT")
+        return jsonify(message="There is Some Problem, Please contact ERLDC IT")
 
 
 @app.route('/api/fetchweekrevisions', methods=['POST'])
@@ -521,7 +521,7 @@ def fetchWeekRevisions():
     
     except Exception as e:
         log_error("fetchweekrevisions", e)
-        return jsonify(message="There is Some Problem, Please contact SRLDC IT")
+        return jsonify(message="There is Some Problem, Please contact ERLDC IT")
 
 @app.route('/api/fetchweeklyrevisionsdata', methods=['POST'])
 @jwt_required()
@@ -559,14 +559,14 @@ def fetchWeeklyRevisionsData():
             return jsonify(status="success", data=file_data, time=uploaded_time, from_date=from_date,to_date=to_date, revision=revision_no, role=uploaded_by)
         else:
             cursor.close()
-            return jsonify(status="failure", message="There is a Problem in fetching the data, Please contact SRLDC IT!")
+            return jsonify(status="failure", message="There is a Problem in fetching the data, Please contact ERLDC IT!")
             
 
         # return jsonify(message="Fetched Successfully")
 
     except Exception as e:
         log_error("weeklyrevisionsdata", e)
-        return jsonify(message="There is Some Problem, Please contact SRLDC IT")
+        return jsonify(message="There is Some Problem, Please contact ERLDC IT")
     
 
 @app.route('/api/fetchintradayrevisionsdata', methods=['POST'])
@@ -605,7 +605,7 @@ def checkIntradayUploaded():
             return jsonify(status="success", data=file_data, time=uploaded_time, date=uploaded_date, revision=revision_no, role=uploaded_by)
         else:
             cursor.close()
-            return jsonify(status="failure", message="There is a Problem in fetching the data, Please contact SRLDC IT!")
+            return jsonify(status="failure", message="There is a Problem in fetching the data, Please contact ERLDC IT!")
     except Exception as e:
         log_error("fetchintradayrevisionsdata", e)
         
@@ -648,7 +648,7 @@ def checkUploaded():
             return jsonify(status="success", data=file_data, time=uploaded_time, date=uploaded_date, revision=revision_no, role=uploaded_by)
         else:
             cursor.close()
-            return jsonify(status="failure", message="There is a Problem in fetching the data, Please contact SRLDC IT!")
+            return jsonify(status="failure", message="There is a Problem in fetching the data, Please contact ERLDC IT!")
     except Exception as e:
         log_error("fetchrevisionsdata", e)
         
@@ -671,8 +671,8 @@ def uploadIntradayDataAndFile():
     try:
         # Connect to the database
         conn = psycopg2.connect(
-            database="demand_forecast_states", user='prasadbabu', 
-            password='BabuPrasad#123', host='10.0.100.79', port='5432'
+            database="demand_forecast_states", user='munesh', 
+            password='munesh', host='localhost', port='5432'
         )
         cursor = conn.cursor()
 
@@ -721,7 +721,7 @@ def uploadIntradayDataAndFile():
             # Save the file with the appropriate revision number
             filename = f"{disabledDate}_{state_name}_rev{revision_no}.xlsx"
             file_path = os.path.join(directory_path, filename)
-            # file.save(file_path)
+            file.save(file_path)
 
             # Insert the file data into the database
             cursor.execute(
@@ -774,7 +774,7 @@ def uploadIntradayDataAndFile():
 
     except Exception as e:
         log_error("uploadintraday", e)
-        return jsonify(message="There is a problem in uploading. Please contact SRLDC IT!")
+        return jsonify(message="There is a problem in uploading. Please contact ERLDC IT!")
 
     finally:
         # Ensure that resources are closed properly
@@ -790,8 +790,8 @@ def uploadDayAheadDataAndFile():
     try:
         # Connect to the database
         conn = psycopg2.connect(
-            database="demand_forecast_states", user='prasadbabu', 
-            password='BabuPrasad#123', host='10.0.100.79', port='5432'
+            database="demand_forecast_states", user='munesh', 
+            password='munesh', host='localhost', port='5432'
         )
         cursor = conn.cursor()
 
@@ -893,7 +893,7 @@ def uploadDayAheadDataAndFile():
 
     except Exception as e:
         log_error("uploaddayahead", e)
-        return jsonify(message="There is a problem in uploading. Please contact SRLDC IT!")
+        return jsonify(message="There is a problem in uploading. Please contact ERLDC IT!")
 
     finally:
         # Ensure that resources are closed properly
@@ -902,7 +902,7 @@ def uploadDayAheadDataAndFile():
 
 
         
-        # return jsonify(message="There is problem in uploading, Please contact SRLDC IT!")
+        # return jsonify(message="There is problem in uploading, Please contact ERLDC IT!")
 
 
 
@@ -941,7 +941,6 @@ def downloadIntraday():
         # Extract the file path
         file_path = result[0]
         print(file_path)
-
         # Ensure the file exists before sending it
         if not os.path.exists(file_path):
             print("Path does not exists")
@@ -1285,7 +1284,7 @@ def pendingTimingEntries():
         # print(exc_type, fname, exc_tb.tb_lineno)
         log_error("pendingtimingentries", e)
         cursor.close()
-        return jsonify(status="failure", message="There is a problem in fetching the data, Please contact SRLDC IT!")
+        return jsonify(status="failure", message="There is a problem in fetching the data, Please contact ERLDC IT!")
 
 
 @app.route('/api/getelementpreviouscodes', methods=['POST'])
@@ -1399,13 +1398,13 @@ def getPreviousCodes():
                 return jsonify(status="failure", message="Data is Empty!")
         else:
             # print(response.status_code)
-            return jsonify(status="failure", message="There is a problem in fetching data, Please contact SRLDC IT!")
+            return jsonify(status="failure", message="There is a problem in fetching data, Please contact ERLDC IT!")
         return jsonify(status="success", message="Message fetched successfully!", data=entities_data )
     except Exception as e:
         # print(e)
         log_error("getpreviouscodes", e)
         cursor.close()
-        return jsonify(status="failure", message="There is a problem in fetching the data, Please contact SRLDC IT!")
+        return jsonify(status="failure", message="There is a problem in fetching the data, Please contact ERLDC IT!")
  
 
 @app.route('/api/weekaheadformat')
@@ -1452,7 +1451,7 @@ def weekAheadFormat():
     except Exception as e:
         log_error("weekaheadformat", e)
         cursor.close()
-        return jsonify(msg="Problem in fetching the data, Please contact SRLDC IT", status="failure")
+        return jsonify(msg="Problem in fetching the data, Please contact ERLDC IT", status="failure")
 
 
 @app.route('/api/monthaheadformat')
@@ -1502,7 +1501,7 @@ def monthAheadFormat():
     except Exception as e:
         log_error("monthaheadformat", e)
         cursor.close()
-        return jsonify(status="failure", msg="Problem in Fetching the data, Please contact SRLDC IT!")
+        return jsonify(status="failure", msg="Problem in Fetching the data, Please contact ERLDC IT!")
 
 
 
@@ -1544,7 +1543,7 @@ def yearheadFormat():
     except Exception as e:
         log_error("yearaheadformat", e)
         cursor.close()
-        return jsonify(status="failure", msg="Problem in Fetching the data, Please contact SRLDC IT!")
+        return jsonify(status="failure", msg="Problem in Fetching the data, Please contact ERLDC IT!")
 
     
 @app.route('/api/submitentries', methods=['POST'])
@@ -1586,7 +1585,7 @@ def submitTimingEntries():
         log_error("submittimingentries", e)
         cursor.close()
         # print(error)
-        return jsonify(status="failure", message="There is a problem, Please contact SRLDC IT!")
+        return jsonify(status="failure", message="There is a problem, Please contact ERLDC IT!")
     
     
 
@@ -1596,7 +1595,7 @@ def weekAheadForecast():
     try: 
         return jsonify(msg="Successful!", status="failure")
     except Exception as error:
-        return jsonify(msg="There is some problem, Please contact SRLDC IT!")
+        return jsonify(msg="There is some problem, Please contact ERLDC IT!")
     
 
 
@@ -1698,7 +1697,7 @@ def uploadWeekAheadDataAndFile():
     except Exception as e:
         log_error("uploadweekahead", e)
         cursor.close()
-        return jsonify(message="There is some problem in uploading the file! Please contact SRLDC IT", status="failure")
+        return jsonify(message="There is some problem in uploading the file! Please contact ERLDC IT", status="failure")
 
 
     
@@ -1858,7 +1857,7 @@ def uploadMonthAheadDataAndFile():
     except Exception as e:
         log_error("uploadmonthahead", e)
         cursor.close()
-        return jsonify(message="There is some problem in uploading the file! Please contact SRLDC IT", status="failure")
+        return jsonify(message="There is some problem in uploading the file! Please contact ERLDC IT", status="failure")
         
 
 
@@ -1892,7 +1891,7 @@ def fetchMonthRevisions():
     except Exception as e:
         log_error("fetchmonthrevisions", e)
         cursor.close()
-        return jsonify(message="There is some problem in fetching the revisions! Please contact SRLDC IT", status="failure")
+        return jsonify(message="There is some problem in fetching the revisions! Please contact ERLDC IT", status="failure")
     
 
 @app.route('/api/fetchmonthlyrevisionsdata', methods=['POST'])
@@ -1930,7 +1929,7 @@ def fetchMonthlyRevisionsData():
             return jsonify(status="success", data=file_data, time=uploaded_time, from_date=from_date,to_date=to_date, revision=revision_no, role=uploaded_by)
         else:
             cursor.close()
-            return jsonify(status="failure", message="There is a Problem in fetching the data, Please contact SRLDC IT!")
+            return jsonify(status="failure", message="There is a Problem in fetching the data, Please contact ERLDC IT!")
             
 
         # return jsonify(message="Fetched Successfully")
@@ -1938,7 +1937,7 @@ def fetchMonthlyRevisionsData():
     except Exception as e:
         log_error("fetchmonthlyrevisionsdata", e)
         cursor.close()
-        return jsonify(message="There is some problem in uploading the file! Please contact SRLDC IT", status="failure")
+        return jsonify(message="There is some problem in uploading the file! Please contact ERLDC IT", status="failure")
 
 
 @app.route('/api/uploadyearahead', methods=['POST'])
@@ -2066,7 +2065,7 @@ def uploadYearAheadDataAndFile():
     except Exception as e:
         log_error("uploadyearahead", e)
         cursor.close()
-        return jsonify(message="There is some problem in uploading the file! Please contact SRLDC IT", status="failure")
+        return jsonify(message="There is some problem in uploading the file! Please contact ERLDC IT", status="failure")
 
 
 
@@ -2107,7 +2106,7 @@ def fetchYearlyRevisionsData():
             return jsonify(status="success", data=file_data, time=uploaded_time, from_date=from_date,to_date=to_date, revision=revision_no, role=uploaded_by)
             
         else:
-            return jsonify(status="failure", message="There is a Problem in fetching the data, Please contact SRLDC IT!")
+            return jsonify(status="failure", message="There is a Problem in fetching the data, Please contact ERLDC IT!")
             
 
         return jsonify(message="Fetched Successfully")
@@ -2115,7 +2114,7 @@ def fetchYearlyRevisionsData():
     except Exception as e:
         log_error("fetchyearlyrevisionsdata", e)
         cursor.close()
-        return jsonify(message="There is some problem in fetching the revisions data! Please contact SRLDC IT", status="failure")
+        return jsonify(message="There is some problem in fetching the revisions data! Please contact ERLDC IT", status="failure")
 
 
 
@@ -2148,7 +2147,7 @@ def fetchYearRevisions():
     except Exception as e:
         log_error("fetchyearrevisions", e)
         cursor.close()
-        return jsonify(message="There is some problem in uploading the file! Please contact SRLDC IT", status="failure")
+        return jsonify(message="There is some problem in uploading the file! Please contact ERLDC IT", status="failure")
 
 
 
@@ -2674,8 +2673,8 @@ def scatterPlotUploadStatus():
         # print(exc_type, fname, exc_tb.tb_lineno)
         log_error("uploadstatus", e)
         # cursor.close()
-        # return jsonify(message="There is some problem in uploading the file! Please contact SRLDC IT", status="failure")
-        return jsonify(message="There is a problem, please contact SRLDC IT!", status="failure")
+        # return jsonify(message="There is some problem in uploading the file! Please contact ERLDC IT", status="failure")
+        return jsonify(message="There is a problem, please contact ERLDC IT!", status="failure")
 
 
 
@@ -2694,8 +2693,8 @@ def scatterPlotUploadStatus():
 def mapeChart():
     try:
         conn = psycopg2.connect(
-        database="demand_forecast_states", user='prasadbabu', 
-        password='BabuPrasad#123', host='10.0.100.79', port='5432'
+        database="demand_forecast_states", user='munesh', 
+        password='munesh', host='localhost', port='5432'
         )
         cursor = conn.cursor()
         params = request.get_json()
@@ -3258,7 +3257,7 @@ def mapeChart():
 
         final_forecast_dict = {}
         final_forecast_dict['data'] = forecast_list 
-        final_forecast_dict['title'] = f"Comparison between Actual, Intraday, Day Ahead, Week Ahead and Month Ahead data  from {from_date} to {to_date} for {state_name if state_name != 'SRLDC' else 'SR'}"
+        final_forecast_dict['title'] = f"Comparison between Actual, Intraday, Day Ahead, Week Ahead and Month Ahead data  from {from_date} to {to_date} for {state_name if state_name != 'ERLDC' else 'ER'}"
         
         # print(mape_list)
 
@@ -3284,14 +3283,14 @@ def mapeChart():
 
         
 
-        return jsonify(status="success", data=mape_list, title="MAPE for the data between {0} and {1} for {2}".format(from_date, to_date, state_name if state_name != 'SRLDC' else 'SR' ), comp_data=final_forecast_dict)        
+        return jsonify(status="success", data=mape_list, title="MAPE for the data between {0} and {1} for {2}".format(from_date, to_date, state_name if state_name != 'ERLDC' else 'ER' ), comp_data=final_forecast_dict)        
 
     except Exception as e:
         log_error("mapechart", e)
         import traceback
         print(traceback.format_exc())
         cursor.close()
-        return jsonify(message="There is some problem in Fetching the Data! Please contact SRLDC IT", status="failure")
+        return jsonify(message="There is some problem in Fetching the Data! Please contact ERLDC IT", status="failure")
 
 
 
@@ -3410,8 +3409,8 @@ def dayRangeStatus():
     except Exception as e:
         log_error("dayrangestatus", e)
         cursor.close()
-        # return jsonify(message="There is some problem in uploading the file! Please contact SRLDC IT", status="failure")
-        return jsonify(message="There is a problem, please contact SRLDC IT!", status="failure")
+        # return jsonify(message="There is some problem in uploading the file! Please contact ERLDC IT", status="failure")
+        return jsonify(message="There is a problem, please contact ERLDC IT!", status="failure")
 
 
 
@@ -3539,7 +3538,7 @@ def weekRangeStatus():
     except Exception as e:
         log_error("weekrangestatus", e)
         cursor.close()
-        return jsonify(message="There is a problem, please contact SRLDC IT!", status="failure")
+        return jsonify(message="There is a problem, please contact ERLDC IT!", status="failure")
 
 
 
@@ -3679,8 +3678,8 @@ def monthRangeStatus():
     except Exception as e:
         log_error("monthrangestatus", e)
         cursor.close()
-        # return jsonify(message="There is some problem in uploading the file! Please contact SRLDC IT", status="failure")
-        return jsonify(message="There is a problem, please contact SRLDC IT!")
+        # return jsonify(message="There is some problem in uploading the file! Please contact ERLDC IT", status="failure")
+        return jsonify(message="There is a problem, please contact ERLDC IT!")
 
 
 @app.route('/api/yearrangestatus', methods=['POST'])
@@ -3777,8 +3776,8 @@ def yearRangeStatus():
     except Exception as e:
         log_error("yearrangestatus", e)
         cursor.close()
-        # return jsonify(message="There is some problem in uploading the file! Please contact SRLDC IT", status="failure")
-        return jsonify(message="There is a problem, please contact SRLDC IT!")
+        # return jsonify(message="There is some problem in uploading the file! Please contact ERLDC IT", status="failure")
+        return jsonify(message="There is a problem, please contact ERLDC IT!")
 
 
 
@@ -3801,8 +3800,8 @@ def get_data():
     input_to_date = data.get('to_date')
 
     conn = psycopg2.connect(
-    database="demand_forecast_states", user='prasadbabu', 
-    password='BabuPrasad#123', host='10.0.100.79', port='5432'
+    database="demand_forecast_states", user='munesh', 
+    password='munesh', host='localhost', port='5432'
     )
 
     cursor = conn.cursor()
@@ -3911,8 +3910,8 @@ def get_forecast_data():
         data_type = data.get('data_type')
 
         conn = psycopg2.connect(    
-        database="demand_forecast_states", user='prasadbabu', 
-        password='BabuPrasad#123', host='10.0.100.79', port='5432'
+        database="demand_forecast_states", user='munesh', 
+        password='munesh', host='localhost', port='5432'
         )
 
         cursor = conn.cursor()
@@ -4576,7 +4575,7 @@ def displayLineFlows():
     except Exception as e:
         log_error("displaylineflows", e)
         cursor.close()
-        return jsonify(message="There is some problem in Fetching the data! Please contact SRLDC IT", status="failure")
+        return jsonify(message="There is some problem in Fetching the data! Please contact ERLDC IT", status="failure")
         # return jsonify({"status": "failure", "error": str(e), "file": fname, "line": exc_tb.tb_lineno}), 500
 
 
@@ -4607,7 +4606,7 @@ def downloadLineFlows():
     except Exception as e:
         log_error("downloadlineflows", e)
         cursor.close()
-        return jsonify(message="There is some problem in downloading the file! Please contact SRLDC IT", status="failure")
+        return jsonify(message="There is some problem in downloading the file! Please contact ERLDC IT", status="failure")
         # return jsonify({'status': 'failure', 'error': str(e)}), 500
 
 
@@ -4642,7 +4641,7 @@ def fetchMdpDescription():
     except Exception as e:
         # Log the error and return a failure message
         log_error("fetchmdpdescription", e)
-        return jsonify(message="There is some problem in fetching the names! Please contact SRLDC IT", status="failure")
+        return jsonify(message="There is some problem in fetching the names! Please contact ERLDC IT", status="failure")
 
 
 
@@ -4710,7 +4709,7 @@ def MdpDescriptionData():
         # Log the error and return a failure message
         print(f"Error in mdpdescriptiondata: {e}")
         return jsonify(
-            message="There is some problem in fetching the data! Please contact SRLDC IT",
+            message="There is some problem in fetching the data! Please contact ERLDC IT",
             status="failure"
         )
 

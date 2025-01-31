@@ -6,6 +6,10 @@ export const MENU: MenuItem[] = [
     label: 'MENUITEMS.MENU.TEXT',
     isTitle: true
   },
+
+
+
+
   {
     id: 2,
     label: 'MENUITEMS.DASHBOARD.TEXT',
@@ -17,44 +21,10 @@ export const MENU: MenuItem[] = [
         link: '/',
         parentId: 2
       },
-      // {
-      //   id: 4,
-      //   label: 'MENUITEMS.DASHBOARD.LIST.CRM',
-      //   link: '/',
-      //   parentId: 2
-      // },
-      // {
-      //   id: 5,
-      //   label: 'MENUITEMS.DASHBOARD.LIST.ECOMMERCE',
-      //   link: '',
-      //   parentId: 2
-      // },
-      // {
-      //   id: 6,
-      //   label: 'MENUITEMS.DASHBOARD.LIST.CRYPTO',
-      //   link: '/',
-      //   parentId: 2
-      // },
-      // {
-      //   id: 7,
-      //   label: 'MENUITEMS.DASHBOARD.LIST.PROJECTS',
-      //   link: '/',
-      //   parentId: 2
-      // },
-      // {
-      //   id: 7,
-      //   label: 'MENUITEMS.DASHBOARD.LIST.NFT',
-      //   link: '/',
-      //   parentId: 2,
-      // },
-      // {
-      //   id: 8,
-      //   label: 'MENUITEMS.DASHBOARD.LIST.JOB',
-      //   link: '/',
-      //   parentId: 2,
-      // }
     ]
   },
+
+
   {
     id: 8,
     label: 'MENUITEMS.APPS.TEXT',
@@ -90,438 +60,7 @@ export const MENU: MenuItem[] = [
         link: 'fileuploads/yearahead',
         parentId: 8
       }
-      // {
-      //   id: 10,
-      //   label: 'MENUITEMS.APPS.LIST.CHAT',
-      //   link: '/',
-      //   parentId: 8
-      // },
-      // {
-      //   id: 11,
-      //   label: 'MENUITEMS.APPS.LIST.EMAIL',
-      //   parentId: 8,
-      //   subItems: [
-      //     {
-      //       id: 13,
-      //       label: 'MENUITEMS.APPS.LIST.MAILBOX',
-      //       link: '/',
-      //       parentId: 11
-      //     },
-      //     {
-      //       id: 14,
-      //       label: 'MENUITEMS.APPS.LIST.MAILTEMPLATES',
-      //       parentId: 11,
-      //       subItems: [
-      //         {
-      //           id: 13,
-      //           label: 'MENUITEMS.APPS.LIST.BASICACTION',
-      //           link: '/',
-      //           parentId: 14
-      //         },
-      //         {
-      //           id: 13,
-      //           label: 'MENUITEMS.APPS.LIST.ECOMMERCEACTION',
-      //           link: '/',
-      //           parentId: 14
-      //         },
-      //       ]
-      //     }
-      //   ]
-      // },
-      // {
-      //   id: 12,
-      //   label: 'MENUITEMS.APPS.LIST.ECOMMERCE',
-      //   link: '/',
-      //   parentId: 8,
-      //   subItems: [
-      //     {
-      //       id: 13,
-      //       label: 'MENUITEMS.APPS.LIST.PRODUCTS',
-      //       link: '/',
-      //       parentId: 12
-      //     },
-      //     {
-      //       id: 14,
-      //       label: 'MENUITEMS.APPS.LIST.PRODUCTDETAILS',
-      //       link: '/',
-      //       parentId: 12
-      //     },
-      //     {
-      //       id: 15,
-      //       label: 'MENUITEMS.APPS.LIST.CREATEPRODUCT',
-      //       link: '/',
-      //       parentId: 12
-      //     },
-      //     {
-      //       id: 16,
-      //       label: 'MENUITEMS.APPS.LIST.ORDERS',
-      //       link: '/',
-      //       parentId: 12
-      //     },
-      //     {
-      //       id: 17,
-      //       label: 'MENUITEMS.APPS.LIST.ORDERDETAILS',
-      //       link: '/',
-      //       parentId: 12
-      //     },
-      //     {
-      //       id: 18,
-      //       label: 'MENUITEMS.APPS.LIST.CUSTOMERS',
-      //       link: '/',
-      //       parentId: 12
-      //     },
-      //     {
-      //       id: 19,
-      //       label: 'MENUITEMS.APPS.LIST.SHOPPINGCART',
-      //       link: '/',
-      //       parentId: 12
-      //     },
-      //     {
-      //       id: 20,
-      //       label: 'MENUITEMS.APPS.LIST.CHECKOUT',
-      //       link: '/',
-      //       parentId: 12
-      //     },
-      //     {
-      //       id: 21,
-      //       label: 'MENUITEMS.APPS.LIST.SELLERS',
-      //       link: '/',
-      //       parentId: 12
-      //     },
-      //     {
-      //       id: 22,
-      //       label: 'MENUITEMS.APPS.LIST.SELLERDETAILS',
-      //       link: '/',
-      //       parentId: 12
-      //     }
-      //   ]
-      // },
-      // {
-      //   id: 23,
-      //   label: 'MENUITEMS.APPS.LIST.PROJECTS',
-      //   parentId: 8,
-      //   subItems: [
-      //     {
-      //       id: 24,
-      //       label: 'MENUITEMS.APPS.LIST.LIST',
-      //       link: '/',
-      //       parentId: 23
-      //     },
-      //     {
-      //       id: 25,
-      //       label: 'MENUITEMS.APPS.LIST.OVERVIEW',
-      //       link: '/',
-      //       parentId: 23
-      //     },
-      //     {
-      //       id: 26,
-      //       label: 'MENUITEMS.APPS.LIST.CREATEPROJECT',
-      //       link: '/',
-      //       parentId: 23
-      //     }
-      //   ]
-      // },
-      // {
-      //   id: 27,
-      //   label: 'MENUITEMS.APPS.LIST.TASK',
-      //   parentId: 8,
-      //   subItems: [
-      //     {
-      //       id: 28,
-      //       label: 'MENUITEMS.APPS.LIST.KANBANBOARD',
-      //       link: '/',
-      //       parentId: 27
-      //     },
-      //     {
-      //       id: 29,
-      //       label: 'MENUITEMS.APPS.LIST.LISTVIEW',
-      //       link: '/',
-      //       parentId: 27
-      //     },
-      //     {
-      //       id: 30,
-      //       label: 'MENUITEMS.APPS.LIST.TASKDETAILS',
-      //       link: '/',
-      //       parentId: 27
-      //     }
-      //   ]
-      // },
-      // {
-      //   id: 31,
-      //   label: 'MENUITEMS.APPS.LIST.CRM',
-      //   parentId: 8,
-      //   subItems: [
-      //     {
-      //       id: 32,
-      //       label: 'MENUITEMS.APPS.LIST.CONTACTS',
-      //       link: '/',
-      //       parentId: 31
-      //     },
-      //     {
-      //       id: 33,
-      //       label: 'MENUITEMS.APPS.LIST.COMPANIES',
-      //       link: '/',
-      //       parentId: 31
-      //     },
-      //     {
-      //       id: 34,
-      //       label: 'MENUITEMS.APPS.LIST.DEALS',
-      //       link: '/',
-      //       parentId: 31
-      //     },
-      //     {
-      //       id: 35,
-      //       label: 'MENUITEMS.APPS.LIST.LEADS',
-      //       link: '/',
-      //       parentId: 31
-      //     }
-      //   ]
-      // },
-      // {
-      //   id: 36,
-      //   label: 'MENUITEMS.APPS.LIST.CRYPTO',
-      //   parentId: 8,
-      //   subItems: [
-      //     {
-      //       id: 37,
-      //       label: 'MENUITEMS.APPS.LIST.TRANSACTIONS',
-      //       link: '/',
-      //       parentId: 36
-      //     },
-      //     {
-      //       id: 38,
-      //       label: 'MENUITEMS.APPS.LIST.BUY&SELL',
-      //       link: '/',
-      //       parentId: 36
-      //     },
-      //     {
-      //       id: 38,
-      //       label: 'MENUITEMS.APPS.LIST.ORDERS',
-      //       link: '/',
-      //       parentId: 36
-      //     },
-      //     {
-      //       id: 39,
-      //       label: 'MENUITEMS.APPS.LIST.MYWALLET',
-      //       link: '/',
-      //       parentId: 36
-      //     },
-      //     {
-      //       id: 40,
-      //       label: 'MENUITEMS.APPS.LIST.ICOLIST',
-      //       link: '/',
-      //       parentId: 36
-      //     },
-      //     {
-      //       id: 41,
-      //       label: 'MENUITEMS.APPS.LIST.KYCAPPLICATION',
-      //       link: '/',
-      //       parentId: 36
-      //     }
-      //   ]
-      // },
-      // {
-      //   id: 42,
-      //   label: 'MENUITEMS.APPS.LIST.INVOICES',
-      //   parentId: 8,
-      //   subItems: [
-      //     {
-      //       id: 43,
-      //       label: 'MENUITEMS.APPS.LIST.LISTVIEW',
-      //       link: '/',
-      //       parentId: 42
-      //     },
-      //     {
-      //       id: 44,
-      //       label: 'MENUITEMS.APPS.LIST.DETAILS',
-      //       link: '/',
-      //       parentId: 42
-      //     },
-      //     {
-      //       id: 45,
-      //       label: 'MENUITEMS.APPS.LIST.CREATEINVOICE',
-      //       link: '/',
-      //       parentId: 42
-      //     }
-      //   ]
-      // },
-      // {
-      //   id: 46,
-      //   label: 'MENUITEMS.APPS.LIST.SUPPORTTICKETS',
-      //   parentId: 8,
-      //   subItems: [
-      //     {
-      //       id: 47,
-      //       label: 'MENUITEMS.APPS.LIST.LISTVIEW',
-      //       link: '/',
-      //       parentId: 46
-      //     },
-      //     {
-      //       id: 48,
-      //       label: 'MENUITEMS.APPS.LIST.TICKETDETAILS',
-      //       link: '/',
-      //       parentId: 46
-      //     }
-      //   ]
-      // },
-      // {
-      //   id: 46,
-      //   label: 'MENUITEMS.APPS.LIST.NFTMARKETPLACE',
-      //   parentId: 8,
-      //   subItems: [
-      //     {
-      //       id: 47,
-      //       label: 'MENUITEMS.APPS.LIST.MARKETPLACE',
-      //       link: '/',
-      //       parentId: 46
-      //     },
-      //     {
-      //       id: 48,
-      //       label: 'MENUITEMS.APPS.LIST.EXPLORENOW',
-      //       link: '/',
-      //       parentId: 46
-      //     },
-      //     {
-      //       id: 48,
-      //       label: 'MENUITEMS.APPS.LIST.LIVEAUCTION',
-      //       link: '/',
-      //       parentId: 46
-      //     },
-      //     {
-      //       id: 48,
-      //       label: 'MENUITEMS.APPS.LIST.ITEMDETAILS',
-      //       link: '/',
-      //       parentId: 46
-      //     },
-      //     {
-      //       id: 48,
-      //       label: 'MENUITEMS.APPS.LIST.COLLECTIONS',
-      //       link: '/',
-      //       parentId: 46
-      //     },
-      //     {
-      //       id: 48,
-      //       label: 'MENUITEMS.APPS.LIST.CREATORS',
-      //       link: '/',
-      //       parentId: 46
-      //     },
-      //     {
-      //       id: 48,
-      //       label: 'MENUITEMS.APPS.LIST.RANKING',
-      //       link: '/',
-      //       parentId: 46
-      //     },
-      //     {
-      //       id: 48,
-      //       label: 'MENUITEMS.APPS.LIST.WALLETCONNECT',
-      //       link: '/',
-      //       parentId: 46
-      //     },
-      //     {
-      //       id: 48,
-      //       label: 'MENUITEMS.APPS.LIST.CREATENFT',
-      //       link: '/',
-      //       parentId: 46
-      //     },
-      //   ]
-      // },
-      // {
-      //   id: 49,
-      //   label: 'MENUITEMS.APPS.LIST.FILEMANAGER',
-      //   link: '/',
-      //   parentId: 8,
-      // },
-      // {
-      //   id: 50,
-      //   label: 'MENUITEMS.APPS.LIST.TODO',
-      //   link: '/',
-      //   parentId: 8,
-      // },
-      // {
-      //   id: 51,
-      //   label: 'MENUITEMS.APPS.LIST.JOBS',
-      //   parentId: 8,
-      //   subItems: [
-      //     {
-      //       id: 52,
-      //       label: 'MENUITEMS.APPS.LIST.STATISTICS',
-      //       link: '/',
-      //       parentId: 51
-      //     },
-      //     {
-      //       id: 53,
-      //       label: 'MENUITEMS.APPS.LIST.JOBLISTS',
-      //       subItems: [
-      //         {
-      //           id: 54,
-      //           label: 'MENUITEMS.APPS.LIST.LIST',
-      //           link: '/',
-      //           parentId: 53
-      //         },
-      //         {
-      //           id: 55,
-      //           label: 'MENUITEMS.APPS.LIST.GRID',
-      //           link: '/',
-      //           parentId: 53
-      //         },
-      //         {
-      //           id: 56,
-      //           label: 'MENUITEMS.APPS.LIST.OVERVIEW',
-      //           link: '/',
-      //           parentId: 53
-      //         }
-      //       ]
-      //     },
-      //     {
-      //       id: 57,
-      //       label: 'MENUITEMS.APPS.LIST.CANDIDATELISTS',
-      //       subItems: [
-      //         {
-      //           id: 58,
-      //           label: 'MENUITEMS.APPS.LIST.LISTVIEW',
-      //           link: '/',
-      //           parentId: 57
-      //         },
-      //         {
-      //           id: 59,
-      //           label: 'MENUITEMS.APPS.LIST.GRIDVIEW',
-      //           link: '/',
-      //           parentId: 57
-      //         }
-      //       ]
-      //     },
-      //     {
-      //       id: 60,
-      //       label: 'MENUITEMS.APPS.LIST.APPLICATION',
-      //       link: '/',
-      //       parentId: 51
-      //     },
-      //     {
-      //       id: 61,
-      //       label: 'MENUITEMS.APPS.LIST.NEWJOB',
-      //       link: '/',
-      //       parentId: 51
-      //     },
-      //     {
-      //       id: 62,
-      //       label: 'MENUITEMS.APPS.LIST.COMPANIESLIST',
-      //       link: '/',
-      //       parentId: 51
-      //     },
-      //     {
-      //       id: 63,
-      //       label: 'MENUITEMS.APPS.LIST.JOBCATEGORIES',
-      //       link: '/',
-      //       parentId: 51
-      //     },
-      //   ]
-      // },
-      // {
-      //   id: 64,
-      //   label: 'MENUITEMS.APPS.LIST.APIKEY',
-      //   link: '/',
-      //   parentId: 8,
-      // },
+      
     ]
   },
   {
@@ -561,40 +100,51 @@ export const MENU: MenuItem[] = [
       }
     ]
   },
-  {
-    id: 10002,
-    label: 'MENUITEMS.TIMINGENTRY.TEXT',
-    icon: 'mdi mdi-sticker-text-outline',
-    subItems: [{
-      id: 10003,
-      label: 'MENUITEMS.TIMINGENTRY.LIST.PENDING',
-      parentId: 10002, 
-      link: 'timingentry/pending'
-    },
-    {
-      id: 10006,
-      label: 'MENUITEMS.TIMINGENTRY.LIST.PREVIOUSCODES',
-      parentId: 10002, 
-      link: 'timingentry/previouscodes'
-    }]
-  },
-  {
-    id: 10004,
-    label: 'MENUITEMS.REPORTS.TEXT',
-    icon: 'mdi mdi-form-select',
-    subItems: [{
-      id: 10005,
-      label: 'MENUITEMS.REPORTS.LIST.LINEFLOWS',
-      parentId: 10004, 
-      link: 'reports/lineflows'
-    },
-    {
-      id: 10007,
-      label: 'MENUITEMS.REPORTS.LIST.MDP',
-      parentId: 10004, 
-      link: 'reports/mdp'
-    }]
-  },
+
+
+
+
+
+  // to be done in next phase
+  // {
+  //   id: 10002,
+  //   label: 'MENUITEMS.TIMINGENTRY.TEXT',
+  //   icon: 'mdi mdi-sticker-text-outline',
+  //   subItems: [{
+  //     id: 10003,
+  //     label: 'MENUITEMS.TIMINGENTRY.LIST.PENDING',
+  //     parentId: 10002, 
+  //     link: 'timingentry/pending'
+  //   },
+  //   {
+  //     id: 10006,
+  //     label: 'MENUITEMS.TIMINGENTRY.LIST.PREVIOUSCODES',
+  //     parentId: 10002, 
+  //     link: 'timingentry/previouscodes'
+  //   }]
+  // },
+  // {              
+  //   id: 10004,
+  //   label: 'MENUITEMS.REPORTS.TEXT',
+  //   icon: 'mdi mdi-form-select',
+  //   subItems: [{
+  //     id: 10005,
+  //     label: 'MENUITEMS.REPORTS.LIST.LINEFLOWS',
+  //     parentId: 10004, 
+  //     link: 'reports/lineflows'
+  //   },
+  //   {
+  //     id: 10007,
+  //     label: 'MENUITEMS.REPORTS.LIST.MDP',
+  //     parentId: 10004, 
+  //     link: 'reports/mdp'
+  //   }]
+  // },
+
+
+
+
+
   // {
   //   id: 54,
   //   label: 'MENUITEMS.PAGES.TEXT',

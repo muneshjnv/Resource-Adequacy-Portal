@@ -77,7 +77,7 @@ export class LineflowsComponent {
 
         else {
           console.log(res['error'])
-          Swal.fire({text:'There is some Problem in Loading the Data, Please contact SRLDC IT!',confirmButtonColor: 'rgb(3, 142, 220)'});
+          Swal.fire({text:'There is some Problem in Loading the Data, Please contact ERLDC IT!',confirmButtonColor: 'rgb(3, 142, 220)'});
         }
         // this.day_data = data["day"];
       //   this.week_data = data["week"];

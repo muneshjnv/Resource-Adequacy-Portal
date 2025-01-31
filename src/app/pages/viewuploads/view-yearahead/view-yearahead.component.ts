@@ -38,12 +38,12 @@ export class ViewYearaheadComponent {
   dataArrived:boolean = false;
 
   stateDict: { [key: string]: string } = {
-    '1': 'Karnataka',
-    '2': 'Tamilnadu',
-    '3': 'Telangana',
-    '4': 'Andhra Pradesh',
-    '5': 'Kerala',
-    '7': 'Pondicherry'
+    '1': 'Bihar',
+    '2': 'Jharkhand',
+    '3': 'Odisha',
+    '4': 'West Bengal',
+    '5': 'DVC',
+    '7': 'Sikkim'
   };
 
 

@@ -205,7 +205,7 @@
         <!-- end card -->
     </div>
 
-    <div class="col-xl-12">
+      <div class="col-xl-12"> 
         <div class="card card-height-50">
             <div class="card-header align-items-center d-flex">
                 <h4 class="card-title mb-0 flex-grow-1">Calculated MAPE </h4> 
@@ -221,13 +221,13 @@
                             [ngClass]="{'is-invalid': submit && form['state'].errors}" >
                             <option selected disabled value="">Select State</option>
 
-                            <option value="1">Karnataka</option>
-                            <option value="2">Tamilnadu</option>
-                            <option value="3">Telangana</option>
-                            <option value="4">Andhra Pradesh</option>
-                            <option value="5">Kerala</option>
-                            <option value="7">Pondicherry</option>
-                            <option value="6">Southern Region</option>
+                            <option value="1">Bihar</option>
+                            <option value="2">Jharkhand</option>
+                            <option value="3">Odisha</option>
+                            <option value="4">West Bengal</option>
+                            <option value="5">DVC</option>
+                            <option value="7">Sikkim</option>
+                            <option value="6">Eastern Region</option>
                         </select>
                         <div class="invalid-feedback">
                             Please select a valid state.
@@ -254,12 +254,12 @@
                     <button class="btn btn-primary" type="submit" *ngIf="!mapeloading" (click)="confirm()">Submit</button>
                 </div>
 
-                <!-- <div class="col-md-2"></div> -->
+                 <div class="col-md-2"></div>
         
                     
-            </div>
+             </div>
 
-            </form>
+            </form> 
 
             
 
@@ -267,10 +267,11 @@
 
             
                 
-            </div><!-- end card header -->
-            <div class="d-flex justify-content-center card-title">
-                <b>{{ mape_title }}</b>
-            </div>
+             </div><!-- end card header -->
+             <div class="d-flex justify-content-center card-title"> 
+                <b>{{ mape_title }}</b> 
+             </div> 
+            
             
 
             <apx-chart [series]="MarketplaceChart.series" [chart]="MarketplaceChart.chart"
@@ -280,15 +281,17 @@
 
             
             
-        </div>
-        </div><!-- end card -->
+        </div> 
+         </div>
+     
+        <!-- end card -->
     
-        <div class="col-xl-12">
+         <div class="col-xl-12">
             <div class="card card-height-50">
-                <div class="card-header align-items-center d-flex">
-                    <h4 class="card-title mb-0 flex-grow-1">Forecast v/s Actual Comparison </h4> 
+                <div class="card-header align-items-center d-flex"> 
+                     <h4 class="card-title mb-0 flex-grow-1">Forecast v/s Actual Comparison </h4>  
     
-                    <!-- <form class="row g-3 needs-validation" novalidate (ngSubmit)="afValidSubmit()" [formGroup]="faform">
+                    <form class="row g-3 needs-validation" novalidate (ngSubmit)="afValidSubmit()" [formGroup]="faform">
                     <div class="row justify-content-center">
     
                         
@@ -298,13 +301,21 @@
                             <select class="form-select" id="validationCustom04" required formControlName="state"
                                 [ngClass]="{'is-invalid': afSubmit && afform['state'].errors}" >
                                 <option selected disabled value="">Select State</option>
-                                <option value="1">Karnataka</option>
+                                <!-- <option value="1">Karnataka</option>
                                 <option value="2">Tamilnadu</option>
                                 <option value="3">Telangana</option>
                                 <option value="4">Andhra Pradesh</option>
                                 <option value="5">Kerala</option>
                                 <option value="7">Pondicherry</option>
-                                <option value="6">SR</option>
+                                <option value="6">SR</option> -->
+                                <option value="1">Bihar</option>
+                                <option value="2">Jharkhand</option>
+                                <option value="3">Odisha</option>
+                                <option value="4">West Bengal</option>
+                                <option value="5">DVC</option>
+                                <option value="7">Sikkim</option>
+                                <option value="6">Eastern Region</option>
+
                             </select>
                             <div class="invalid-feedback">
                                 Please select a valid state.
@@ -335,15 +346,16 @@
                     </div>
     
                 </form>
-     -->
+     
                 
     
                     
     
                 
                     
-                </div><!-- end card header -->
-                <div class="d-flex justify-content-center card-title">
+                </div>
+                <!-- end card header -->
+                 <div class="d-flex justify-content-center card-title">
                     <b>{{ fa_compare_title }}</b>
                 </div>
                 
@@ -356,7 +368,8 @@
                 
                 
             </div>
-            </div><!-- end card -->
+            </div>
+            <!-- end card -->
 
     
 </div>

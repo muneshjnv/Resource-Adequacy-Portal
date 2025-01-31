@@ -59,7 +59,7 @@ export class DashboardComponent implements OnInit {
   fa_compare_title = "Comparison"
   userData: any;
 
-  state_id_dict: any = {'kar_state': 1, 'tn_state':2, 'tg_state': 3, 'ap_state': 4, 'ker_state':5, 'pondy_state': 7}
+  state_id_dict: any = {'bh_state': 1, 'jh_state':2, 'gr_state': 3, 'wb_state': 4, 'dvc_state':5, 'si_state': 7}
 
   dayForm!: UntypedFormGroup; // Define the form group
   weekForm!: UntypedFormGroup; // Define the form group

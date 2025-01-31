@@ -24,7 +24,7 @@ export class LoginComponent implements OnInit {
   loading: boolean= false;
   
 
-  siteKey: string = '6LftdjQqAAAAAO8bAfW50GrYNKlkXXwRSMEk7IXj';
+  siteKey: string = '6Lfu97YqAAAAAE-jvR39ZWdbGYegEzV3CGF76Z0m';
 
   captchaResolved: boolean = false;
   captchaToken: string | null = null;

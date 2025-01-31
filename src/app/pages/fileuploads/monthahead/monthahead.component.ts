@@ -54,7 +54,7 @@ export class MonthaheadComponent {
   userData: any;
 
 
-  state_id_dict: any = {'kar_state': 1, 'tn_state':2, 'tg_state': 3, 'ap_state': 4, 'ker_state':5}
+  state_id_dict: any = {'bh_state': 1, 'jh_state':2, 'gr_state': 3, 'wb_state': 4, 'dvc_state':5, 'si_state': 7}
 
   data: any;
 
@@ -121,7 +121,7 @@ export class MonthaheadComponent {
 
       }
       else {
-        Swal.fire({text:'There is a problem, Please contact SRLDC IT!',confirmButtonColor: 'rgb(3, 142, 220)',});
+        Swal.fire({text:'There is a problem, Please contact ERLDC IT!',confirmButtonColor: 'rgb(3, 142, 220)',});
 
       }
       

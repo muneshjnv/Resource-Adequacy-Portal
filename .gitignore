@@ -2,7 +2,7 @@
 node_modules/
 
 # Ignore the configBackend.py file
-configBackend.py
+# configBackend.py
 
 # Ignore the .angular directory
 .angular/
@@ -11,4 +11,7 @@ configBackend.py
 dist/
 
 # Ignore the Forecast Files 
-Day_Ahead_Forecast_Files/
+# Day_Ahead_Forecast_Files/
+Backend/configBackend.py
+logs/
+Uploaded_Excel_files/
