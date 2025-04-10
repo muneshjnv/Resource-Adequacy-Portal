@@ -1,0 +1,376 @@
+<!-- Start Breadcrumbs -->
+<app-breadcrumbs title="DASHBOARD" [breadcrumbItems]="breadCrumbItems"></app-breadcrumbs>
+<!-- End Breadcrumbs -->
+
+
+<div class="row" *ngIf="![8,9,10,11,12,13,14,15,17].includes(userData['state_id'])">    
+
+    <div class="col-xl-12">
+        <div class="card card-height-50">
+            <div class="card-header align-items-center d-flex">
+                <h4 class="card-title mb-0 flex-grow-1">File Upload Status</h4> 
+
+                <div class="btn-group" role="group" aria-label="Basic radio toggle button group">
+                    <input type="radio" class="btn-check" name="btnradio" id="btnradio1" checked="" [(ngModel)]="selectedOption" value="day">
+                    <label class="btn btn-outline-secondary mb-0" for="btnradio1">Day Ahead</label>
+
+                    <input type="radio" class="btn-check" name="btnradio" id="btnradio2" [(ngModel)]="selectedOption" value="week">
+                    <label class="btn btn-outline-secondary mb-0" for="btnradio2">Week Ahead</label>
+
+                    <input type="radio" class="btn-check" name="btnradio" id="btnradio3" [(ngModel)]="selectedOption" value="month">
+                    <label class="btn btn-outline-secondary mb-0" for="btnradio3">Month Ahead</label>
+
+                    <input type="radio" class="btn-check" name="btnradio" id="btnradio4" [(ngModel)]="selectedOption" value="year">
+                    <label class="btn btn-outline-secondary mb-0" for="btnradio4">Year Ahead</label>
+                </div>
+                
+            </div><!-- end card header -->
+            <div *ngIf="selectedOption === 'day'">
+
+                <form class="row g-3 needs-validation" novalidate  [formGroup]="dayForm">
+                    <div class="row">&nbsp;</div>
+                    <div class="row justify-content-end">
+                        
+
+                        
+    
+                        <div class="col-md-4 position-relative">
+                            <label for="validationTooltip05" class="form-label">Select Range</label>
+                            <input class="form-control flatpickr-input" type="text" mwlFlatpickr [altInput]="true" [convertModelValue]="true" mode="range" altFormat="d M, Y" dateFormat="d M, Y" formControlName="dayRange" data-week-number>
+                    </div>
+    
+                <!-- <div class="col-md-1"></div> -->
+    
+                <div class="col-md-1 d-flex align-items-end">
+                    <button class="btn btn-outline-primary btn-load" *ngIf="loading">
+                        <span class="d-flex align-items-center">
+                            <span class="spinner-border flex-shrink-0" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </span>
+                            <span class="flex-grow-1 ms-2">
+                                Loading...
+                            </span>
+                        </span>
+                    </button>
+                    <button class="btn btn-primary" type="submit" *ngIf="!loading" (click)="fetchForDay()">Submit</button>
+                </div>
+            
+                        
+                    </div>
+    
+                </form>
+            <div class="card-body p-0">
+                <div class="mb-n2" *ngIf="dataArrived">
+                    <apx-chart [series]="basicHeatmapChart.series" [chart]="basicHeatmapChart.chart"
+                        [dataLabels]="basicHeatmapChart.dataLabels" [legend]="basicHeatmapChart.legend" [plotOptions]="basicHeatmapChart.plotOptions"
+                        [colors]="basicHeatmapChart.colors" [tooltip]="basicHeatmapChart.tooltip" dir="ltr"></apx-chart>
+                </div>
+            </div><!-- end cardbody -->
+        </div>
+
+        <div *ngIf="selectedOption === 'week'">
+            <form class="row g-3 needs-validation" novalidate  [formGroup]="weekForm">
+                <div class="row">&nbsp;</div>
+                <div class="row justify-content-end">
+                    
+
+                    
+
+                    <div class="col-md-4 position-relative">
+                        <label for="validationTooltip05" class="form-label">Select Range</label>
+                        <input class="form-control flatpickr-input" type="text" mwlFlatpickr [altInput]="true" [convertModelValue]="true" mode="range" altFormat="d M, Y" dateFormat="d M, Y" formControlName="weekRange" data-week-number>
+                </div>
+
+            <!-- <div class="col-md-1"></div> -->
+
+            <div class="col-md-1 d-flex align-items-end">
+                <button class="btn btn-outline-primary btn-load" *ngIf="weekloading">
+                    <span class="d-flex align-items-center">
+                        <span class="spinner-border flex-shrink-0" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </span>
+                        <span class="flex-grow-1 ms-2">
+                            Loading...
+                        </span>
+                    </span>
+                </button>
+                <button class="btn btn-primary" type="submit" *ngIf="!weekloading" (click)="fetchForWeek()">Submit</button>
+            </div>
+        
+                    
+                </div>
+
+            </form>
+            <div class="card-body p-0">
+                <div class="mb-n2" *ngIf="dataArrived">
+                    <apx-chart [series]="basicWeekHeatmapChart.series" [chart]="basicWeekHeatmapChart.chart"
+                        [dataLabels]="basicWeekHeatmapChart.dataLabels" [legend]="basicWeekHeatmapChart.legend" [plotOptions]="basicWeekHeatmapChart.plotOptions"
+                        [colors]="basicWeekHeatmapChart.colors" [tooltip]="basicWeekHeatmapChart.tooltip" dir="ltr"></apx-chart>
+                </div>
+            </div><!-- end cardbody -->
+        </div>
+
+        <div *ngIf="selectedOption === 'month'">
+
+            <form class="row g-3 needs-validation" novalidate  [formGroup]="monthForm">
+                <div class="row">&nbsp;</div>
+                <div class="row justify-content-end">
+                    
+
+                    
+
+                    <div class="col-md-4 position-relative">
+                        <label for="validationTooltip05" class="form-label">Select Range</label>
+                        <input class="form-control flatpickr-input" type="text" mwlFlatpickr [altInput]="true" [convertModelValue]="true" mode="range" altFormat="d M, Y" dateFormat="d M, Y" formControlName="monthRange" data-week-number>
+                </div>
+
+            <!-- <div class="col-md-1"></div> -->
+
+            <div class="col-md-1 d-flex align-items-end">
+                <button class="btn btn-outline-primary btn-load" *ngIf="monthloading">
+                    <span class="d-flex align-items-center">
+                        <span class="spinner-border flex-shrink-0" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </span>
+                        <span class="flex-grow-1 ms-2">
+                            Loading...
+                        </span>
+                    </span>
+                </button>
+                
+                <button class="btn btn-primary" type="submit" *ngIf="!monthloading" (click)="fetchForMonth()">Submit</button>
+            </div>
+        
+                    
+                </div>
+
+            </form>
+            <div class="card-body p-0">
+                <div class="mb-n2" *ngIf="dataArrived">
+                    <apx-chart [series]="basicMonthHeatmapChart.series" [chart]="basicMonthHeatmapChart.chart"
+                        [dataLabels]="basicMonthHeatmapChart.dataLabels" [legend]="basicMonthHeatmapChart.legend" [plotOptions]="basicMonthHeatmapChart.plotOptions"
+                        [colors]="basicMonthHeatmapChart.colors" [tooltip]="basicMonthHeatmapChart.tooltip" dir="ltr"></apx-chart>
+                </div>
+            </div><!-- end cardbody -->
+
+
+            
+        </div>
+
+        <div *ngIf="selectedOption === 'year'">
+
+            <form class="row g-3 needs-validation" novalidate  [formGroup]="yearForm">
+                <div class="row">&nbsp;</div>
+                <div class="row justify-content-end">
+                    
+
+                    
+
+                    <div class="col-md-4 position-relative">
+                        <label for="validationTooltip05" class="form-label">Select Range</label>
+                        <input class="form-control flatpickr-input" type="text" mwlFlatpickr [altInput]="true" [convertModelValue]="true" mode="range" altFormat="d M, Y" dateFormat="d M, Y" formControlName="yearRange" data-week-number>
+                </div>
+
+
+            <div class="col-md-1 d-flex align-items-end">
+                <button class="btn btn-outline-primary btn-load" *ngIf="yearloading">
+                    <span class="d-flex align-items-center">
+                        <span class="spinner-border flex-shrink-0" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </span>
+                        <span class="flex-grow-1 ms-2">
+                            Loading...
+                        </span>
+                    </span>
+                </button>
+                
+                <button class="btn btn-primary" type="submit" *ngIf="!yearloading" (click)="fetchForYear()">Submit</button>
+            </div>
+        
+                    
+                </div>
+
+            </form>
+            <div class="card-body p-0">
+                <div class="mb-n2" *ngIf="dataArrived">
+                    <apx-chart [series]="basicYearHeatmapChart.series" [chart]="basicYearHeatmapChart.chart"
+                        [dataLabels]="basicYearHeatmapChart.dataLabels" [legend]="basicYearHeatmapChart.legend" [plotOptions]="basicYearHeatmapChart.plotOptions"
+                        [colors]="basicYearHeatmapChart.colors" [tooltip]="basicYearHeatmapChart.tooltip" dir="ltr"></apx-chart>
+                </div>
+            </div>
+            
+
+        
+        </div>
+        <!-- end card -->
+    </div>
+
+      <!-- <div class="col-xl-12">  -->
+        <!-- <div class="card card-height-50"> -->
+            <!-- <div class="card-header align-items-center d-flex">
+                <h4 class="card-title mb-0 flex-grow-1">Calculated MAPE </h4> 
+
+                <form class="row g-3 needs-validation" novalidate (ngSubmit)="validSubmit()" [formGroup]="validationform">
+                <div class="row justify-content-center">
+
+                    
+
+                    <div class="col-md-4 position-relative">
+                        <label for="validationCustom04" class="form-label">State</label>
+                        <select class="form-select" id="validationCustom04" required formControlName="state"
+                            [ngClass]="{'is-invalid': submit && form['state'].errors}" >
+                            <option selected disabled value="">Select State</option>
+
+                            <option value="1">Bihar</option>
+                            <option value="2">Jharkhand</option>
+                            <option value="3">Odisha</option>
+                            <option value="4">West Bengal</option>
+                            <option value="5">DVC</option>
+                            <option value="7">Sikkim</option>
+                        </select>
+                        <div class="invalid-feedback">
+                            Please select a valid state.
+                        </div>
+                    </div>
+
+                    <div class="col-md-6 position-relative">
+                        <label for="validationTooltip05" class="form-label">Select Range</label>
+                        <input class="form-control flatpickr-input" type="text" mwlFlatpickr [altInput]="true" [convertModelValue]="true" mode="range" altFormat="d M, Y" dateFormat="d M, Y" formControlName="monthDate" data-week-number>
+                </div>
+
+
+                <div class="col-md-1 d-flex flex-wrap align-items-end">
+                    <button class="btn btn-outline-primary btn-load" *ngIf="mapeloading">
+                        <span class="d-flex align-items-center">
+                            <span class="spinner-border flex-shrink-0" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </span>
+                            <span class="flex-grow-1 ms-2">
+                                Loading...
+                            </span>
+                        </span>
+                    </button>
+                    <button class="btn btn-primary" type="submit" *ngIf="!mapeloading" (click)="confirm()">Submit</button>
+                </div>
+
+                 <div class="col-md-2"></div>
+        
+                    
+             </div>
+
+            </form> 
+
+            
+
+                
+
+            
+                
+             </div> -->
+             <!-- end card header -->
+             <!-- <div class="d-flex justify-content-center card-title"> 
+                <b>{{ mape_title }}</b> 
+             </div> 
+            
+            
+
+            <apx-chart [series]="MarketplaceChart.series" [chart]="MarketplaceChart.chart"
+            [dataLabels]="MarketplaceChart.dataLabels" [stroke]="MarketplaceChart.stroke"
+            [xaxis]="MarketplaceChart.xaxis" [yaxis]="MarketplaceChart.yaxis" [title]="MarketplaceChart.title" [colors]="MarketplaceChart.colors" dir="ltr">
+        </apx-chart>
+
+            
+            
+        </div> 
+         </div> -->
+     
+        <!-- end card -->
+    
+         <!-- <div class="col-xl-12">
+            <div class="card card-height-50">
+                <div class="card-header align-items-center d-flex"> 
+                     <h4 class="card-title mb-0 flex-grow-1">Forecast v/s Actual Comparison </h4>  
+    
+                    <form class="row g-3 needs-validation" novalidate (ngSubmit)="afValidSubmit()" [formGroup]="faform">
+                    <div class="row justify-content-center">
+    
+                        
+    
+                        <div class="col-md-4 position-relative">
+                            <label for="validationCustom04" class="form-label">State</label>
+                            <select class="form-select" id="validationCustom04" required formControlName="state"
+                                [ngClass]="{'is-invalid': afSubmit && afform['state'].errors}" >
+                                <option selected disabled value="">Select State</option> -->
+                                <!-- <option value="1">Karnataka</option>
+                                <option value="2">Tamilnadu</option>
+                                <option value="3">Telangana</option>
+                                <option value="4">Andhra Pradesh</option>
+                                <option value="5">Kerala</option>
+                                <option value="7">Pondicherry</option>
+                                <option value="6">SR</option> -->
+                                <!-- <option value="1">Bihar</option>
+                                <option value="2">Jharkhand</option>
+                                <option value="3">Odisha</option>
+                                <option value="4">West Bengal</option>
+                                <option value="5">DVC</option>
+                                <option value="7">Sikkim</option>
+<!-- 
+                            </select>
+                            <div class="invalid-feedback">
+                                Please select a valid state.
+                            </div>
+                        </div>
+    
+                        <div class="col-md-6 position-relative">
+                            <label for="validationTooltip05" class="form-label">Select Range</label>
+                            <input class="form-control flatpickr-input" type="text" mwlFlatpickr [altInput]="true" [convertModelValue]="true" mode="range" altFormat="d M, Y" dateFormat="d M, Y" formControlName="monthDate" data-week-number>
+                    </div>
+    
+    
+                <div class="col-md-1 d-flex flex-wrap align-items-end">
+                    <button class="btn btn-outline-primary btn-load" *ngIf="afloading">
+                        <span class="d-flex align-items-center">
+                            <span class="spinner-border flex-shrink-0" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </span>
+                            <span class="flex-grow-1 ms-2">
+                                Loading...
+                            </span>
+                        </span>
+                    </button>
+                    <button class="btn btn-primary" type="submit" *ngIf="!afloading" (click)="afConfirm()">Submit</button>
+                </div>
+            
+                        
+                    </div>
+    
+                </form>
+     
+                
+    
+                    
+    
+                
+                    
+                </div> -->
+                <!-- end card header -->
+                 <!-- <div class="d-flex justify-content-center card-title"> -->
+                    <!-- <b>{{ fa_compare_title }}</b>
+                </div>
+                
+    
+                <apx-chart [series]="MarketplaceChartAF.series" [chart]="MarketplaceChartAF.chart"
+                [dataLabels]="MarketplaceChartAF.dataLabels" [stroke]="MarketplaceChartAF.stroke" 
+                [xaxis]="MarketplaceChartAF.xaxis" [yaxis]="MarketplaceChartAF.yaxis" [title]="MarketplaceChartAF.title" [colors]="MarketplaceChartAF.colors" dir="ltr">
+            </apx-chart>
+    
+                
+                
+            </div>
+            </div> -->
+            <!-- end card -->
+
+    
+</div>
+
+

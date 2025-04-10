@@ -1,0 +1,21 @@
+# Ignore the node_modules directory
+node_modules/
+.angular/
+.git/
+yarn.lock
+package-lock.json
+
+# Ignore the configBackend.py file
+# configBackend.py
+urlentry.ts
+
+# Ignore the dist directory
+dist/
+
+# Ignore the Forecast Files 
+# Day_Ahead_Forecast_Files/
+Backend/configBackend.py
+logs/
+Uploaded_Excel_files/
+
+

@@ -1,0 +1,197 @@
+<!-- Start Breadcrumbs -->
+<app-breadcrumbs title="DAY AHEAD FORECAST" [breadcrumbItems]="breadCrumbItems"></app-breadcrumbs>
+<!-- End Breadcrumbs -->
+
+<div class="row">
+    <div class="col-lg-12">
+        <div class="card">
+            
+            <div class="card-header align-items-center d-flex">
+                <div class="col-lg-6">
+                    <div class="mt-3">
+                        <h4 class="card-title mb-0 flex-grow-1">Past Uploads</h4>
+                        </div>
+                </div>
+                
+                
+                <!-- <div class="col-lg-3">
+                    <div class="mb-3">
+                        <select class="form-select" required aria-label="select example">
+                            <option value="">Select State</option>
+                            <option value="1">Andhra Pradesh</option>
+                            <option value="2">Tamilnadu</option>
+                            <option value="3">Karnataka</option>
+                            <option value="4">Kerala</option>
+                            <option value="5">Telangana</option>
+                        </select>
+                        <div class="invalid-feedback">Example invalid select feedback</div>
+                    </div>
+                    <div class="mt-3">
+                        <label class="form-label mb-0">Upload For Date</label>
+                        <input class="form-control flatpickr-input" type="text" mwlFlatpickr [(ngModel)]="disabledDate" [altInput]="true" [convertModelValue]="true" altFormat="d M, Y" dateFormat="d M, Y" [disabled]="true">
+
+                    </div>
+                </div> -->
+
+
+
+                <!-- <h4 class="card-title mb-0 flex-grow-1">File Upload</h4> -->
+
+                <div class="flex-shrink-0">
+                    
+                </div>
+            </div><!-- end card header -->
+
+            <div class="card-body">
+                
+
+                <div class="live-preview">
+                    <form class="row g-3 needs-validation justify-content-around" novalidate (ngSubmit)="validSubmit()"
+                    [formGroup]="validationform">
+
+                    <div class="col-md-3">
+                        <label for="validationCustom04" class="form-label">State</label>
+                        <select class="form-select" id="validationCustom04" required formControlName="state"
+                            [ngClass]="{'is-invalid': submit && form['state'].errors}" >
+                            <option selected disabled value="">Select State</option>
+                            <option value="1">Bihar</option>
+                            <option value="2">Jharkhand</option>
+                            <option value="3">Odisha</option>
+                            <option value="4">West Bengal</option>
+                            <option value="5">DVC</option>
+                            <option value="7">Sikkim</option>
+                        </select>
+                        <div class="invalid-feedback">
+                            Please select a valid state.
+                        </div>
+                    </div>
+                        
+                        
+
+                        <!-- <div class="col-md-2">
+
+                        </div> -->
+
+                        <div class="col-md-3 position-relative">
+                            <label for="validationTooltip05" class="form-label">Fetch For Date</label>
+                            <input class="form-control flatpickr-input" type="text" mwlFlatpickr  [altInput]="true" [convertModelValue]="true" altFormat="d M, Y" dateFormat="d M, Y"  formControlName="fetchDate" >
+                            
+                        </div>
+
+                        <div class="col-md-3">
+                            <label for="validationCustom04" class="form-label">Revision no.</label>
+                            <select class="form-select" id="validationCustom04" formControlName="revisions"
+                            [ngClass]="{'is-invalid': submit && form['revisions'].errors}">
+                                <option selected disabled value="">Select Revision</option>
+                                <option *ngFor="let option of revisionsData" [value]="option">Revision - {{ option }}</option>
+                            </select>
+                            <div class="invalid-feedback">
+                                Please select a valid Revision no.
+                            </div>
+                        </div>
+                        
+
+                        
+                        
+
+                        
+                        <div class="col-12 d-flex justify-content-center">
+                            <br>
+                        <br>
+
+                        <button class="btn btn-outline-primary btn-load" *ngIf="loading">
+                            <span class="d-flex align-items-center">
+                                <span class="spinner-border flex-shrink-0" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </span>
+                                <span class="flex-grow-1 ms-2">
+                                    Loading...
+                                </span>
+                            </span>
+                        </button>
+                       
+                            <button class="btn btn-primary" type="submit" (click)="fetchData()" *ngIf="!loading" [disabled]="!validationform.get('revisions').valid">Fetch Data</button>
+                        </div>
+                    </form>
+                </div>
+
+
+                <div class="d-none code-view">
+                    
+                </div>
+
+                <br>
+                <br>
+
+
+                <!-- <div *ngIf="previewClicked">
+                    
+                    <br>
+                    <div *ngIf="excelData">
+                        <div class="table-container">
+                            <table class="table">
+                                <thead>
+                                  <tr *ngFor="let row of excelData.header">
+                                    <ng-container *ngFor="let cell of row">
+                                      <th [attr.colspan]="cell.colspan" class="sticky-column">{{ cell.text }}</th>
+                                    </ng-container>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  <tr *ngFor="let row of excelData.rows">
+                                    <td *ngFor="let cell of row">{{ cell }}</td>
+                                  </tr>
+                                </tbody>
+                              </table>
+                            </div>
+                            
+                      </div>
+                      
+                </div> -->
+                <div class="d-flex justify-content-around">
+
+                    <div class="col-md-2">
+                        <label for="validationCustom04" class="form-label">Upload Time: {{ uploadTime }}</label>       
+                    </div>
+    
+                    
+                    <div class="col-md-2">
+                        <label for="validationCustom04" class="form-label">Upload Date: {{ uploadDate }}</label>       
+                    </div>
+
+                    <div class="col-md-2">
+                        <label for="validationCustom04" class="form-label">Uploaded by: {{ uploadedBy }}</label>       
+                    </div>
+    
+                    
+                    <div class="col-md-2">
+                        <label for="validationCustom04" class="form-label">Revision: {{ revision }}</label>       
+                    </div>
+
+                    <div class="col-md-2 d-flex align-items-end ">
+                        <div *ngIf="dataArrived">
+                            <button class="btn btn-sm btn-primary" type="submit" (click)="downloadReport()">Download File</button>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- <br> -->
+                <!-- <br> -->
+                <br>
+
+                
+
+
+                <div #spreadsheet class="d-flex justify-content-center" ></div>
+
+                      
+    
+
+
+                
+
+            </div>
+        </div>
+    </div> <!-- end col -->
+</div>

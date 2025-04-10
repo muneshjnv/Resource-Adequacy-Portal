@@ -1,0 +1,107 @@
+<!-- Start Breadcrumbs -->
+<app-breadcrumbs title="LINEFLOWS" [breadcrumbItems]="breadCrumbItems"></app-breadcrumbs>
+<!-- End Breadcrumbs -->
+
+
+
+    
+
+
+<div class="row">
+    <div class="col-lg-12">
+        <div class="card">
+            
+            <div class="card-header align-items-center d-flex">
+                <div class="col-lg-6">
+                    <div class="mt-3">
+                        <h4 class="card-title mb-0 flex-grow-1">Generate Report</h4>
+                        </div>
+                </div>
+                
+                
+                
+
+                <!-- <div class="flex-shrink-0">
+                    
+                </div> -->
+            </div><!-- end card header -->
+
+            <div class="card-body">
+
+
+                <form class="row g-3 needs-validation" novalidate  [formGroup]="dayForm">
+                    <div class="row">&nbsp;</div>
+                    <div class="row justify-content-center">
+                        
+
+                        
+    
+                        <div class="col-md-4 position-relative">
+                            <label for="validationTooltip05" class="form-label">Select Range</label>
+                            <input class="form-control flatpickr-input" type="text" mwlFlatpickr [altInput]="true" [convertModelValue]="true" mode="range" altFormat="d M, Y" dateFormat="d M, Y" formControlName="dayRange" data-week-number>
+                    </div>
+    
+                <!-- <div class="col-md-1"></div> -->
+    
+                <div class="col-md-1 d-flex align-items-end">
+                    <button class="btn btn-outline-primary btn-load" *ngIf="loading">
+                        <span class="d-flex align-items-center">
+                            <span class="spinner-border flex-shrink-0" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </span>
+                            <span class="flex-grow-1 ms-2">
+                                Loading...
+                            </span>
+                        </span>
+                    </button>
+                    <button class="btn btn-primary w-100" type="submit" *ngIf="!loading" (click)="fetchLineFlowReport()">Submit</button>
+                </div>
+
+                
+            
+                        
+                    </div>
+    
+                </form>
+                
+
+                
+                    
+                    
+                <div class="row">
+                    <div class="col-md-10">
+                        <!-- Include other content here (e.g., the date range picker) -->
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end justify-content-end">
+                        <div *ngIf="downloadLink">
+                            <button class="btn btn-sm btn-primary" type="submit" (click)="downloadReport()">Download Report</button>
+                        </div>
+                    </div>
+                </div>
+                  
+                    <!-- <div *ngIf="errorMessage" style="color: red;">
+                      {{ errorMessage }}
+                    </div> -->
+
+
+                    <div class="d-flex justify-content-center title-text" *ngIf="downloadLink">
+                       <b>{{ lineflows_title }}</b> 
+                    </div>
+                    
+        
+                    <apx-chart [series]="MarketplaceChart.series" [chart]="MarketplaceChart.chart"
+                    [dataLabels]="MarketplaceChart.dataLabels" [stroke]="MarketplaceChart.stroke"
+                    [xaxis]="MarketplaceChart.xaxis" [yaxis]="MarketplaceChart.yaxis" [title]="MarketplaceChart.title" [colors]="MarketplaceChart.colors" dir="ltr" *ngIf="downloadLink">
+                </apx-chart>
+                  
+
+                
+    
+
+
+                
+
+            </div>
+        </div>
+    </div> <!-- end col -->
+</div>
