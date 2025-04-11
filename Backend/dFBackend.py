@@ -388,7 +388,7 @@ def login():
 
         # Generate Session Token
         session_token = secrets.token_urlsafe(32)  # Secure random session token
-        session_expiration = datetime.utcnow() + timedelta(minutes=2)  # Session valid for 2 minutes
+        session_expiration = datetime.utcnow() + timedelta(minutes=30)  # Session valid for 2 minutes
 
         # Store session details in the database
         cursor.execute("""
@@ -406,7 +406,7 @@ def login():
             "role": role
         }
 
-        if username == 'sr_internal' and password == 'Srldc#$1234':  # Special credentials
+        if username == 'er_internal' and password == 'Erldc#$1234':  # Special credentials
             jwt_data["script_access"] = True
 
         access_token = jwt.encode(payload=jwt_data, key=app.config.get('JWT_SECRET_KEY'), algorithm=app.config.get('ALGORITHM'))
@@ -968,6 +968,7 @@ def downloadDayAhead():
         data_json = request.get_json()
         state_id = data_json.get('state')
         upload_date = data_json.get('date')  # Expected in 'YYYY-MM-DD' format
+        print(upload_date)
         revision_no = data_json.get('revision')
 
         print(data_json)
@@ -2159,6 +2160,7 @@ def fetchYearRevisions():
 @token_required
 @session_token_required
 def scatterPlotUploadStatus():
+    print("entered in upload status")
     try:
         conn = psycopg2.connect(**db_params)
         cursor = conn.cursor()
@@ -2348,7 +2350,7 @@ def scatterPlotUploadStatus():
         results = cursor.fetchall()
 
 
-        cursor.execute("SELECT username, state_id FROM states WHERE state_id IN (1,2,3,4,5,7)")
+        cursor.execute("SELECT state_name, state_id FROM states WHERE state_id IN (1,2,3,4,5,7)")
         states_list = cursor.fetchall()
         all_states = [row[0] for row in states_list]
 
@@ -2713,7 +2715,7 @@ def mapeChart():
         selected_state_id = state_id  # Set to the desired single state or region (use 6 for the entire region)
 
         # Define expected state IDs based on selected_state_id
-        expected_state_ids = region_state_ids if selected_state_id == 6 else {selected_state_id}
+        expected_state_ids = region_state_ids if selected_state_id in [6, 11] else {selected_state_id}
 
         date_range = pd.date_range(start=datetime.strptime(from_date, "%d/%m/%Y"), end=datetime.strptime(to_date, "%d/%m/%Y"))
         date_df = pd.DataFrame(date_range, columns=["D_F_DATE"])
@@ -2986,7 +2988,7 @@ def mapeChart():
         def week_ahead_mape(from_date, to_date, sr_actual_day_df, selected_state_id):
             # Define expected state IDs based on selected_state_id
             region_state_ids = {1, 2, 3, 4, 5, 7}  # IDs for the Southern Region
-            expected_state_ids = region_state_ids if selected_state_id == 6 else {selected_state_id}
+            expected_state_ids = region_state_ids if selected_state_id in [6, 11] else {selected_state_id}
 
             cursor.execute('''
                 WITH MaxRevisions AS (
@@ -3110,7 +3112,7 @@ def mapeChart():
         def month_ahead_mape(from_date, to_date, sr_actual_day_df, selected_state_id):
             # Define expected state IDs based on selected_state_id
             region_state_ids = {1, 2, 3, 4, 5, 7}  # IDs for the Southern Region
-            expected_state_ids = region_state_ids if selected_state_id == 6 else {selected_state_id}
+            expected_state_ids = region_state_ids if selected_state_id in [6, 11] else {selected_state_id}
 
             cursor.execute('''
                 WITH MaxRevisions AS (
