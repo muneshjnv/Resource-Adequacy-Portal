@@ -6,7 +6,7 @@ yarn.lock
 package-lock.json
 
 # Ignore the configBackend.py file
-# configBackend.py
+configBackend.py
 urlentry.ts
 
 # Ignore the dist directory
@@ -15,6 +15,7 @@ dist/
 # Ignore the Forecast Files 
 # Day_Ahead_Forecast_Files/
 Backend/configBackend.py
+Backend/__pycache__/
 logs/
 Uploaded_Excel_files/
 

@@ -757,8 +757,8 @@ def uploadIntradayDataAndFile():
                     
                     # Send the email with the attached consolidated file
                     try:
-                        send_mails_list_db = ['mprashad@grid_india.in']
-                        cc_mails_list_db = ['srldcos@grid_india.in']
+                        send_mails_list_db = ['mprashada@grid_india.in']
+                        cc_mails_list_db = ['srldcosa@grid_india.in']
                         send_mail_with_attachment(send_mails_list_db, cc_mails_list_db, save_file_path, for_week_ahead='day', custom_date=disabledDate)
                         print(f"All states have uploaded. Email with consolidated file sent.")
                     except Exception as email_error:
@@ -917,7 +917,9 @@ def downloadIntraday():
         # Parse the JSON input from the frontend
         data_json = request.get_json()
         state_id = data_json.get('state')
-        upload_date = data_json.get('date')  # Expected in 'YYYY-MM-DD' format
+        # upload_date = data_json.get('date')  # Expected in 'YYYY-MM-DD' format
+        upload_date_str = data_json.get('date')  # Expected in 'YYYY-MM-DD' format
+        upload_date = datetime.strptime(upload_date_str, "%d/%m/%Y").date()
         revision_no = data_json.get('revision')
 
         print(data_json)
@@ -967,7 +969,8 @@ def downloadDayAhead():
         # Parse the JSON input from the frontend
         data_json = request.get_json()
         state_id = data_json.get('state')
-        upload_date = data_json.get('date')  # Expected in 'YYYY-MM-DD' format
+        upload_date_str = data_json.get('date')  # Expected in 'YYYY-MM-DD' format
+        upload_date = datetime.strptime(upload_date_str, "%d/%m/%Y").date()
         revision_no = data_json.get('revision')
 
         print(data_json)
@@ -1020,8 +1023,12 @@ def downloadWeekAhead():
         # Parse the JSON input from the frontend
         data_json = request.get_json()
         state_id = data_json.get('state')
-        upload_from_date = data_json.get('from_date')  # Expected in 'YYYY-MM-DD' format
-        upload_to_date = data_json.get('to_date')
+        # upload_from_date = data_json.get('from_date')  # Expected in 'YYYY-MM-DD' format
+        upload_from_date_str = data_json.get('from_date')  # Expected in 'YYYY-MM-DD' format
+        upload_from_date = datetime.strptime(upload_from_date_str, "%d/%m/%Y").date()
+        # upload_to_date = data_json.get('to_date')
+        upload_to_date_str = data_json.get('to_date')  # Expected in 'YYYY-MM-DD' format
+        upload_to_date = datetime.strptime(upload_to_date_str, "%d/%m/%Y").date()
         revision_no = data_json.get('revision')
 
         print(data_json)
@@ -1074,8 +1081,12 @@ def downloadMonthAhead():
         # Parse the JSON input from the frontend
         data_json = request.get_json()
         state_id = data_json.get('state')
-        upload_from_date = data_json.get('from_date')  # Expected in 'YYYY-MM-DD' format
-        upload_to_date = data_json.get('to_date')
+        # upload_from_date = data_json.get('from_date')  # Expected in 'YYYY-MM-DD' format
+        upload_from_date_str = data_json.get('from_date')  # Expected in 'YYYY-MM-DD' format
+        upload_from_date = datetime.strptime(upload_from_date_str, "%d/%m/%Y").date()
+        # upload_to_date = data_json.get('to_date')
+        upload_to_date_str = data_json.get('to_date')  # Expected in 'YYYY-MM-DD' format
+        upload_to_date = datetime.strptime(upload_to_date_str, "%d/%m/%Y").date()
         revision_no = data_json.get('revision')
 
         print(data_json)
@@ -1127,8 +1138,12 @@ def downloadYearAhead():
         # Parse the JSON input from the frontend
         data_json = request.get_json()
         state_id = data_json.get('state')
-        upload_from_date = data_json.get('from_date')  # Expected in 'YYYY-MM-DD' format
-        upload_to_date = data_json.get('to_date')
+        # upload_from_date = data_json.get('from_date')  # Expected in 'YYYY-MM-DD' format
+        upload_from_date_str = data_json.get('from_date')  # Expected in 'YYYY-MM-DD' format
+        upload_from_date = datetime.strptime(upload_from_date_str, "%d/%m/%Y").date()
+        # upload_to_date = data_json.get('to_date')
+        upload_to_date_str = data_json.get('to_date')  # Expected in 'YYYY-MM-DD' format
+        upload_to_date = datetime.strptime(upload_to_date_str, "%d/%m/%Y").date()
         revision_no = data_json.get('revision')
 
         print(data_json)
