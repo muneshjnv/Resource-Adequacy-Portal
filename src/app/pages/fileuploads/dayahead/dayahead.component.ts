@@ -707,11 +707,12 @@ export class DayaheadComponent {
   
       if(colIndex == 2 ) {
         const exactValue = value.toString()
-        console.log(typeof value);
         if(typeof value !== 'number' && Number.isNaN(Number.parseInt(exactValue))){
           cell.style.background = '#ffcccb'
           Swal.fire({text:'Your Data has some errors, They are highlighted. Please check and Update',confirmButtonColor: 'rgb(3, 142, 220)',});
+          
         }
+        
   
         const modifiedValue = value.toString()
       // console.log(modifiedValue)
@@ -909,7 +910,7 @@ export class DayaheadComponent {
   
   handleFileInput(event: any) {
 
-    console.log(this.spreadsheet.nativeElement.jexcel);
+    // console.log(this.spreadsheet.nativeElement.jexcel);
     const file = event.target.files[0];
     this.validationform.get('excelFile')!.setValue(file);
     if (!file) return;
@@ -930,6 +931,7 @@ export class DayaheadComponent {
       const secondColumnValues: any[] = this.data.map(row => row[1]);
       secondColumnValues.push('23:45 - 24:00')
       this.tempData = [];
+      
       for(var i =0; i < this.excelData.rows.length; i++) {
         if((this.excelData.rows[i][0] >= 1 && this.excelData.rows[i][0] <= 96) && secondColumnValues.includes(this.excelData.rows[i][1]) ){
           this.tempData.push(this.excelData.rows[i].slice(0,25))
@@ -945,36 +947,85 @@ export class DayaheadComponent {
       // console.log(this.tempData[0])
       // console.log(this.tempData[0].length)
 
-      console.log(totalCount)
+      // console.log(totalCount)
 
         // Check if column 2 (index 1) contains all zeroes
-        let allZeroes = true;
-        for (let i = 0; i < this.tempData.length; i++) {
-          if (Number(this.tempData[i][2]) !== 0) { // Index 1 for second column
-            allZeroes = false;
-            break;
-          }
-        }
-
-        if (allZeroes) {
+       
+// console.log(this.tempData.length,totalCount)
+        if (this.tempData.length !== 96 || totalCount !== 96 * 25) {
+          // Show error message if data is not in proper format or totalCount is incorrect
           Swal.fire({
-            text: 'Forecasted Demand contains all zeroes. Please correct the data.',
-            confirmButtonColor: 'rgb(3, 142, 220)',
+              text:  'The data you have uploaded is not in the proper format, Please upload based on the format provided above.',
+              confirmButtonColor: 'rgb(3, 142, 220)',
+          }).then(() => {
+              this.validationform.get('excelFile')!.setValue(null); // Reset form control
+              event.target.value = null; // Clear file input
           });
           return;
+      }
+      
+      // Check if Forecasted Demand contains all zeroes
+      let allZeroes = true;
+      for (let i = 0; i < this.tempData.length; i++) {
+        if (Number(this.tempData[i][2]) !== 0) { // Index 1 for second column
+          allZeroes = false;
+          break;
         }
+      }
+      
+      if (allZeroes) {
+          Swal.fire({
+              text: 'Forecasted Demand contains all zeroes. Please correct the data.',
+              confirmButtonColor: 'rgb(3, 142, 220)',
+          }).then(() => {
+              this.validationform.get('excelFile')!.setValue(null); // Reset form control
+              event.target.value = null; // Clear file input
+          });
+          return;
+      }
+      
+      // If data is valid
+      Swal.fire({
+          text: 'Data is successfully loaded, you can now preview the data!',
+          confirmButtonColor: 'rgb(3, 142, 220)',
+      });
+
+
+    //   if (this.tempData.length!==0){
+
+    //     let allZeroes = true;
+    //     for (let i = 0; i < this.tempData.length; i++) {
+    //       if (Number(this.tempData[i][2]) !== 0) { // Index 1 for second column
+    //         allZeroes = false;
+    //         break;
+    //       }
+    //     }
+
+    //     if (allZeroes) {
+    //       Swal.fire({
+    //         text: 'Forecasted Demand contains all zeroes. Please correct the data.',
+    //         confirmButtonColor: 'rgb(3, 142, 220)',
+    //       }).then(() => {
+    //         this.validationform.get('excelFile')!.setValue(null); // Reset form control
+    //         event.target.value = null; // Clear file input
+    //       });
+    //       return;
+    //     }
 
 
       
-      if(totalCount == 96*25) {
-          Swal.fire({text:'Data is successfully loaded, you can now preview the data!',confirmButtonColor: 'rgb(3, 142, 220)',});
+    //   if(totalCount == 96*25) {
+    //       Swal.fire({text:'Data is successfully loaded, you can now preview the data!',confirmButtonColor: 'rgb(3, 142, 220)',});
 
-      }
+    //   }
+    // }
+    //   else {
+    //     Swal.fire({text:'The data you have uploaded is not in the proper format, Please upload based on the format provided above.',confirmButtonColor: 'rgb(3, 142, 220)',}).then(() => {
+    //       this.validationform.get('excelFile')!.setValue(null); // Reset form control
+    //       event.target.value = null; // Clear file input
+    //     });   
 
-      else {
-        Swal.fire({text:'The data you have uploaded is not in the proper format, Please upload based on the format provided above.',confirmButtonColor: 'rgb(3, 142, 220)',});   
-
-      }
+    //   }
 
       this.spreadsheet.nativeElement.jexcel.setData(this.tempData);
 

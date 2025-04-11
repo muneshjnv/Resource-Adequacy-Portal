@@ -817,33 +817,73 @@ export class YearaheadComponent {
       // console.log(totalCount)
       // console.log(96*22*this.daysInMonth(this.validationform.get('disabledDate')!.value["from"]))
       
-       // Check if column 2 (index 1) contains all zeroes
-       let allZeroes = true;
-       for (let i = 0; i < this.tempData.length; i++) {
-         if (Number(this.tempData[i][2]) !== 0) { // Index 1 for second column
-           allZeroes = false;
-           break;
-         }
-       }
+      if (this.tempData.length!==24*this.daysInYear(this.validationform.get('disabledDate')!.value["from"])|| totalCount !== 24*21*this.daysInYear(this.validationform.get('disabledDate')!.value["from"]))
+        {console.log(this.tempData.length,24*this.daysInYear(this.validationform.get('disabledDate')!.value["from"]),totalCount,24*21*this.daysInYear(this.validationform.get('disabledDate')!.value["from"]))
+          Swal.fire({text:'The data you have uploaded is not in the proper format, Please upload based on the format provided above.',confirmButtonColor: 'rgb(3, 142, 220)',}).then(() => {
+            this.validationform.get('excelFile')!.setValue(null); // Reset form control
+            event.target.value = null; // Clear file input
+          });   
+          return;
 
-       if (allZeroes) {
-         Swal.fire({
-           text: 'Forecasted Demand contains all zeroes. Please correct the data.',
-           confirmButtonColor: 'rgb(3, 142, 220)',
+        }
+
+        let allZeroes = true;
+        for (let i = 0; i < this.tempData.length; i++) {
+          if (Number(this.tempData[i][2]) !== 0) { // Index 1 for second column
+            allZeroes = false;
+            break;
+          }
+        }
+ 
+        if (allZeroes) {
+          Swal.fire({
+            text: 'Forecasted Demand contains all zeroes. Please correct the data.',
+            confirmButtonColor: 'rgb(3, 142, 220)',
+          }).then(() => {
+           this.validationform.get('excelFile')!.setValue(null); // Reset form control
+           event.target.value = null; // Clear file input
          });
-         return;
-       }
+          return;
+        }
+
+        Swal.fire({text:'Data is successfully loaded, you can now preview the data!',confirmButtonColor: 'rgb(3, 142, 220)',});
+
+
+
+    //   if (this.tempData.length!==0){
+    //    // Check if column 2 (index 1) contains all zeroes
+    //    let allZeroes = true;
+    //    for (let i = 0; i < this.tempData.length; i++) {
+    //      if (Number(this.tempData[i][2]) !== 0) { // Index 1 for second column
+    //        allZeroes = false;
+    //        break;
+    //      }
+    //    }
+
+    //    if (allZeroes) {
+    //      Swal.fire({
+    //        text: 'Forecasted Demand contains all zeroes. Please correct the data.',
+    //        confirmButtonColor: 'rgb(3, 142, 220)',
+    //      }).then(() => {
+    //       this.validationform.get('excelFile')!.setValue(null); // Reset form control
+    //       event.target.value = null; // Clear file input
+    //     });
+    //      return;
+    //    }
 
       
-      if(totalCount == 24*21*this.daysInYear(this.validationform.get('disabledDate')!.value["from"])) {
-          Swal.fire({text:'Data is successfully loaded, you can now preview the data!',confirmButtonColor: 'rgb(3, 142, 220)',});
+    //   if(totalCount == 24*21*this.daysInYear(this.validationform.get('disabledDate')!.value["from"])) {
+    //       Swal.fire({text:'Data is successfully loaded, you can now preview the data!',confirmButtonColor: 'rgb(3, 142, 220)',});
 
-      }
+    //   }
+    // }
+    //   else {
+    //     Swal.fire({text:'The data you have uploaded is not in the proper format, Please upload based on the format provided above.',confirmButtonColor: 'rgb(3, 142, 220)',}).then(() => {
+    //       this.validationform.get('excelFile')!.setValue(null); // Reset form control
+    //       event.target.value = null; // Clear file input
+    //     });   
 
-      else {
-        Swal.fire({text:'The data you have uploaded is not in the proper format, Please upload based on the format provided above.',confirmButtonColor: 'rgb(3, 142, 220)',});   
-
-      }
+    //   }
 
       this.spreadsheet.nativeElement.jexcel.setData(this.tempData);
 

@@ -81,7 +81,7 @@
 
 
                         <div class="col-md-10">
-                            <input type="file" class="form-control" aria-label="file example" (change)="handleFileInput($event)"  required [ngClass]="{'is-invalid': submit && form['excelFile'].errors}">
+                            <input type="file" accept=".XLS, .XLSX" class="form-control" aria-label="file example" (change)="handleFileInput($event)"  required [ngClass]="{'is-invalid': submit && form['excelFile'].errors}">
                             <div class="invalid-feedback">Please choose a file to Upload</div>
                         </div>
 

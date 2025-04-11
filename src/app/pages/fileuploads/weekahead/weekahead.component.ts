@@ -809,37 +809,75 @@ export class WeekaheadComponent {
       // console.log(this.tempData[0])
       // console.log(this.tempData[0].length)
 
-      // console.log(totalCount)
 
-       // Check if column 2 (index 1) contains all zeroes
-       let allZeroes = true;
-       for (let i = 0; i < this.tempData.length; i++) {
-         if (Number(this.tempData[i][3]) !== 0) { // Index 1 for second column
-           allZeroes = false;
-           break;
-         }
-       }
+      if (this.tempData.length!==96*7|| totalCount !== 96*22*7){
+        Swal.fire({text:'The data you have uploaded is not in the proper format, Please upload based on the format provided above.',confirmButtonColor: 'rgb(3, 142, 220)',}).then(() => {
+          this.validationform.get('excelFile')!.setValue(null); // Reset form control
+          event.target.value = null; // Clear file input
+        }); 
+        return;
+      }
 
-       if (allZeroes) {
-         Swal.fire({
-           text: 'Forecasted Demand contains all zeroes. Please correct the data.',
-           confirmButtonColor: 'rgb(3, 142, 220)',
-         });
-         return;
-       }
+      let allZeroes = true;
+      for (let i = 0; i < this.tempData.length; i++) {
+        if (Number(this.tempData[i][3]) !== 0) { // Index 1 for second column
+          allZeroes = false;
+          break;
+        }
+      }
+
+      if (allZeroes) {
+        Swal.fire({
+          text: 'Forecasted Demand contains all zeroes. Please correct the data.',
+          confirmButtonColor: 'rgb(3, 142, 220)',
+        }).then(() => {
+         this.validationform.get('excelFile')!.setValue(null); // Reset form control
+         event.target.value = null; // Clear file input
+       });
+        return;
+      }
+
+      Swal.fire({text:'Data is successfully loaded, you can now preview the data!',confirmButtonColor: 'rgb(3, 142, 220)',});
+
+ 
+
+
+    //   if (this.tempData.length!==0){
+    //    // Check if column 2 (index 1) contains all zeroes
+    //    let allZeroes = true;
+    //    for (let i = 0; i < this.tempData.length; i++) {
+    //      if (Number(this.tempData[i][3]) !== 0) { // Index 1 for second column
+    //        allZeroes = false;
+    //        break;
+    //      }
+    //    }
+
+    //    if (allZeroes) {
+    //      Swal.fire({
+    //        text: 'Forecasted Demand contains all zeroes. Please correct the data.',
+    //        confirmButtonColor: 'rgb(3, 142, 220)',
+    //      }).then(() => {
+    //       this.validationform.get('excelFile')!.setValue(null); // Reset form control
+    //       event.target.value = null; // Clear file input
+    //     });
+    //      return;
+    //    }
 
       
-      if(totalCount == 96*22*7) {
-          Swal.fire({text:'Data is successfully loaded, you can now preview the data!',confirmButtonColor: 'rgb(3, 142, 220)',});
+    //   if(totalCount == 96*22*7) {
+    //       Swal.fire({text:'Data is successfully loaded, you can now preview the data!',confirmButtonColor: 'rgb(3, 142, 220)',});
 
-      }
+    //   }
+    // }
+    //   else {
+    //     // console.log(totalCount)
+    //     // console.log(96*22*7);
+    //     Swal.fire({text:'The data you have uploaded is not in the proper format, Please upload based on the format provided above.',confirmButtonColor: 'rgb(3, 142, 220)',}).then(() => {
+    //       this.validationform.get('excelFile')!.setValue(null); // Reset form control
+    //       event.target.value = null; // Clear file input
+    //     });   
 
-      else {
-        // console.log(totalCount)
-        // console.log(96*22*7);
-        Swal.fire({text:'The data you have uploaded is not in the proper format, Please upload based on the format provided above.',confirmButtonColor: 'rgb(3, 142, 220)',});   
-
-      }
+    //   }
 
       this.spreadsheet.nativeElement.jexcel.setData(this.tempData);
 

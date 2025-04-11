@@ -63,7 +63,7 @@ export class ViewYearaheadComponent {
   ngOnInit(): void {
     this.breadCrumbItems = [
       { label: 'Past Uploads' },
-      { label: 'Month Ahead Forecast', active: true }
+      { label: 'Year Ahead Forecast', active: true }
     ];
 
     this.userData = this.TokenStorageService.getUser();

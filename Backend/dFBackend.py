@@ -388,7 +388,7 @@ def login():
 
         # Generate Session Token
         session_token = secrets.token_urlsafe(32)  # Secure random session token
-        session_expiration = datetime.utcnow() + timedelta(minutes=30)  # Session valid for 2 minutes
+        session_expiration = datetime.utcnow() + timedelta(minutes=30)  # Session valid for 30 minutes
 
         # Store session details in the database
         cursor.execute("""
@@ -406,7 +406,7 @@ def login():
             "role": role
         }
 
-        if username == 'er_internal' and password == 'Erldc#$1234':  # Special credentials
+        if username == 'sr_internal' and password == 'Srldc#$1234':  # Special credentials
             jwt_data["script_access"] = True
 
         access_token = jwt.encode(payload=jwt_data, key=app.config.get('JWT_SECRET_KEY'), algorithm=app.config.get('ALGORITHM'))
@@ -671,8 +671,8 @@ def uploadIntradayDataAndFile():
     try:
         # Connect to the database
         conn = psycopg2.connect(
-            database="demand_forecast_states", user='munesh', 
-            password='munesh', host='localhost', port='5432'
+            database="demand_forecast_states", user='ra_admin', 
+            password='admin', host='localhost', port='5432'
         )
         cursor = conn.cursor()
 
@@ -757,8 +757,8 @@ def uploadIntradayDataAndFile():
                     
                     # Send the email with the attached consolidated file
                     try:
-                        send_mails_list_db = ['mprashad@grid-india.in']
-                        cc_mails_list_db = ['srldcos@grid-india.in']
+                        send_mails_list_db = ['mprashada@grid_india.in']
+                        cc_mails_list_db = ['srldcosa@grid_india.in']
                         send_mail_with_attachment(send_mails_list_db, cc_mails_list_db, save_file_path, for_week_ahead='day', custom_date=disabledDate)
                         print(f"All states have uploaded. Email with consolidated file sent.")
                     except Exception as email_error:
@@ -790,8 +790,8 @@ def uploadDayAheadDataAndFile():
     try:
         # Connect to the database
         conn = psycopg2.connect(
-            database="demand_forecast_states", user='munesh', 
-            password='munesh', host='localhost', port='5432'
+            database="demand_forecast_states", user='ra_admin', 
+            password='admin', host='localhost', port='5432'
         )
         cursor = conn.cursor()
 
@@ -876,8 +876,8 @@ def uploadDayAheadDataAndFile():
                     
                     # Send the email with the attached consolidated file
                     try:
-                        send_mails_list_db = ['mprashad@grid-india.in']
-                        cc_mails_list_db = ['srldcos@grid-india.in']
+                        send_mails_list_db = ['mprashad@grid_india.in']
+                        cc_mails_list_db = ['srldcos@grid_india.in']
                         send_mail_with_attachment(send_mails_list_db, cc_mails_list_db, save_file_path, for_week_ahead='day', custom_date=disabledDate)
                         print(f"All states have uploaded. Email with consolidated file sent.")
                     except Exception as email_error:
@@ -917,7 +917,9 @@ def downloadIntraday():
         # Parse the JSON input from the frontend
         data_json = request.get_json()
         state_id = data_json.get('state')
-        upload_date = data_json.get('date')  # Expected in 'YYYY-MM-DD' format
+        # upload_date = data_json.get('date')  # Expected in 'YYYY-MM-DD' format
+        upload_date_str = data_json.get('date')  # Expected in 'YYYY-MM-DD' format
+        upload_date = datetime.strptime(upload_date_str, "%d/%m/%Y").date()
         revision_no = data_json.get('revision')
 
         print(data_json)
@@ -967,8 +969,8 @@ def downloadDayAhead():
         # Parse the JSON input from the frontend
         data_json = request.get_json()
         state_id = data_json.get('state')
-        upload_date = data_json.get('date')  # Expected in 'YYYY-MM-DD' format
-        print(upload_date)
+        upload_date_str = data_json.get('date')  # Expected in 'YYYY-MM-DD' format
+        upload_date = datetime.strptime(upload_date_str, "%d/%m/%Y").date()
         revision_no = data_json.get('revision')
 
         print(data_json)
@@ -1021,8 +1023,12 @@ def downloadWeekAhead():
         # Parse the JSON input from the frontend
         data_json = request.get_json()
         state_id = data_json.get('state')
-        upload_from_date = data_json.get('from_date')  # Expected in 'YYYY-MM-DD' format
-        upload_to_date = data_json.get('to_date')
+        # upload_from_date = data_json.get('from_date')  # Expected in 'YYYY-MM-DD' format
+        upload_from_date_str = data_json.get('from_date')  # Expected in 'YYYY-MM-DD' format
+        upload_from_date = datetime.strptime(upload_from_date_str, "%d/%m/%Y").date()
+        # upload_to_date = data_json.get('to_date')
+        upload_to_date_str = data_json.get('to_date')  # Expected in 'YYYY-MM-DD' format
+        upload_to_date = datetime.strptime(upload_to_date_str, "%d/%m/%Y").date()
         revision_no = data_json.get('revision')
 
         print(data_json)
@@ -1075,8 +1081,12 @@ def downloadMonthAhead():
         # Parse the JSON input from the frontend
         data_json = request.get_json()
         state_id = data_json.get('state')
-        upload_from_date = data_json.get('from_date')  # Expected in 'YYYY-MM-DD' format
-        upload_to_date = data_json.get('to_date')
+        # upload_from_date = data_json.get('from_date')  # Expected in 'YYYY-MM-DD' format
+        upload_from_date_str = data_json.get('from_date')  # Expected in 'YYYY-MM-DD' format
+        upload_from_date = datetime.strptime(upload_from_date_str, "%d/%m/%Y").date()
+        # upload_to_date = data_json.get('to_date')
+        upload_to_date_str = data_json.get('to_date')  # Expected in 'YYYY-MM-DD' format
+        upload_to_date = datetime.strptime(upload_to_date_str, "%d/%m/%Y").date()
         revision_no = data_json.get('revision')
 
         print(data_json)
@@ -1128,8 +1138,12 @@ def downloadYearAhead():
         # Parse the JSON input from the frontend
         data_json = request.get_json()
         state_id = data_json.get('state')
-        upload_from_date = data_json.get('from_date')  # Expected in 'YYYY-MM-DD' format
-        upload_to_date = data_json.get('to_date')
+        # upload_from_date = data_json.get('from_date')  # Expected in 'YYYY-MM-DD' format
+        upload_from_date_str = data_json.get('from_date')  # Expected in 'YYYY-MM-DD' format
+        upload_from_date = datetime.strptime(upload_from_date_str, "%d/%m/%Y").date()
+        # upload_to_date = data_json.get('to_date')
+        upload_to_date_str = data_json.get('to_date')  # Expected in 'YYYY-MM-DD' format
+        upload_to_date = datetime.strptime(upload_to_date_str, "%d/%m/%Y").date()
         revision_no = data_json.get('revision')
 
         print(data_json)
@@ -1679,8 +1693,8 @@ def uploadWeekAheadDataAndFile():
                     save_file_path = write_to_excel(file_path_template, db_data, for_week_ahead='week', custom_from_date=datetime.strptime(fromDate, '%d/%m/%Y'), custom_to_date=datetime.strptime(toDate, '%d/%m/%Y'))
                     try:
                         # Send the email with the consolidated file
-                        send_mails_list_db = ['mprashad@grid-india.in']
-                        cc_mails_list_db = [ 'srldcos@grid-india.in']
+                        send_mails_list_db = ['mprashad@grid_india.in']
+                        cc_mails_list_db = [ 'srldcos@grid_india.in']
                         send_mail_with_attachment(send_mails_list_db, cc_mails_list_db, save_file_path, for_week_ahead='week', custom_from_date=datetime.strptime(fromDate, '%d/%m/%Y'), custom_to_date=datetime.strptime(toDate, '%d/%m/%Y'))
                         print('e')
                         print(f"All states have uploaded. Email with consolidated file sent.")
@@ -1838,8 +1852,8 @@ def uploadMonthAheadDataAndFile():
                             save_file_path = write_to_excel(file_path_template, db_data, for_week_ahead='month', custom_from_date=datetime.strptime(fromDate, '%d/%m/%Y'), custom_to_date=datetime.strptime(toDate, '%d/%m/%Y'))
                             try:
                                 # Send the email with the consolidated file
-                                send_mails_list_db = ['mprashad@grid-india.in']
-                                cc_mails_list_db = [ 'srldcos@grid-india.in']
+                                send_mails_list_db = ['mprashad@grid_india.in']
+                                cc_mails_list_db = [ 'srldcos@grid_india.in']
                                 send_mail_with_attachment(send_mails_list_db, cc_mails_list_db, save_file_path, for_week_ahead='month', custom_from_date=datetime.strptime(fromDate, '%d/%m/%Y'), custom_to_date=datetime.strptime(toDate, '%d/%m/%Y'))
                                 print('e')
                                 print(f"All states have uploaded. Email with consolidated file sent.")
@@ -1849,12 +1863,12 @@ def uploadMonthAheadDataAndFile():
                                 log_error("Email sending failed", email_error)
 
                     return jsonify({'message': f'Data and file uploaded successfully. Uploaded for Revision-{len(existing_revs)}', "status": "success"})
-            else:
-                cursor.close()
-                return jsonify({'error': 'Invalid file type'})
-            
+        else:
+            cursor.close()
             return jsonify({'error': 'Invalid file type'})
-
+            
+            # return jsonify({'error': 'Invalid file type'})
+      
     except Exception as e:
         log_error("uploadmonthahead", e)
         cursor.close()
@@ -2160,7 +2174,6 @@ def fetchYearRevisions():
 @token_required
 @session_token_required
 def scatterPlotUploadStatus():
-    print("entered in upload status")
     try:
         conn = psycopg2.connect(**db_params)
         cursor = conn.cursor()
@@ -2289,8 +2302,8 @@ def scatterPlotUploadStatus():
         this_week_start = today - timedelta(days=today.weekday())
 
         # Setting date ranges
-        start_date = this_week_start - timedelta(weeks=2)  # Start date two weeks before this week
-        end_date = this_week_start + timedelta(weeks=3) - timedelta(days=1)  # End date two weeks after this week
+        start_date = this_week_start - timedelta(weeks=3)  # Start date two weeks before this week
+        end_date = this_week_start + timedelta(weeks=2) - timedelta(days=1)  # End date two weeks after this week
 
         # Adjusting end_date to ensure it ends on the last day of the intended week
         if end_date.weekday() != 6:  # Check if end_date is not a Sunday
@@ -2563,7 +2576,7 @@ def scatterPlotUploadStatus():
 
         # Organize the fetched data by state and financial year
         year_data = []
-        financial_years = [current_financial_year_start, next_financial_year_start]
+        financial_years = [next_financial_year_start,current_financial_year_start]
 
         for state_name in all_states:
             state_data = {"name": state_name, "data": []}
@@ -2695,8 +2708,8 @@ def scatterPlotUploadStatus():
 def mapeChart():
     try:
         conn = psycopg2.connect(
-        database="demand_forecast_states", user='munesh', 
-        password='munesh', host='localhost', port='5432'
+        database="demand_forecast_states", user='ra_admin', 
+        password='admin', host='localhost', port='5432'
         )
         cursor = conn.cursor()
         params = request.get_json()
@@ -2715,7 +2728,7 @@ def mapeChart():
         selected_state_id = state_id  # Set to the desired single state or region (use 6 for the entire region)
 
         # Define expected state IDs based on selected_state_id
-        expected_state_ids = region_state_ids if selected_state_id in [6, 11] else {selected_state_id}
+        expected_state_ids = region_state_ids if selected_state_id == 6 else {selected_state_id}
 
         date_range = pd.date_range(start=datetime.strptime(from_date, "%d/%m/%Y"), end=datetime.strptime(to_date, "%d/%m/%Y"))
         date_df = pd.DataFrame(date_range, columns=["D_F_DATE"])
@@ -2988,7 +3001,7 @@ def mapeChart():
         def week_ahead_mape(from_date, to_date, sr_actual_day_df, selected_state_id):
             # Define expected state IDs based on selected_state_id
             region_state_ids = {1, 2, 3, 4, 5, 7}  # IDs for the Southern Region
-            expected_state_ids = region_state_ids if selected_state_id in [6, 11] else {selected_state_id}
+            expected_state_ids = region_state_ids if selected_state_id == 6 else {selected_state_id}
 
             cursor.execute('''
                 WITH MaxRevisions AS (
@@ -3112,7 +3125,7 @@ def mapeChart():
         def month_ahead_mape(from_date, to_date, sr_actual_day_df, selected_state_id):
             # Define expected state IDs based on selected_state_id
             region_state_ids = {1, 2, 3, 4, 5, 7}  # IDs for the Southern Region
-            expected_state_ids = region_state_ids if selected_state_id in [6, 11] else {selected_state_id}
+            expected_state_ids = region_state_ids if selected_state_id == 6 else {selected_state_id}
 
             cursor.execute('''
                 WITH MaxRevisions AS (
@@ -3802,8 +3815,8 @@ def get_data():
     input_to_date = data.get('to_date')
 
     conn = psycopg2.connect(
-    database="demand_forecast_states", user='munesh', 
-    password='munesh', host='localhost', port='5432'
+    database="demand_forecast_states", user='ra_admin', 
+    password='admin', host='localhost', port='5432'
     )
 
     cursor = conn.cursor()
@@ -3912,8 +3925,8 @@ def get_forecast_data():
         data_type = data.get('data_type')
 
         conn = psycopg2.connect(    
-        database="demand_forecast_states", user='munesh', 
-        password='munesh', host='localhost', port='5432'
+        database="demand_forecast_states", user='ra_admin', 
+        password='admin', host='localhost', port='5432'
         )
 
         cursor = conn.cursor()
@@ -4718,7 +4731,8 @@ def MdpDescriptionData():
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0',debug=True)
+    cors = CORS(app)
+    app.run(host='0.0.0.0', port=5000, debug=False)
 
 
 
