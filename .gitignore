@@ -18,5 +18,7 @@ Backend/configBackend.py
 Backend/__pycache__/
 logs/
 Uploaded_Excel_files/
-
+Backend/venv/
+/build
+build/
 
