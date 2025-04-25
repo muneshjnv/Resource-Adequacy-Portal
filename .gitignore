@@ -16,6 +16,7 @@ dist/
 # Day_Ahead_Forecast_Files/
 Backend/configBackend.py
 Backend/__pycache__/
+Backend/logs/
 logs/
 Uploaded_Excel_files/
 Backend/venv/

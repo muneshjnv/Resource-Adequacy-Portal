@@ -2693,6 +2693,583 @@ def scatterPlotUploadStatus():
 
 
 
+@app.route('/api/rauploadstatus')
+@jwt_required()
+@token_required
+@session_token_required
+def raScatterPlotUploadStatus():
+    try:
+        conn = psycopg2.connect(**db_params)
+        cursor = conn.cursor()
+        # Day Ahead Data Processing
+        header_data = dict(request.headers)
+        state = request.form.get('state')
+
+        token = header_data['Authorization'].split()[1]
+        x = decode_token(token, csrf_value=None, allow_expired=False)
+
+
+        state_id_query = """select state_id from public.states where username = %s"""
+        cursor.execute(state_id_query, (x['sub'],))
+        state_id = cursor.fetchall()[0][0]
+
+        # print(state)
+        end_date = datetime.now() + timedelta(days=1)
+        start_date = end_date - timedelta(days=30)
+
+        sql_query = """
+                    WITH min_revision AS (
+                        SELECT 
+                            state_id, 
+                            upload_date, 
+                            MAX(revision_no) AS min_revision_no
+                        FROM 
+                            file_uploads
+                        GROUP BY 
+                            state_id, 
+                            upload_date
+                    ),
+                    valid_uploads AS (
+                        SELECT 
+                            f.*
+                        FROM 
+                            file_uploads f
+                        INNER JOIN min_revision m ON 
+                            f.state_id = m.state_id
+                            AND f.upload_date = m.upload_date
+                            AND f.revision_no = m.min_revision_no
+                    ),
+                    upload_status AS (
+                        SELECT 
+                            vu.state_id,
+                            vu.upload_date,
+                            vu.upload_time,
+                            CASE
+                                WHEN vu.file_data IS NULL THEN 2  -- Not Uploaded
+                                WHEN NOT EXISTS (
+                                    SELECT 1 FROM jsonb_array_elements(vu.file_data) AS row
+                                    WHERE EXISTS (
+                                        SELECT 1 FROM jsonb_array_elements(row.value) WITH ORDINALITY AS val(v, idx)
+                                        WHERE idx >= 4
+                                        AND val.v::text <> ''
+                                        AND val.v::text ~ '^[-+]?[0-9]*\.?[0-9]+$'
+                                        AND (val.v::text)::numeric <> 0
+                                    )
+                                ) THEN 2  -- All values in cols 4–last are zero
+                                WHEN vu.upload_time < (vu.upload_date - INTERVAL '1 day' + INTERVAL '10 hours') THEN 1  -- Proper upload
+                                ELSE 0  -- Late Upload
+                            END AS upload_status_code
+                        FROM valid_uploads vu
+                    )
+                    SELECT 
+                        s.state_name,
+                        COALESCE(f.upload_date, %s) AS upload_date,
+                        COALESCE(us.upload_time, NULL) AS upload_time,
+                        COALESCE(us.upload_status_code, 2) AS upload_status_code,
+                        COUNT(f.state_id) AS upload_count
+                    FROM 
+                        states s
+                    LEFT JOIN file_uploads f ON 
+                        s.state_id = f.state_id
+                        AND f.upload_date BETWEEN %s AND %s
+                    LEFT JOIN upload_status us ON 
+                        f.state_id = us.state_id 
+                        AND f.upload_date = us.upload_date
+                    WHERE 
+                        s.state_id IN (1,2,3,4,5,7)
+                    GROUP BY 
+                        s.state_name, 
+                        f.upload_date,
+                        us.upload_time,
+                        us.upload_status_code
+                    ORDER BY
+                        s.state_name,
+                        upload_date DESC;
+        """
+        cursor.execute(sql_query, (end_date, start_date, end_date))
+        results = cursor.fetchall()
+
+        day_data = []
+        date_range = [end_date - timedelta(days=i) for i in range(30)]
+        state_names = set(result[0] for result in results)
+
+        for state_name in state_names:
+            state_data = {"name": state_name, "data": []}
+            for date in date_range:
+                date_str = date.strftime('%Y-%m-%d')
+                found_result = False
+                for result in results:
+                    if result[0] == state_name and result[1].strftime("%Y-%m-%d") == date_str:
+                        upload_count = result[4]
+                        upload_time = result[2].strftime("%Y-%m-%d %H:%M:%S") if result[2] is not None else None
+                        upload_status_code = result[3]
+                        found_result = True
+                        break
+                if not found_result:
+                    upload_count = 0
+                    upload_time = None
+                    upload_status_code = 2  # Not Uploaded
+                state_data["data"].append({
+                    'x': date_str, 
+                    'y': upload_status_code, 
+                    'upload_time': upload_time, 
+                    'upload_count': upload_count
+                })
+            day_data.append(state_data)
+
+        day_dates = {
+            "start_date": (start_date + timedelta(days=1)).strftime('%Y-%m-%d'),
+            "end_date": end_date.strftime('%Y-%m-%d')
+        }
+
+        mape_comp_dates = {
+            "start_date": (start_date + timedelta(days=1)).strftime('%d/%m/%Y'),
+            "end_date": end_date.strftime('%d/%m/%Y')
+        }
+
+
+        # for i in day_data:
+        #     print(i["name"])
+
+        #######################################################################################################################################
+        #######################################################################################################################################
+        # Week Ahead Data Processing
+                
+
+
+        # Week Ahead Data Processing
+        # Calculate date ranges
+        today = datetime.now()
+        # Get the start of this week (Monday)
+        this_week_start = today - timedelta(days=today.weekday())
+
+        # Setting date ranges
+        start_date = this_week_start - timedelta(weeks=3)  # Start date two weeks before this week
+        end_date = this_week_start + timedelta(weeks=2) - timedelta(days=1)  # End date two weeks after this week
+
+        # Adjusting end_date to ensure it ends on the last day of the intended week
+        if end_date.weekday() != 6:  # Check if end_date is not a Sunday
+            end_date = end_date - timedelta(days=end_date.weekday() + 1)  # Adjust to the last Sunday before or on end_date
+
+        sql_query = """
+                    WITH min_revision AS (
+                        SELECT 
+                            state_id, 
+                            from_date, 
+                            MAX(revision_no) AS min_revision_no
+                        FROM 
+                            week_ahead_file_uploads
+                        WHERE
+                            from_date BETWEEN %s AND %s
+                        GROUP BY 
+                            state_id, 
+                            from_date
+                    ), min_uploads AS (
+                        SELECT 
+                            fu.state_id, 
+                            fu.from_date, 
+                            fu.upload_time,
+                            fu.revision_no,
+                            fu.file_data
+                        FROM 
+                            week_ahead_file_uploads fu
+                        INNER JOIN min_revision mr ON
+                            fu.state_id = mr.state_id
+                            AND fu.from_date = mr.from_date
+                            AND fu.revision_no = mr.min_revision_no
+                    )
+                    SELECT 
+                        states.state_name,
+                        COALESCE(mu.from_date, %s) AS week_start_date,
+                        COALESCE(mu.upload_time, NULL) AS upload_time,
+                        CASE
+                            WHEN mu.file_data IS NULL THEN 2  -- Not Uploaded
+                            WHEN NOT EXISTS (
+                                SELECT 1 FROM jsonb_array_elements(mu.file_data) AS row
+                                WHERE EXISTS (
+                                    SELECT 1 
+                                    FROM jsonb_array_elements(row.value) WITH ORDINALITY AS val(v, idx)
+                                    WHERE idx >= 5
+                                    AND val.v::text <> ''
+                                    AND val.v::text ~ '^[-+]?[0-9]*\.?[0-9]+$'
+                                    AND (val.v::text)::numeric <> 0
+                                )
+                            ) THEN 2  -- All values in cols 5–last are zero
+                            WHEN mu.upload_time < DATE_TRUNC('week', mu.from_date - INTERVAL '1 week') + INTERVAL '1 day' THEN 1  -- Proper upload
+                            ELSE 0  -- Late upload
+                        END AS upload_status_code,
+                        COUNT(mu.state_id) AS upload_count
+                    FROM 
+                        states
+                    LEFT JOIN 
+                        min_uploads mu ON states.state_id = mu.state_id
+                    WHERE 
+                        states.state_id IN (1,2,3,4,5,7)
+                    GROUP BY 
+                        states.state_name, 
+                        mu.from_date,
+                        mu.upload_time,
+                        mu.file_data  
+                    ORDER BY
+                        states.state_name,
+                        mu.from_date DESC;
+        """
+        cursor.execute(sql_query, (start_date.strftime('%Y-%m-%d'), end_date.strftime('%Y-%m-%d'), end_date.strftime('%Y-%m-%d')))
+        results = cursor.fetchall()
+
+
+        cursor.execute("SELECT state_name, state_id FROM states WHERE state_id IN (1,2,3,4,5,7)")
+        states_list = cursor.fetchall()
+        all_states = [row[0] for row in states_list]
+
+
+        state_dict = {row[0]: row[1] for row in states_list}
+
+
+        week_range = sorted([(start_date + timedelta(weeks=i)).date() for i in range(5)], reverse=True)  # Generate Mondays for 6 weeks
+
+        week_data = []
+        for state_name in all_states:
+            state_data = {"name": state_name, "data": []}
+            for week_start in week_range:
+                week_start_date = week_start
+                week_end_date = week_start_date + timedelta(days=6)  # End on Sunday
+                week_range_str = f"{week_start_date.strftime('%Y-%m-%d')} to {week_end_date.strftime('%Y-%m-%d')}"
+
+                upload_count = 0
+                upload_status_code = 2  # Default to Not Uploaded
+                upload_time = None
+                found_result = False
+                for result in results:
+                    if result[0] == state_name and result[1] == week_start_date:
+                        upload_count = result[4]
+                        upload_time = result[2].strftime("%Y-%m-%d %H:%M:%S") if result[2] is not None else None
+                        upload_status_code = result[3]
+                        found_result = True
+                        break
+
+                if not found_result:
+                    upload_count = 0
+                    upload_status_code = 2  # Not Uploaded
+                state_data["data"].append({'x': week_range_str, 'y': upload_status_code, 'upload_time': upload_time, 'upload_count': upload_count})
+            week_data.append(state_data)
+
+        week_dates = {
+            "start_date": start_date.strftime('%Y-%m-%d'),
+            "end_date": end_date.strftime('%Y-%m-%d')
+        }
+
+
+
+
+
+
+        #######################################################################################################################################
+        #######################################################################################################################################
+        # Month Ahead Data Processing
+        # Initialize current date and calculate relevant month starts
+        today = datetime.now()
+        current_month_start = today.replace(day=1)
+        previous_month_start = (current_month_start - timedelta(days=1)).replace(day=1)
+        next_month_start = (current_month_start + timedelta(days=31)).replace(day=1)
+
+        # Define the date ranges
+        start_date = previous_month_start
+        end_date = next_month_start.replace(day=monthrange(next_month_start.year, next_month_start.month)[1])
+
+        # Prepare the SQL query to fetch the data
+        sql_query = """
+                    WITH min_revision AS (
+                        SELECT 
+                            state_id, 
+                            DATE_TRUNC('month', from_date) AS from_month, 
+                            MAX(revision_no) AS min_revision_no
+                        FROM 
+                            month_ahead_file_uploads
+                        WHERE
+                            from_date BETWEEN %s AND %s
+                        GROUP BY 
+                            state_id, 
+                            from_month
+                    ), min_uploads AS (
+                        SELECT 
+                            fu.state_id, 
+                            DATE_TRUNC('month', fu.from_date) AS from_month, 
+                            fu.upload_time,
+                            fu.revision_no,
+                            fu.file_data
+                        FROM 
+                            month_ahead_file_uploads fu
+                        INNER JOIN min_revision mr ON
+                            fu.state_id = mr.state_id
+                            AND DATE_TRUNC('month', fu.from_date) = mr.from_month
+                            AND fu.revision_no = mr.min_revision_no
+                    )
+                    SELECT 
+                        states.state_name,
+                        COALESCE(mu.from_month, %s) AS month_start_date,
+                        COALESCE(mu.upload_time, NULL) AS upload_time,
+                        CASE
+                            WHEN mu.file_data IS NULL THEN 2  -- Not Uploaded
+                            WHEN NOT EXISTS (
+                                SELECT 1 FROM jsonb_array_elements(mu.file_data) AS row
+                                WHERE EXISTS (
+                                    SELECT 1 
+                                    FROM jsonb_array_elements(row.value) WITH ORDINALITY AS val(v, idx)
+                                    WHERE idx >= 5
+                                    AND val.v::text <> ''
+                                    AND val.v::text ~ '^[-+]?[0-9]*\.?[0-9]+$'
+                                    AND (val.v::text)::numeric <> 0
+                                )
+                            ) THEN 2  -- All values in cols 5–last are zero
+                            WHEN mu.upload_time < DATE_TRUNC('month', mu.from_month) - INTERVAL '1 month' + INTERVAL '5 day' THEN 1  -- Uploaded on time
+                            ELSE 0  -- Late Upload
+                        END AS upload_status_code,
+                        COUNT(mu.state_id) AS upload_count
+                    FROM 
+                        states
+                    LEFT JOIN 
+                        min_uploads mu ON states.state_id = mu.state_id
+                    WHERE 
+                        states.state_id IN (1,2,3,4,5,7)
+                    GROUP BY 
+                        states.state_name, 
+                        mu.from_month,
+                        mu.upload_time,
+                        mu.file_data  
+                    ORDER BY
+                        states.state_name,
+                        mu.from_month DESC;
+        """
+        cursor.execute(sql_query, (start_date.strftime('%Y-%m-%d'), end_date.strftime('%Y-%m-%d'), end_date.strftime('%Y-%m-%d')))
+        results = cursor.fetchall()
+
+        # Fetch the state names from the database
+        cursor.execute("SELECT state_name FROM states WHERE state_id IN (1,2,3,4,5,7)")
+        all_states = [row[0] for row in cursor.fetchall()]
+
+        # Initialize month range and data structure
+        month_range = [next_month_start, current_month_start, previous_month_start]
+        month_data = []
+
+        # Process results and sort by latest month first
+        for state_name in all_states:
+            state_data = {"name": state_name, "data": []}
+            for month_start in sorted(month_range, reverse=True):
+                _, last_day_of_month = monthrange(month_start.year, month_start.month)
+                month_end = month_start.replace(day=last_day_of_month)
+                month_range_str = f"{month_start.strftime('%Y-%m-%d')} to {month_end.strftime('%Y-%m-%d')}"
+
+                upload_count = 0
+                upload_status_code = 2  # Default to Not Uploaded
+                upload_time = None
+                found_result = False
+
+                # Check each result for the current state and month
+                for result in results:
+                    result_state, result_month_start, result_upload_time, result_status, result_count = result
+                    if result_state == state_name and result_month_start.strftime('%Y-%m-%d') == month_start.strftime('%Y-%m-%d'):
+                        upload_count = result_count
+                        upload_time = result_upload_time.strftime("%Y-%m-%d %H:%M:%S") if result_upload_time else None
+                        upload_status_code = result_status
+                        found_result = True
+                        break
+
+                if not found_result:
+                    upload_count = 0
+                    upload_status_code = 2  # Not Uploaded
+
+                state_data["data"].append({
+                    'x': month_range_str,
+                    'y': upload_status_code,
+                    'upload_time': upload_time,
+                    'upload_count': upload_count
+                })
+
+            month_data.append(state_data)
+
+        # Prepare JSON for frontend
+        month_dates = {
+            "start_date": start_date.strftime('%Y-%m-%d'),
+            "end_date": end_date.strftime('%Y-%m-%d')
+        }
+
+
+        ############### Year Ahead Forecast Status
+
+        # Financial year calculation
+        
+        today = datetime.now()
+
+        # Determine the current and next financial years
+        if today.month < 4:
+            current_financial_year_start = datetime(today.year - 1, 4, 1)
+        else:
+            current_financial_year_start = datetime(today.year, 4, 1)
+        current_financial_year_end = datetime(current_financial_year_start.year + 1, 3, 31)
+        next_financial_year_start = datetime(current_financial_year_start.year + 1, 4, 1)
+        next_financial_year_end = datetime(next_financial_year_start.year + 1, 3, 31)
+
+        # SQL query to fetch relevant data for both financial years
+        sql_query = """
+                    SELECT 
+                        states.state_name,
+                        yafu.from_date,
+                        yafu.to_date,
+                        yafu.upload_time,
+                        CASE
+                            WHEN yafu.file_data IS NULL THEN 2  -- Not Uploaded
+                            WHEN NOT EXISTS (
+                                SELECT 1 FROM jsonb_array_elements(yafu.file_data) AS row
+                                WHERE EXISTS (
+                                    SELECT 1 
+                                    FROM jsonb_array_elements(row.value) WITH ORDINALITY AS val(v, idx)
+                                    WHERE idx >= 4
+                                    AND val.v::text <> ''
+                                    AND val.v::text ~ '^[-+]?[0-9]*\.?[0-9]+$'
+                                    AND (val.v::text)::numeric <> 0
+                                )
+                            ) THEN 2  -- All values in cols 4–last are zero
+                            WHEN yafu.upload_time <= yafu.from_date + INTERVAL '5 months' - INTERVAL '1 day' THEN 1  -- Uploaded on time
+                            ELSE 0  -- Late Upload
+                        END AS upload_status,
+                        COUNT(yafu.state_id) AS upload_count
+                    FROM 
+                        states
+                    LEFT JOIN 
+                        year_ahead_file_uploads yafu ON states.state_id = yafu.state_id
+                    WHERE 
+                        states.state_id IN (1,2,3,4,5,7)
+                        AND (yafu.from_date BETWEEN %s AND %s OR yafu.from_date IS NULL)
+                    GROUP BY 
+                        states.state_name, yafu.from_date, yafu.to_date, yafu.upload_time, yafu.file_data
+                    ORDER BY
+                        states.state_name, yafu.from_date DESC;
+        """
+        cursor.execute(sql_query, (current_financial_year_start.strftime('%Y-%m-%d'), next_financial_year_end.strftime('%Y-%m-%d')))
+        results = cursor.fetchall()
+
+        # Fetch state names to ensure coverage of all states
+        cursor.execute("SELECT state_name FROM states WHERE state_id IN (1,2,3,4,5,7)")
+        all_states = [row[0] for row in cursor.fetchall()]
+
+        # Organize the fetched data by state and financial year
+        year_data = []
+        financial_years = [next_financial_year_start,current_financial_year_start]
+
+        for state_name in all_states:
+            state_data = {"name": state_name, "data": []}
+            for financial_year in financial_years:
+                found = False
+                for result in results:
+                    result_state, from_date, to_date, upload_time, upload_status, upload_count = result
+                    if result_state == state_name and from_date and from_date == financial_year.date():
+                        found = True
+                        upload_time_formatted = upload_time.strftime("%Y-%m-%d %H:%M:%S") if upload_time else None
+                        state_data["data"].append({
+                            'x': f"{from_date.strftime('%Y-%m-%d')} to {to_date.strftime('%Y-%m-%d')}",
+                            'y': upload_status,
+                            'upload_time': upload_time_formatted,
+                            'upload_count': upload_count
+                        })
+                        break
+                if not found:
+                    state_data["data"].append({
+                        'x': f"{financial_year.strftime('%Y-%m-%d')} to {financial_year.replace(year=financial_year.year + 1, month=3, day=31).strftime('%Y-%m-%d')}",
+                        'y': 2,
+                        'upload_time': None,
+                        'upload_count': 0
+                    })
+            year_data.append(state_data)
+
+        # Prepare JSON data for the frontend
+        year_dates = {
+            "start_date": current_financial_year_start.strftime('%Y-%m-%d'),
+            "end_date": next_financial_year_end.strftime('%Y-%m-%d')
+        }
+
+
+
+
+        # url = host_url +"/mapechart"
+        # headers = {
+        #     'Authorization': request.headers.get('Authorization'),
+        #     'Content-Type': 'application/json'
+        # }
+        # payload = {
+        #     "params": {
+        #         "fromDate": from_date,
+        #         "toDate": to_date,
+        #         "state": state_id
+        #     }
+        # }
+
+        # print(header_data)
+
+        # token = header_data['Authorization'].split()[1]
+        # x = decode_token(token, csrf_value=None, allow_expired=False)
+
+        # username = x['sub']
+        # # print(username, "username")
+        # # role = x['role']
+
+        # # print(state_dict)
+
+        # if username in state_dict.keys():
+        #     url = host_url +"/mapechart"
+        #     headers = {
+        #         'Authorization': request.headers.get('Authorization'),
+        #         'Content-Type': 'application/json'
+        #     }
+        #     payload = {
+        #         "params": {
+        #             "fromDate": mape_comp_dates['start_date'],
+        #             "toDate": mape_comp_dates['end_date'],
+        #             "state": state_dict[username]
+        #         }
+        #     }
+
+
+
+        #     response = requests.post(url, json=payload, headers=headers)
+        #     cursor.close()
+
+        #     if response.status_code == 200:
+        #         # pass
+        #         # print(response.json().keys())
+        #         res_data = response.json()
+        #         print(res_data.keys())
+        #         print(res_data['title'])
+        #         if res_data['status'] == 'success':    
+        #             return jsonify(day=day_data, week=week_data, month=month_data, year = year_data, day_dates=day_dates, week_dates=week_dates, month_dates=month_dates, year_dates=year_dates, mape_data= res_data['data'],mape_title = res_data['title'],comp_data = res_data['comp_data'],  status="success")
+        #         else:
+        #             return jsonify(day=day_data, week=week_data, month=month_data, year = year_data, day_dates=day_dates, week_dates=week_dates, month_dates=month_dates, year_dates=year_dates,  status="success")
+
+        #     else:
+        #         print("Response not recieved")
+        #         return jsonify(day=day_data, week=week_data, month=month_data, year = year_data, day_dates=day_dates, week_dates=week_dates, month_dates=month_dates, year_dates=year_dates,  status="success")
+
+
+
+
+
+
+
+        
+
+
+        return jsonify(day=day_data, week=week_data, month=month_data, year = year_data, day_dates=day_dates, week_dates=week_dates, month_dates=month_dates, year_dates=year_dates, status="success")
+    
+    except Exception as e:
+        # print(error)
+        # exc_type, exc_obj, exc_tb = sys.exc_info()
+        # fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        # print(exc_type, fname, exc_tb.tb_lineno)
+        log_error("uploadstatus", e)
+        # cursor.close()
+        # return jsonify(message="There is some problem in uploading the file! Please contact ERLDC IT", status="failure")
+        return jsonify(message="There is a problem, please contact ERLDC IT!", status="failure")
+
 
 
 
@@ -3427,8 +4004,137 @@ def dayRangeStatus():
         # return jsonify(message="There is some problem in uploading the file! Please contact ERLDC IT", status="failure")
         return jsonify(message="There is a problem, please contact ERLDC IT!", status="failure")
 
+@app.route('/api/radayrangestatus', methods=['POST'])
+@jwt_required()
+@token_required
+def radayRangeStatus():
+    try:
+        # Retrieve date range from request
+        conn = psycopg2.connect(**db_params)
+        cursor = conn.cursor()
+        params = request.get_json()
+        print("radayRangeStatus", params)
 
+        start_date = datetime.strptime(params["params"]["fromDate"], '%d/%m/%Y')
+        end_date = datetime.strptime(params["params"]["toDate"], '%d/%m/%Y')
 
+        # SQL query to fetch data within the specified date range
+        sql_query = """
+                    WITH min_revision AS (
+                        SELECT 
+                            state_id, 
+                            upload_date, 
+                            MAX(revision_no) AS min_revision_no
+                        FROM 
+                            file_uploads
+                        GROUP BY 
+                            state_id, 
+                            upload_date
+                    ),
+                    valid_uploads AS (
+                        SELECT 
+                            f.*
+                        FROM 
+                            file_uploads f
+                        INNER JOIN min_revision m ON 
+                            f.state_id = m.state_id
+                            AND f.upload_date = m.upload_date
+                            AND f.revision_no = m.min_revision_no
+                    ),
+                    upload_status AS (
+                        SELECT 
+                            vu.state_id,
+                            vu.upload_date,
+                            vu.upload_time,
+                            CASE
+                                WHEN vu.file_data IS NULL THEN 2  -- Not Uploaded
+                                WHEN NOT EXISTS (
+                                    SELECT 1 FROM jsonb_array_elements(vu.file_data) AS row
+                                    WHERE EXISTS (
+                                        SELECT 1 FROM jsonb_array_elements(row.value) WITH ORDINALITY AS val(v, idx)
+                                        WHERE idx >= 4
+                                        AND val.v::text <> ''
+                                        AND val.v::text ~ '^[-+]?[0-9]*\.?[0-9]+$'
+                                        AND (val.v::text)::numeric <> 0
+                                    )
+                                ) THEN 2  -- All values in cols 4–25 are zero
+                                WHEN vu.upload_time < (vu.upload_date - INTERVAL '1 day' + INTERVAL '10 hours') THEN 1  -- Proper upload
+                                ELSE 0  -- Late Upload
+                            END AS upload_status_code
+                        FROM valid_uploads vu
+                    )
+                    SELECT 
+                        s.state_name,
+                        COALESCE(f.upload_date, %s) AS upload_date,
+                        COALESCE(us.upload_time, NULL) AS upload_time,
+                        COALESCE(us.upload_status_code, 2) AS upload_status_code,
+                        COUNT(f.state_id) AS upload_count
+                    FROM 
+                        states s
+                    LEFT JOIN file_uploads f ON 
+                        s.state_id = f.state_id
+                        AND f.upload_date BETWEEN %s AND %s
+                    LEFT JOIN upload_status us ON 
+                        f.state_id = us.state_id 
+                        AND f.upload_date = us.upload_date
+                    WHERE 
+                        s.state_id IN (1,2,3,4,5,7)
+                    GROUP BY 
+                        s.state_name, 
+                        f.upload_date,
+                        us.upload_time,
+                        us.upload_status_code
+                    ORDER BY
+                        s.state_name,
+                        upload_date DESC;
+
+        """
+        
+        cursor.execute(sql_query, (end_date, start_date, end_date))
+        results = cursor.fetchall()
+        
+        print("Checking")
+        print(results)
+
+        day_data = []
+        date_range = [end_date - timedelta(days=i) for i in range((end_date - start_date).days + 1)]
+        state_names = set(result[0] for result in results)
+
+        for state_name in state_names:
+            state_data = {"name": state_name, "data": []}
+            for date in date_range:
+                date_str = date.strftime('%Y-%m-%d')
+                found_result = False
+                for result in results:
+                    if result[0] == state_name and result[1].strftime("%Y-%m-%d") == date_str:
+                        upload_count = result[4]
+                        upload_time = result[2].strftime("%Y-%m-%d %H:%M:%S") if result[2] is not None else None
+                        upload_status_code = result[3]
+                        found_result = True
+                        break
+                if not found_result:
+                    upload_count = 0
+                    upload_time = None
+                    upload_status_code = 2  # Not Uploaded
+                state_data["data"].append({
+                    'x': date_str, 
+                    'y': upload_status_code, 
+                    'upload_time': upload_time, 
+                    'upload_count': upload_count
+                })
+            day_data.append(state_data)
+
+        day_dates = {
+            "start_date": (start_date + timedelta(days=1)).strftime('%Y-%m-%d'),
+            "end_date": end_date.strftime('%Y-%m-%d')
+        }
+
+        return jsonify(day=day_data, status="success")
+
+    except Exception as e:
+        log_error("dayrangestatus", e)
+        cursor.close()
+        return jsonify(message="There is a problem, please contact ERLDC IT!", status="failure")
 
 
 @app.route('/api/weekrangestatus', methods=['POST'])
@@ -3508,6 +4214,148 @@ def weekRangeStatus():
             ORDER BY
                 states.state_name,
                 mu.from_date DESC;
+        """
+        
+        cursor.execute(sql_query, (custom_start_date.strftime('%Y-%m-%d'), custom_end_date.strftime('%Y-%m-%d')))
+        results = cursor.fetchall()
+
+        # Fetch state names
+        cursor.execute("SELECT state_name FROM states WHERE state_id IN (1,2,3,4,5,7)")
+        all_states = [row[0] for row in cursor.fetchall()]
+
+        # Initialize data structure for states
+        week_data = [{"name": state_name, "data": []} for state_name in all_states]
+
+        # Process each state and week range
+        for state in week_data:
+            for week_start in week_range:
+                week_end = week_start + timedelta(days=6)  # End of the week
+                # Filter the results for the current state and week
+                upload_info = next((item for item in results if item[0] == state["name"] and item[1] is not None and week_start <= item[1] <= week_end), None)
+
+                # Determine upload status for the week
+                if upload_info:
+                    upload_status_code = upload_info[3]
+                    upload_time = upload_info[2].strftime('%Y-%m-%d %H:%M:%S') if upload_info[2] else None
+                    upload_count = 1  # At least one upload exists
+                else:
+                    upload_status_code = 2  # Not Uploaded
+                    upload_time = None
+                    upload_count = 0
+
+                # Append data for the week
+                state["data"].append({
+                    "x": f"{week_start.strftime('%Y-%m-%d')} to {week_end.strftime('%Y-%m-%d')}",
+                    "y": upload_status_code,
+                    "upload_time": upload_time,
+                    "upload_count": upload_count
+                })
+
+            # Sort the state's data in descending order of week (latest first)
+            state["data"] = sorted(state["data"], key=lambda x: x["x"], reverse=True)
+
+        return jsonify(week=week_data, status="success")
+
+    except Exception as e:
+        log_error("weekrangestatus", e)
+        cursor.close()
+        return jsonify(message="There is a problem, please contact ERLDC IT!", status="failure")
+
+@app.route('/api/raweekrangestatus', methods=['POST'])
+@jwt_required()
+@token_required
+def raweekRangeStatus():
+    try:
+        conn = psycopg2.connect(**db_params)
+        cursor = conn.cursor()
+
+        # Retrieve date range from request
+        params = request.get_json()
+        custom_start_date = datetime.strptime(params["params"]["fromDate"], '%d/%m/%Y').date()
+        custom_end_date = datetime.strptime(params["params"]["toDate"], '%d/%m/%Y').date()
+
+        # Adjust start date to the start of the week (Monday)
+        if custom_start_date.weekday() != 0:  # If the start date is not a Monday
+            custom_start_date = custom_start_date - timedelta(days=custom_start_date.weekday())  # Shift to the previous Monday
+
+        # Adjust the end date to include the entire last week if it falls mid-week
+        if custom_end_date.weekday() != 6:  # If the end date is not a Sunday
+            custom_end_date = custom_end_date + timedelta(days=(6 - custom_end_date.weekday()))  # Extend to the next Sunday
+
+        # Generate the week ranges (from Monday to Sunday)
+        week_range = []
+        week_start = custom_start_date
+        while week_start <= custom_end_date:
+            week_range.append(week_start)
+            week_start += timedelta(weeks=1)
+
+        # SQL query for fetching data across weeks
+        sql_query = """
+                    WITH min_revision AS (
+                        SELECT 
+                            state_id, 
+                            from_date, 
+                            MAX(revision_no) AS min_revision_no
+                        FROM 
+                            week_ahead_file_uploads
+                        WHERE
+                            from_date BETWEEN %s AND %s
+                        GROUP BY 
+                            state_id, 
+                            from_date
+                    ),
+                    valid_uploads AS (
+                        SELECT 
+                            fu.*
+                        FROM 
+                            week_ahead_file_uploads fu
+                        INNER JOIN min_revision mr ON
+                            fu.state_id = mr.state_id
+                            AND fu.from_date = mr.from_date
+                            AND fu.revision_no = mr.min_revision_no
+                    ),
+                    upload_status AS (
+                        SELECT 
+                            vu.state_id,
+                            vu.from_date,
+                            vu.upload_time,
+                            CASE
+                                WHEN vu.file_data IS NULL THEN 2  -- Not Uploaded
+                                WHEN NOT EXISTS (
+                                    SELECT 1 FROM jsonb_array_elements(vu.file_data) AS row
+                                    WHERE EXISTS (
+                                        SELECT 1 
+                                        FROM jsonb_array_elements(row.value) WITH ORDINALITY AS val(v, idx)
+                                        WHERE idx >= 5
+                                        AND val.v::text <> ''
+                                        AND val.v::text ~ '^[-+]?[0-9]*\.?[0-9]+$'
+                                        AND (val.v::text)::numeric <> 0
+                                    )
+                                ) THEN 2  -- All values in cols 5–last are zero
+                                WHEN vu.upload_time < DATE_TRUNC('week', vu.from_date - INTERVAL '1 week') + INTERVAL '1 day' THEN 1  -- Proper upload
+                                ELSE 0  -- Late upload
+                            END AS upload_status_code
+                        FROM valid_uploads vu
+                    )
+                    SELECT 
+                        s.state_name,
+                        us.from_date AS week_start_date,
+                        us.upload_time,
+                        COALESCE(us.upload_status_code, 2) AS upload_status_code
+                    FROM 
+                        states s
+                    LEFT JOIN upload_status us ON 
+                        s.state_id = us.state_id
+                    WHERE 
+                        s.state_id IN (1,2,3,4,5,7)
+                    GROUP BY 
+                        s.state_name, 
+                        us.from_date,
+                        us.upload_time,
+                        us.upload_status_code
+                    ORDER BY
+                        s.state_name,
+                        week_start_date DESC;
         """
         
         cursor.execute(sql_query, (custom_start_date.strftime('%Y-%m-%d'), custom_end_date.strftime('%Y-%m-%d')))
@@ -3697,6 +4545,167 @@ def monthRangeStatus():
         return jsonify(message="There is a problem, please contact ERLDC IT!")
 
 
+
+@app.route('/api/ramonthrangestatus', methods=['POST'])
+@jwt_required()
+@token_required
+def raMonthRangeStatus():
+    try:
+        # Get the current date
+        today = datetime.now()
+
+        conn = psycopg2.connect(**db_params)
+        cursor = conn.cursor()
+        # Retrieve date range from request
+
+        # Retrieve date range from request
+        params = request.get_json()
+        print(params)
+
+        # Assuming 'params' is a dictionary that includes 'fromDate' and 'toDate'
+        start_date = datetime.strptime(params["params"]["fromDate"], '%d/%m/%Y')
+        end_date = datetime.strptime(params["params"]["toDate"], '%d/%m/%Y')
+
+        # Calculate the start of the first month in the custom range
+        start_of_first_month = start_date.replace(day=1)
+
+        # Calculate the end of the last month in the custom range
+        _, last_day = monthrange(end_date.year, end_date.month)
+        end_of_last_month = end_date.replace(day=last_day)
+
+        # Execute SQL Query
+        sql_query = """
+                    WITH min_revision AS (
+                        SELECT 
+                            state_id, 
+                            DATE_TRUNC('month', from_date) AS from_month, 
+                            MAX(revision_no) AS min_revision_no
+                        FROM 
+                            month_ahead_file_uploads
+                        WHERE
+                            from_date BETWEEN %s AND %s
+                        GROUP BY 
+                            state_id, 
+                            from_month
+                    ),
+                    valid_uploads AS (
+                        SELECT 
+                            fu.*
+                        FROM 
+                            month_ahead_file_uploads fu
+                        INNER JOIN min_revision mr ON
+                            fu.state_id = mr.state_id
+                            AND DATE_TRUNC('month', fu.from_date) = mr.from_month
+                            AND fu.revision_no = mr.min_revision_no
+                    ),
+                    upload_status AS (
+                        SELECT 
+                            vu.state_id,
+                            DATE_TRUNC('month', vu.from_date) AS from_month,
+                            vu.upload_time,
+                            CASE
+                                WHEN vu.file_data IS NULL THEN 2  -- Not Uploaded
+                                WHEN NOT EXISTS (
+                                    SELECT 1 FROM jsonb_array_elements(vu.file_data) AS row
+                                    WHERE EXISTS (
+                                        SELECT 1 
+                                        FROM jsonb_array_elements(row.value) WITH ORDINALITY AS val(v, idx)
+                                        WHERE idx >= 5
+                                        AND val.v::text <> ''
+                                        AND val.v::text ~ '^[-+]?[0-9]*\.?[0-9]+$'
+                                        AND (val.v::text)::numeric <> 0
+                                    )
+                                ) THEN 2  -- All values in cols 5–last are zero
+                                WHEN vu.upload_time < DATE_TRUNC('month', vu.from_date) - INTERVAL '1 month' + INTERVAL '5 day' THEN 1  -- On-time Upload
+                                ELSE 0  -- Late Upload
+                            END AS upload_status_code
+                        FROM valid_uploads vu
+                    )
+                    SELECT 
+                        s.state_name,
+                        COALESCE(us.from_month, %s) AS month_start_date,
+                        COALESCE(us.upload_time, NULL) AS upload_time,
+                        COALESCE(us.upload_status_code, 2) AS upload_status_code,
+                        COUNT(us.state_id) AS upload_count
+                    FROM 
+                        states s
+                    LEFT JOIN upload_status us ON 
+                        s.state_id = us.state_id
+                    WHERE 
+                        s.state_id IN (1,2,3,4,5,7)
+                    GROUP BY 
+                        s.state_name, 
+                        us.from_month,
+                        us.upload_time,
+                        us.upload_status_code
+                    ORDER BY
+                        s.state_name,
+                        month_start_date DESC;
+                    """
+        cursor.execute(sql_query, (start_of_first_month.strftime('%Y-%m-%d'), end_of_last_month.strftime('%Y-%m-%d'), end_of_last_month.strftime('%Y-%m-%d')))
+        results = cursor.fetchall()
+
+        # Process the results
+        month_range = [start_of_first_month + timedelta(days=32 * i) for i in range((end_of_last_month.year - start_of_first_month.year) * 12 + end_of_last_month.month - start_of_first_month.month + 1)]
+        month_range = [date.replace(day=1) for date in month_range]
+        all_states = set(result[0] for result in results)
+
+        month_data = []
+        # Process results and sort by latest month first
+        for state_name in all_states:
+            state_data = {"name": state_name, "data": []}
+            for month_start in sorted(month_range, reverse=True):
+                _, last_day_of_month = monthrange(month_start.year, month_start.month)
+                month_end = month_start.replace(day=last_day_of_month)
+                month_range_str = f"{month_start.strftime('%Y-%m-%d')} to {month_end.strftime('%Y-%m-%d')}"
+
+                upload_count = 0
+                upload_status_code = 2  # Default to Not Uploaded
+                upload_time = None
+                found_result = False
+
+                # Check each result for the current state and month
+                for result in results:
+                    result_state, result_month_start, result_upload_time, result_status, result_count = result
+                    if result_state == state_name and result_month_start.strftime('%Y-%m-%d') == month_start.strftime('%Y-%m-%d'):
+                        upload_count = result_count
+                        upload_time = result_upload_time.strftime("%Y-%m-%d %H:%M:%S") if result_upload_time else None
+                        upload_status_code = result_status
+                        found_result = True
+                        break
+
+                if not found_result:
+                    upload_count = 0
+                    upload_status_code = 2  # Not Uploaded
+
+                state_data["data"].append({
+                    'x': month_range_str,
+                    'y': upload_status_code,
+                    'upload_time': upload_time,
+                    'upload_count': upload_count
+                })
+
+            month_data.append(state_data)
+
+        # # Prepare JSON for frontend
+        # month_dates = {
+        #     "start_date": start_of_first_month.strftime('%Y-%m-%d'),
+        #     "end_date": end_of_last_month.strftime('%Y-%m-%d')
+        # }
+
+        month_data
+        return jsonify(month=month_data, status="success")
+
+    except Exception as e:
+        log_error("monthrangestatus", e)
+        cursor.close()
+        # return jsonify(message="There is some problem in uploading the file! Please contact ERLDC IT", status="failure")
+        return jsonify(message="There is a problem, please contact ERLDC IT!")
+
+
+
+
+
 @app.route('/api/yearrangestatus', methods=['POST'])
 @jwt_required()
 @token_required
@@ -3726,29 +4735,193 @@ def yearRangeStatus():
             if current_year_end >= start_date:
                 financial_years.append((current_year_start, current_year_end))
             current_year_start = datetime(current_year_start.year + 1, 4, 1).date()  # Next financial year start
+        financial_years.reverse()  # Reverse to get the latest year first
 
         # SQL query to fetch relevant data
         sql_query = """
-        SELECT 
-            states.state_name,
-            yafu.from_date,
-            yafu.to_date,
-            yafu.upload_time,
-            CASE
-                WHEN yafu.upload_time IS NULL THEN 2  -- Not Uploaded
-                WHEN yafu.upload_time <= yafu.from_date + INTERVAL '5 months' - INTERVAL '1 day' THEN 1  -- Uploaded
-                ELSE 0  -- Late Upload
-            END AS upload_status,
-            COUNT(yafu.state_id) AS upload_count
-        FROM 
-            states
-        LEFT JOIN 
-            year_ahead_file_uploads yafu ON states.state_id = yafu.state_id
-        WHERE 
-            states.state_id IN (1,2,3,4,5,7)
-        GROUP BY 
-            states.state_name, yafu.from_date, yafu.to_date, yafu.upload_time
+                    WITH max_revision AS (
+                        SELECT 
+                            state_id, 
+                            from_date, 
+                            MAX(revision_no) AS max_revision_no
+                        FROM 
+                            year_ahead_file_uploads
+                        WHERE
+                            from_date IS NOT NULL
+                        GROUP BY 
+                            state_id, from_date
+                    ), latest_uploads AS (
+                        SELECT 
+                            fu.state_id,
+                            fu.from_date,
+                            fu.to_date,
+                            fu.upload_time,
+                            fu.revision_no
+                        FROM 
+                            year_ahead_file_uploads fu
+                        INNER JOIN max_revision mr ON 
+                            fu.state_id = mr.state_id
+                            AND fu.from_date = mr.from_date
+                            AND fu.revision_no = mr.max_revision_no
+                    )
+                    SELECT 
+                        states.state_name,
+                        lu.from_date,
+                        lu.to_date,
+                        lu.upload_time,
+                        CASE
+                            WHEN lu.upload_time IS NULL THEN 2  -- Not Uploaded
+                            WHEN lu.upload_time <= lu.from_date + INTERVAL '5 months' - INTERVAL '1 day' THEN 1  -- Uploaded on time
+                            ELSE 0  -- Late Upload
+                        END AS upload_status,
+                        COUNT(lu.state_id) AS upload_count
+                    FROM 
+                        states
+                    LEFT JOIN 
+                        latest_uploads lu ON states.state_id = lu.state_id
+                    WHERE 
+                        states.state_id IN (1,2,3,4,5,7)
+                    GROUP BY 
+                        states.state_name, lu.from_date, lu.to_date, lu.upload_time
+                    ORDER BY
+                        states.state_name, lu.from_date DESC;
         """
+        cursor.execute(sql_query)
+        results = cursor.fetchall()
+
+        all_states = set(result[0] for result in results)
+
+        # Process results
+        year_data = []
+        for state_name in all_states:
+            state_data = {"name": state_name, "data": []}
+            for fy_start, fy_end in financial_years:
+                found = False
+                for result in results:
+                    result_state, from_date, to_date, upload_time, upload_status, upload_count = result
+                    if result_state == state_name and from_date and to_date and from_date >= fy_start and to_date <= fy_end:
+                        found = True
+                        upload_time_formatted = upload_time.strftime("%Y-%m-%d %H:%M:%S") if upload_time else None
+                        state_data["data"].append({
+                            'x': f"{fy_start.strftime('%Y-%m-%d')} to {fy_end.strftime('%Y-%m-%d')}",
+                            'y': upload_status,
+                            'upload_time': upload_time_formatted,
+                            'upload_count': upload_count
+                        })
+                if not found:
+                    state_data["data"].append({
+                        'x': f"{fy_start.strftime('%Y-%m-%d')} to {fy_end.strftime('%Y-%m-%d')}",
+                        'y': 2,  # Not Uploaded
+                        'upload_time': None,
+                        'upload_count': 0
+                    })
+            year_data.append(state_data)
+        # Prepare JSON data for the frontend
+        date_range = {
+            "start_date": start_date.strftime('%Y-%m-%d'),
+            "end_date": end_date.strftime('%Y-%m-%d')
+        }
+        
+        return jsonify(year=year_data, status="success")
+
+    except Exception as e:
+        log_error("yearrangestatus", e)
+        cursor.close()
+        # return jsonify(message="There is some problem in uploading the file! Please contact ERLDC IT", status="failure")
+        return jsonify(message="There is a problem, please contact ERLDC IT!")
+
+
+
+@app.route('/api/rayearrangestatus', methods=['POST'])
+@jwt_required()
+@token_required
+def raYearRangeStatus():
+    try:
+        # Get the current date
+        today = datetime.now()
+
+        conn = psycopg2.connect(**db_params)
+        cursor = conn.cursor()
+
+        # Retrieve date range from request
+        params = request.get_json()
+        print(params)
+
+        # Assuming 'params' is a dictionary that includes 'fromDate' and 'toDate'
+        start_date = datetime.strptime(params["params"]["fromDate"], '%d/%m/%Y').date()
+        end_date = datetime.strptime(params["params"]["toDate"], '%d/%m/%Y').date()
+
+        # Loop to calculate the financial years intersecting with the given range
+        financial_years = []
+        current_year_start = datetime(start_date.year, 4, 1) if start_date.month >= 4 else datetime(start_date.year - 1, 4, 1)
+        current_year_start = current_year_start.date()  # Ensure this is a date
+
+        while current_year_start <= end_date:
+            current_year_end = datetime(current_year_start.year + 1, 3, 31).date()  # Ensure this is also a date
+            if current_year_end >= start_date:
+                financial_years.append((current_year_start, current_year_end))
+            current_year_start = datetime(current_year_start.year + 1, 4, 1).date()  # Next financial year start
+        financial_years.reverse() # Reverse to get the latest year first
+        # SQL query to fetch relevant data
+        sql_query = """
+                    WITH max_revision AS (
+                        SELECT 
+                            state_id, 
+                            from_date, 
+                            MAX(revision_no) AS max_revision_no
+                        FROM 
+                            year_ahead_file_uploads
+                        WHERE
+                            from_date IS NOT NULL
+                        GROUP BY 
+                            state_id, from_date
+                    ), latest_uploads AS (
+                        SELECT 
+                            fu.state_id,
+                            fu.from_date,
+                            fu.to_date,
+                            fu.upload_time,
+                            fu.file_data
+                        FROM 
+                            year_ahead_file_uploads fu
+                        INNER JOIN max_revision mr ON 
+                            fu.state_id = mr.state_id
+                            AND fu.from_date = mr.from_date
+                            AND fu.revision_no = mr.max_revision_no
+                    )
+                    SELECT 
+                        states.state_name,
+                        lu.from_date,
+                        lu.to_date,
+                        lu.upload_time,
+                        CASE
+                            WHEN lu.file_data IS NULL THEN 2  -- Not Uploaded
+                            WHEN NOT EXISTS (
+                                SELECT 1 FROM jsonb_array_elements(lu.file_data) AS row
+                                WHERE EXISTS (
+                                    SELECT 1 
+                                    FROM jsonb_array_elements(row.value) WITH ORDINALITY AS val(v, idx)
+                                    WHERE idx >= 4
+                                    AND val.v::text <> ''
+                                    AND val.v::text ~ '^[-+]?[0-9]*\.?[0-9]+$'
+                                    AND (val.v::text)::numeric <> 0
+                                )
+                            ) THEN 2  -- All values in cols 4–last are zero
+                            WHEN lu.upload_time <= lu.from_date + INTERVAL '5 months' - INTERVAL '1 day' THEN 1  -- Uploaded on time
+                            ELSE 0  -- Late Upload
+                        END AS upload_status,
+                        COUNT(lu.state_id) AS upload_count
+                    FROM 
+                        states
+                    LEFT JOIN 
+                        latest_uploads lu ON states.state_id = lu.state_id
+                    WHERE 
+                        states.state_id IN (1,2,3,4,5,7)
+                    GROUP BY 
+                        states.state_name, lu.from_date, lu.to_date, lu.upload_time, lu.file_data
+                    ORDER BY
+                        states.state_name, lu.from_date DESC;
+                    """
         cursor.execute(sql_query)
         results = cursor.fetchall()
 
@@ -3793,8 +4966,6 @@ def yearRangeStatus():
         cursor.close()
         # return jsonify(message="There is some problem in uploading the file! Please contact ERLDC IT", status="failure")
         return jsonify(message="There is a problem, please contact ERLDC IT!")
-
-
 
 
 
@@ -4732,7 +5903,9 @@ def MdpDescriptionData():
 
 if __name__ == '__main__':
     cors = CORS(app)
-    app.run(host='0.0.0.0', port=5000, debug=False)
+    from waitress import serve
+    serve(app, host="0.0.0.0", port=5000)
+    # app.run(host='0.0.0.0', port=5000, debug=False)
 
 
 
