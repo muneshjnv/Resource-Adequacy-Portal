@@ -8,24 +8,24 @@
     <div class="col-xl-12">
         <div class="card card-height-50">
             <div class="card-header align-items-center d-flex">
-                <h4 class="card-title mb-0 flex-grow-1">File Upload Status</h4> 
+                <h4 class="card-title mb-0 flex-grow-1">Forecast Data Upload Status</h4> 
 
                 <div class="btn-group" role="group" aria-label="Basic radio toggle button group">
-                    <input type="radio" class="btn-check" name="btnradio" id="btnradio1" checked="" [(ngModel)]="selectedOption" value="day">
+                    <input type="radio" class="btn-check" name="forecastBtnradio" id="btnradio1" checked="" [(ngModel)]="forecastSelectedOption" value="day">
                     <label class="btn btn-outline-secondary mb-0" for="btnradio1">Day Ahead</label>
 
-                    <input type="radio" class="btn-check" name="btnradio" id="btnradio2" [(ngModel)]="selectedOption" value="week">
+                    <input type="radio" class="btn-check" name="forecastBtnradio" id="btnradio2" [(ngModel)]="forecastSelectedOption" value="week">
                     <label class="btn btn-outline-secondary mb-0" for="btnradio2">Week Ahead</label>
 
-                    <input type="radio" class="btn-check" name="btnradio" id="btnradio3" [(ngModel)]="selectedOption" value="month">
+                    <input type="radio" class="btn-check" name="forecastBtnradio" id="btnradio3" [(ngModel)]="forecastSelectedOption" value="month">
                     <label class="btn btn-outline-secondary mb-0" for="btnradio3">Month Ahead</label>
 
-                    <input type="radio" class="btn-check" name="btnradio" id="btnradio4" [(ngModel)]="selectedOption" value="year">
+                    <input type="radio" class="btn-check" name="forecastBtnradio" id="btnradio4" [(ngModel)]="forecastSelectedOption" value="year">
                     <label class="btn btn-outline-secondary mb-0" for="btnradio4">Year Ahead</label>
                 </div>
                 
             </div><!-- end card header -->
-            <div *ngIf="selectedOption === 'day'">
+            <div *ngIf="forecastSelectedOption === 'day'">
 
                 <form class="row g-3 needs-validation" novalidate  [formGroup]="dayForm">
                     <div class="row">&nbsp;</div>
@@ -61,14 +61,14 @@
                 </form>
             <div class="card-body p-0">
                 <div class="mb-n2" *ngIf="dataArrived">
-                    <apx-chart [series]="basicHeatmapChart.series" [chart]="basicHeatmapChart.chart"
-                        [dataLabels]="basicHeatmapChart.dataLabels" [legend]="basicHeatmapChart.legend" [plotOptions]="basicHeatmapChart.plotOptions"
-                        [colors]="basicHeatmapChart.colors" [tooltip]="basicHeatmapChart.tooltip" dir="ltr"></apx-chart>
+                    <apx-chart [series]="forecastDayHeatmapChart.series" [chart]="forecastDayHeatmapChart.chart"
+                        [dataLabels]="forecastDayHeatmapChart.dataLabels" [legend]="forecastDayHeatmapChart.legend" [plotOptions]="forecastDayHeatmapChart.plotOptions"
+                        [colors]="forecastDayHeatmapChart.colors" [tooltip]="forecastDayHeatmapChart.tooltip" dir="ltr"></apx-chart>
                 </div>
             </div><!-- end cardbody -->
         </div>
 
-        <div *ngIf="selectedOption === 'week'">
+        <div *ngIf="forecastSelectedOption === 'week'">
             <form class="row g-3 needs-validation" novalidate  [formGroup]="weekForm">
                 <div class="row">&nbsp;</div>
                 <div class="row justify-content-end">
@@ -103,14 +103,14 @@
             </form>
             <div class="card-body p-0">
                 <div class="mb-n2" *ngIf="dataArrived">
-                    <apx-chart [series]="basicWeekHeatmapChart.series" [chart]="basicWeekHeatmapChart.chart"
-                        [dataLabels]="basicWeekHeatmapChart.dataLabels" [legend]="basicWeekHeatmapChart.legend" [plotOptions]="basicWeekHeatmapChart.plotOptions"
-                        [colors]="basicWeekHeatmapChart.colors" [tooltip]="basicWeekHeatmapChart.tooltip" dir="ltr"></apx-chart>
+                    <apx-chart [series]="forecastWeekHeatmapChart.series" [chart]="forecastWeekHeatmapChart.chart"
+                        [dataLabels]="forecastWeekHeatmapChart.dataLabels" [legend]="forecastWeekHeatmapChart.legend" [plotOptions]="forecastWeekHeatmapChart.plotOptions"
+                        [colors]="forecastWeekHeatmapChart.colors" [tooltip]="forecastWeekHeatmapChart.tooltip" dir="ltr"></apx-chart>
                 </div>
             </div><!-- end cardbody -->
         </div>
 
-        <div *ngIf="selectedOption === 'month'">
+        <div *ngIf="forecastSelectedOption === 'month'">
 
             <form class="row g-3 needs-validation" novalidate  [formGroup]="monthForm">
                 <div class="row">&nbsp;</div>
@@ -147,9 +147,9 @@
             </form>
             <div class="card-body p-0">
                 <div class="mb-n2" *ngIf="dataArrived">
-                    <apx-chart [series]="basicMonthHeatmapChart.series" [chart]="basicMonthHeatmapChart.chart"
-                        [dataLabels]="basicMonthHeatmapChart.dataLabels" [legend]="basicMonthHeatmapChart.legend" [plotOptions]="basicMonthHeatmapChart.plotOptions"
-                        [colors]="basicMonthHeatmapChart.colors" [tooltip]="basicMonthHeatmapChart.tooltip" dir="ltr"></apx-chart>
+                    <apx-chart [series]="forecastMonthHeatmapChart.series" [chart]="forecastMonthHeatmapChart.chart"
+                        [dataLabels]="forecastMonthHeatmapChart.dataLabels" [legend]="forecastMonthHeatmapChart.legend" [plotOptions]="forecastMonthHeatmapChart.plotOptions"
+                        [colors]="forecastMonthHeatmapChart.colors" [tooltip]="forecastMonthHeatmapChart.tooltip" dir="ltr"></apx-chart>
                 </div>
             </div><!-- end cardbody -->
 
@@ -157,7 +157,7 @@
             
         </div>
 
-        <div *ngIf="selectedOption === 'year'">
+        <div *ngIf="forecastSelectedOption === 'year'">
 
             <form class="row g-3 needs-validation" novalidate  [formGroup]="yearForm">
                 <div class="row">&nbsp;</div>
@@ -193,9 +193,9 @@
             </form>
             <div class="card-body p-0">
                 <div class="mb-n2" *ngIf="dataArrived">
-                    <apx-chart [series]="basicYearHeatmapChart.series" [chart]="basicYearHeatmapChart.chart"
-                        [dataLabels]="basicYearHeatmapChart.dataLabels" [legend]="basicYearHeatmapChart.legend" [plotOptions]="basicYearHeatmapChart.plotOptions"
-                        [colors]="basicYearHeatmapChart.colors" [tooltip]="basicYearHeatmapChart.tooltip" dir="ltr"></apx-chart>
+                    <apx-chart [series]="forecastYearHeatmapChart.series" [chart]="forecastYearHeatmapChart.chart"
+                        [dataLabels]="forecastYearHeatmapChart.dataLabels" [legend]="forecastYearHeatmapChart.legend" [plotOptions]="forecastYearHeatmapChart.plotOptions"
+                        [colors]="forecastYearHeatmapChart.colors" [tooltip]="forecastYearHeatmapChart.tooltip" dir="ltr"></apx-chart>
                 </div>
             </div>
             
@@ -204,6 +204,207 @@
         </div>
         <!-- end card -->
     </div>
+
+
+
+    <div class="card card-height-50">
+        <div class="card-header align-items-center d-flex">
+            <h4 class="card-title mb-0 flex-grow-1"> Resource Adequacy Data Upload Status</h4> 
+
+            <div class="btn-group" role="group" aria-label="Basic radio toggle button group">
+                <input type="radio" class="btn-check" name="rabtnradio" id="btnradio5" checked="" [(ngModel)]="resourceAdequacySelectedOption" value="day">
+                <label class="btn btn-outline-secondary mb-0" for="btnradio5">Day Ahead</label>
+
+                <input type="radio" class="btn-check" name="rabtnradio" id="btnradio6" [(ngModel)]="resourceAdequacySelectedOption" value="week">
+                <label class="btn btn-outline-secondary mb-0" for="btnradio6">Week Ahead</label>
+
+                <input type="radio" class="btn-check" name="rabtnradio" id="btnradio7" [(ngModel)]="resourceAdequacySelectedOption" value="month">
+                <label class="btn btn-outline-secondary mb-0" for="btnradio7">Month Ahead</label>
+
+                <input type="radio" class="btn-check" name="rabtnradio" id="btnradio8" [(ngModel)]="resourceAdequacySelectedOption" value="year">
+                <label class="btn btn-outline-secondary mb-0" for="btnradio8">Year Ahead</label>
+            </div>
+            
+        </div><!-- end card header -->
+        <div *ngIf="resourceAdequacySelectedOption === 'day'">
+
+            <form class="row g-3 needs-validation" novalidate  [formGroup]="dayForm">
+                <div class="row">&nbsp;</div>
+                <div class="row justify-content-end">
+                    
+
+                    
+
+                    <div class="col-md-4 position-relative">
+                        <label for="validationTooltip05" class="form-label">Select Range</label>
+                        <input class="form-control flatpickr-input" type="text" mwlFlatpickr [altInput]="true" [convertModelValue]="true" mode="range" altFormat="d M, Y" dateFormat="d M, Y" formControlName="dayRange" data-week-number>
+                </div>
+
+            <!-- <div class="col-md-1"></div> -->
+
+            <div class="col-md-1 d-flex align-items-end">
+                <button class="btn btn-outline-primary btn-load" *ngIf="raloading">
+                    <span class="d-flex align-items-center">
+                        <span class="spinner-border flex-shrink-0" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </span>
+                        <span class="flex-grow-1 ms-2">
+                            Loading...
+                        </span>
+                    </span>
+                </button>
+                <button class="btn btn-primary" type="submit" *ngIf="!raloading" (click)="fetchRAForDay()">Submit</button>
+            </div>
+        
+                    
+                </div>
+
+            </form>
+        <div class="card-body p-0">
+            <div class="mb-n2" *ngIf="radataArrived">
+                <apx-chart [series]="resourceAdequacyDayHeatmapChart.series" [chart]="resourceAdequacyDayHeatmapChart.chart"
+                    [dataLabels]="resourceAdequacyDayHeatmapChart.dataLabels" [legend]="resourceAdequacyDayHeatmapChart.legend" [plotOptions]="resourceAdequacyDayHeatmapChart.plotOptions"
+                    [colors]="resourceAdequacyDayHeatmapChart.colors" [tooltip]="resourceAdequacyDayHeatmapChart.tooltip" dir="ltr"></apx-chart>
+            </div>
+        </div><!-- end cardbody -->
+    </div>
+
+    <div *ngIf="resourceAdequacySelectedOption === 'week'">
+        <form class="row g-3 needs-validation" novalidate  [formGroup]="weekForm">
+            <div class="row">&nbsp;</div>
+            <div class="row justify-content-end">
+                
+
+                
+
+                <div class="col-md-4 position-relative">
+                    <label for="validationTooltip05" class="form-label">Select Range</label>
+                    <input class="form-control flatpickr-input" type="text" mwlFlatpickr [altInput]="true" [convertModelValue]="true" mode="range" altFormat="d M, Y" dateFormat="d M, Y" formControlName="weekRange" data-week-number>
+            </div>
+
+        <!-- <div class="col-md-1"></div> -->
+
+        <div class="col-md-1 d-flex align-items-end">
+            <button class="btn btn-outline-primary btn-load" *ngIf="raweekloading">
+                <span class="d-flex align-items-center">
+                    <span class="spinner-border flex-shrink-0" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </span>
+                    <span class="flex-grow-1 ms-2">
+                        Loading...
+                    </span>
+                </span>
+            </button>
+            <button class="btn btn-primary" type="submit" *ngIf="!raweekloading" (click)="fetchRAForWeek()">Submit</button>
+        </div>
+    
+                
+            </div>
+
+        </form>
+        <div class="card-body p-0">
+            <div class="mb-n2" *ngIf="radataArrived">
+                <apx-chart [series]="resourceAdequacyWeekHeatmapChart.series" [chart]="resourceAdequacyWeekHeatmapChart.chart"
+                    [dataLabels]="resourceAdequacyWeekHeatmapChart.dataLabels" [legend]="resourceAdequacyWeekHeatmapChart.legend" [plotOptions]="resourceAdequacyWeekHeatmapChart.plotOptions"
+                    [colors]="resourceAdequacyWeekHeatmapChart.colors" [tooltip]="resourceAdequacyWeekHeatmapChart.tooltip" dir="ltr"></apx-chart>
+            </div>
+        </div><!-- end cardbody -->
+    </div>
+
+    <div *ngIf="resourceAdequacySelectedOption === 'month'">
+
+        <form class="row g-3 needs-validation" novalidate  [formGroup]="monthForm">
+            <div class="row">&nbsp;</div>
+            <div class="row justify-content-end">
+                
+
+                
+
+                <div class="col-md-4 position-relative">
+                    <label for="validationTooltip05" class="form-label">Select Range</label>
+                    <input class="form-control flatpickr-input" type="text" mwlFlatpickr [altInput]="true" [convertModelValue]="true" mode="range" altFormat="d M, Y" dateFormat="d M, Y" formControlName="monthRange" data-week-number>
+            </div>
+
+        <!-- <div class="col-md-1"></div> -->
+
+        <div class="col-md-1 d-flex align-items-end">
+            <button class="btn btn-outline-primary btn-load" *ngIf="ramonthloading">
+                <span class="d-flex align-items-center">
+                    <span class="spinner-border flex-shrink-0" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </span>
+                    <span class="flex-grow-1 ms-2">
+                        Loading...
+                    </span>
+                </span>
+            </button>
+            
+            <button class="btn btn-primary" type="submit" *ngIf="!ramonthloading" (click)="fetchRAForMonth()">Submit</button>
+        </div>
+    
+                
+            </div>
+
+        </form>
+        <div class="card-body p-0">
+            <div class="mb-n2" *ngIf="radataArrived">
+                <apx-chart [series]="resourceAdequacyMonthHeatmapChart.series" [chart]="resourceAdequacyMonthHeatmapChart.chart"
+                    [dataLabels]="resourceAdequacyMonthHeatmapChart.dataLabels" [legend]="resourceAdequacyMonthHeatmapChart.legend" [plotOptions]="resourceAdequacyMonthHeatmapChart.plotOptions"
+                    [colors]="resourceAdequacyMonthHeatmapChart.colors" [tooltip]="resourceAdequacyMonthHeatmapChart.tooltip" dir="ltr"></apx-chart>
+            </div>
+        </div><!-- end cardbody -->
+
+
+        
+    </div>
+
+    <div *ngIf="resourceAdequacySelectedOption === 'year'">
+
+        <form class="row g-3 needs-validation" novalidate  [formGroup]="yearForm">
+            <div class="row">&nbsp;</div>
+            <div class="row justify-content-end">
+                
+
+                
+
+                <div class="col-md-4 position-relative">
+                    <label for="validationTooltip05" class="form-label">Select Range</label>
+                    <input class="form-control flatpickr-input" type="text" mwlFlatpickr [altInput]="true" [convertModelValue]="true" mode="range" altFormat="d M, Y" dateFormat="d M, Y" formControlName="yearRange" data-week-number>
+            </div>
+
+
+        <div class="col-md-1 d-flex align-items-end">
+            <button class="btn btn-outline-primary btn-load" *ngIf="rayearloading">
+                <span class="d-flex align-items-center">
+                    <span class="spinner-border flex-shrink-0" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </span>
+                    <span class="flex-grow-1 ms-2">
+                        Loading...
+                    </span>
+                </span>
+            </button>
+            
+            <button class="btn btn-primary" type="submit" *ngIf="!rayearloading" (click)="fetchRAForYear()">Submit</button>
+        </div>
+    
+                
+            </div>
+
+        </form>
+        <div class="card-body p-0">
+            <div class="mb-n2" *ngIf="radataArrived">
+                <apx-chart [series]="resourceAdequacyYearHeatmapChart.series" [chart]="resourceAdequacyYearHeatmapChart.chart"
+                    [dataLabels]="resourceAdequacyYearHeatmapChart.dataLabels" [legend]="resourceAdequacyYearHeatmapChart.legend" [plotOptions]="resourceAdequacyYearHeatmapChart.plotOptions"
+                    [colors]="resourceAdequacyYearHeatmapChart.colors" [tooltip]="resourceAdequacyYearHeatmapChart.tooltip" dir="ltr"></apx-chart>
+            </div>
+        </div>
+        
+
+    
+    </div>
+    <!-- end card -->
+</div>
 
       <!-- <div class="col-xl-12">  -->
         <!-- <div class="card card-height-50"> -->

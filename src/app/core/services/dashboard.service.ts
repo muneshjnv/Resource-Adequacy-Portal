@@ -16,6 +16,9 @@ export class DashboardService {
     return this.http.get<any>(this.url + '/uploadstatus')
   }
 
+  fetchRADayUploadStatus() {
+    return this.http.get<any>(this.url + '/rauploadstatus')
+  }
 
   mapeChart(formData: any) {
     return this.http.post<any>(this.url+'/mapechart', {"params":formData})
@@ -40,6 +43,27 @@ export class DashboardService {
   fetchYearRangeStatus(formDate:any) {
     return this.http.post<any>(this.url + '/yearrangestatus', {"params":formDate}) 
   }
+
+
+  fetchRADayRangeStatus(formDate:any) {
+    return this.http.post<any>(this.url + '/radayrangestatus', {"params":formDate}) 
+  }
+
+  fetchRAWeekRangeStatus(formDate:any) {
+    return this.http.post<any>(this.url + '/raweekrangestatus', {"params":formDate}) 
+  }
+
+  fetchRAMonthRangeStatus(formDate:any) {
+    return this.http.post<any>(this.url + '/ramonthrangestatus', {"params":formDate}) 
+  }
+
+  fetchRAYearRangeStatus(formDate:any) {
+    return this.http.post<any>(this.url + '/rayearrangestatus', {"params":formDate}) 
+  }
+
+
+
+
 
 
 

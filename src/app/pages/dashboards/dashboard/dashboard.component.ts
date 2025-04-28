@@ -18,15 +18,27 @@ import { ToastService } from 'src/app/core/services/toast-service';
  */
 export class DashboardComponent implements OnInit {
 
-  basicHeatmapChart: any;
-  basicWeekHeatmapChart: any;
-  basicMonthHeatmapChart: any;
-  basicYearHeatmapChart: any;
+//   basicHeatmapChart: any;
+//   basicWeekHeatmapChart: any;
+//   basicMonthHeatmapChart: any;
+//   basicYearHeatmapChart: any;
+
+
+  forecastDayHeatmapChart: any;
+  forecastWeekHeatmapChart: any;
+  forecastMonthHeatmapChart: any;
+  forecastYearHeatmapChart: any;
+  resourceAdequacyDayHeatmapChart: any;
+  resourceAdequacyWeekHeatmapChart: any;
+  resourceAdequacyMonthHeatmapChart: any;
+  resourceAdequacyYearHeatmapChart: any;
+
 
   MarketplaceChart: any;
   MarketplaceChartAF: any;
 
   dataArrived: boolean = false;
+  radataArrived: boolean = false;
 
   // bread crumb items
   breadCrumbItems!: Array<{}>;
@@ -38,16 +50,36 @@ export class DashboardComponent implements OnInit {
   weekloading: boolean = false;
   monthloading: boolean = false;
   yearloading: boolean = false;
+  raloading: boolean = false;
+  raweekloading: boolean = false;
+  ramonthloading: boolean = false;
+  rayearloading: boolean = false;
   mapeloading: boolean = false;
   afloading: boolean = false;
 
 
-  public day_data:any = [];
-  public week_data: any = [];
-  public month_data: any = [];
-  public year_data: any = [];
+//   public day_data:any = [];
+//   public week_data: any = [];
+//   public month_data: any = [];
+//   public year_data: any = [];
 
-  selectedOption: string = 'day';
+  public forecastDayData: any = [];
+  public forecastWeekData: any = [];
+  public forecastMonthData: any = [];
+  public forecastYearData: any = [];
+
+  public resourceAdequacyDayData: any = [];
+  public resourceAdequacyWeekData: any = [];
+  public resourceAdequacyMonthData: any = [];
+  public resourceAdequacyYearData: any = [];
+
+
+
+
+
+//   selectedOption: string = 'day';
+  forecastSelectedOption: string = 'day'; // For Forecast Data Upload Status
+  resourceAdequacySelectedOption: string = 'day'; // For Resource Adequacy Data Upload Status
 
   mape_day_ahead: any = [];
   dates_list: any = []
@@ -116,10 +148,10 @@ export class DashboardComponent implements OnInit {
         if (data && data["day"] && data["week"] && data["month"] && data["year"]) {
 
              //   console.log(data);
-      this.day_data = data["day"];
-      this.week_data = data["week"];
-      this.month_data = data["month"];
-      this.year_data = data["year"];
+      this.forecastDayData = data["day"];
+      this.forecastWeekData = data["week"];
+      this.forecastMonthData = data["month"];
+      this.forecastYearData = data["year"];
 
     // //   console.log(data);
 
@@ -143,12 +175,19 @@ export class DashboardComponent implements OnInit {
     this.yearForm.patchValue({
         yearRange: { from: new Date(data["year_dates"]["start_date"]), to: new Date(data["year_dates"]["end_date"]) }
     });
-        this._basicHeatmapChart('["--vz-success", "--vz-danger", "--vz-warning"]');
-        this._basicWeekHeatmapChart('["--vz-success", "--vz-danger", "--vz-warning"]');
-        this._basicMonthHeatmapChart('["--vz-success", "--vz-danger", "--vz-warning"]');
-        this._basicYearHeatmapChart('["--vz-success", "--vz-danger", "--vz-warning"]');
+        // this._basicHeatmapChart('["--vz-success", "--vz-danger", "--vz-warning"]');
+        // this._basicWeekHeatmapChart('["--vz-success", "--vz-danger", "--vz-warning"]');
+        // this._basicMonthHeatmapChart('["--vz-success", "--vz-danger", "--vz-warning"]');
+        // this._basicYearHeatmapChart('["--vz-success", "--vz-danger", "--vz-warning"]');
+        this._basicForecastDayHeatmapChart('["--vz-success", "--vz-danger", "--vz-warning"]');
+        this._basicForecastWeekHeatmapChart('["--vz-success", "--vz-danger", "--vz-warning"]');
+        this._basicForecastMonthHeatmapChart('["--vz-success", "--vz-danger", "--vz-warning"]');
+        this._basicForecastYearHeatmapChart('["--vz-success", "--vz-danger", "--vz-warning"]');
+        // this._basicRADayHeatmapChart('["--vz-success", "--vz-danger", "--vz-warning"]');
+        // this._basicRAWeekHeatmapChart('["--vz-success", "--vz-danger", "--vz-warning"]');
+        // this._basicRAMonthHeatmapChart('["--vz-success", "--vz-danger", "--vz-warning"]');
+        // this._basicRAYearHeatmapChart('["--vz-success", "--vz-danger", "--vz-warning"]');
 
-        
         this.dataArrived = true;
 
 
@@ -168,6 +207,62 @@ export class DashboardComponent implements OnInit {
     //     }
     });
 
+    this.dashboardService.fetchRADayUploadStatus().subscribe((data: any) => {
+
+        if (data && data["day"] && data["week"] && data["month"] && data["year"]) {
+
+             //   console.log(data);
+      this.resourceAdequacyDayData = data["day"];
+      this.resourceAdequacyWeekData = data["week"];
+      this.resourceAdequacyMonthData = data["month"];
+      this.resourceAdequacyYearData = data["year"];
+
+    // //   console.log(data);
+
+
+
+      // Updating the form controls with the fetched dates
+        this.dayForm.patchValue({
+            dayRange: { from: new Date(data["day_dates"]["start_date"]), to: new Date(data["day_dates"]["end_date"]) }
+        });
+
+
+
+    this.weekForm.patchValue({
+        weekRange: { from: new Date(data["week_dates"]["start_date"]), to: new Date(data["week_dates"]["end_date"]) }
+    });
+
+    this.monthForm.patchValue({
+        monthRange: { from: new Date(data["month_dates"]["start_date"]), to: new Date(data["month_dates"]["end_date"]) }
+    });
+
+    this.yearForm.patchValue({
+        yearRange: { from: new Date(data["year_dates"]["start_date"]), to: new Date(data["year_dates"]["end_date"]) }
+    });
+        this._basicRADayHeatmapChart('["--vz-success", "--vz-danger", "--vz-warning"]');
+        this._basicRAWeekHeatmapChart('["--vz-success", "--vz-danger", "--vz-warning"]');
+        this._basicRAMonthHeatmapChart('["--vz-success", "--vz-danger", "--vz-warning"]');
+        this._basicRAYearHeatmapChart('["--vz-success", "--vz-danger", "--vz-warning"]');
+
+        this.radataArrived = true;
+
+
+        }
+   
+
+        // if(this.userData['state_id'] != 6){}
+
+    //     })
+
+    // this.dashboardService.fetchDayUploadStatus().subscribe({
+    //     next: (data) => {
+    //         // handle data
+    //     },
+    //     error: (error) => {
+    //         console.error("Failed to fetch data:", error);
+    //     }
+    });
+    
 
     this.validationform = this.formBuilder.group({
         // firstName: ['', [Validators.required, Validators.pattern('[a-zA-Z0-9]+')]],
@@ -312,10 +407,10 @@ export class DashboardComponent implements OnInit {
   // }
 
 
-  private _basicHeatmapChart(colors: any) {
+  private _basicForecastDayHeatmapChart(colors: any) {
     colors = this.getChartColorsArray(colors);
-    this.basicHeatmapChart = {
-        series: this.day_data,
+    this.forecastDayHeatmapChart = {
+        series: this.forecastDayData,
         chart: {
             height: 300,
             width: '100%',    
@@ -401,10 +496,10 @@ export class DashboardComponent implements OnInit {
 }
 
 
-private _basicWeekHeatmapChart(colors: any) {
+private _basicForecastWeekHeatmapChart(colors: any) {
     colors = this.getChartColorsArray(colors);
-    this.basicWeekHeatmapChart = {
-        series: this.week_data,
+    this.forecastWeekHeatmapChart = {
+        series: this.forecastWeekData,
         chart: {
             height: 300,
             width: '90%',
@@ -490,10 +585,10 @@ private _basicWeekHeatmapChart(colors: any) {
 
 
 
-private _basicMonthHeatmapChart(colors: any) {
+private _basicForecastMonthHeatmapChart(colors: any) {
     colors = this.getChartColorsArray(colors);
-    this.basicMonthHeatmapChart = {
-        series: this.month_data,
+    this.forecastMonthHeatmapChart = {
+        series: this.forecastMonthData,
         xaxis: {
             type: 'datetime'
           },  
@@ -579,10 +674,10 @@ private _basicMonthHeatmapChart(colors: any) {
     };
 }
 
-private _basicYearHeatmapChart(colors: any) {
+private _basicForecastYearHeatmapChart(colors: any) {
     colors = this.getChartColorsArray(colors);
-    this.basicYearHeatmapChart = {
-        series: this.year_data,
+    this.forecastYearHeatmapChart = {
+        series: this.forecastYearData,
         xaxis: {
             type: 'datetime'
           },  
@@ -667,6 +762,364 @@ private _basicYearHeatmapChart(colors: any) {
         }
     };
 }
+
+
+private _basicRADayHeatmapChart(colors: any) {
+    colors = this.getChartColorsArray(colors);
+    this.resourceAdequacyDayHeatmapChart = {
+        series: this.resourceAdequacyDayData,
+        chart: {
+            height: 300,
+            width: '100%',    
+            type: 'heatmap',
+            offsetX: 0,
+            offsetY: -8,
+            toolbar: {
+                show: false
+            }
+        },
+        dataLabels: {
+            enabled: false
+        },
+        legend: {
+            show: true,
+            horizontalAlign: 'center',
+            offsetX: 0,
+            offsetY: 20,
+            markers: {
+                width: 20,
+                height: 6,
+                radius: 2,
+            },
+            itemMargin: {
+                horizontal: 12,
+                vertical: 0
+            },
+        },
+        colors: colors,
+        plotOptions: {
+            heatmap: {
+                colorScale: {
+                    ranges: [{
+                        from: 0,
+                        to: 0,
+                        name: 'Late Upload',
+                        color: colors[2]
+                    },
+                    {
+                        from: 2,
+                        to: 2,
+                        name: 'Not Uploaded',
+                        color: colors[1]
+                    },
+                    {
+                        from: 1,
+                        to: 1,
+                        name: 'Uploaded',
+                        color: colors[0]
+                    },
+                    ]
+                }
+            }
+        },
+        tooltip: {
+            
+            custom: function(opts: any) {
+                // if (w && w.config && w.config.series && w.config.series[seriesIndex] && w.config.series[seriesIndex].data && w.config.series[seriesIndex].data[dataPointIndex]) {
+                    const uploadTime =  opts.ctx.w.config.series[opts.seriesIndex].data[opts.dataPointIndex].upload_time;
+                    // const uploadTime = w.config.series[seriesIndex].data[dataPointIndex].upload_time;
+                    if (uploadTime) {
+                        return '<b>Upload Time: </b> ' + uploadTime ;
+                            
+                            
+                    }
+                   
+    
+                    
+                // }
+
+                else {
+                    return "<b>Not Uploaded</b>" 
+                }
+                
+                   
+            }
+        }
+
+    
+    };
+
+
+}
+
+
+private _basicRAWeekHeatmapChart(colors: any) {
+    colors = this.getChartColorsArray(colors);
+    this.resourceAdequacyWeekHeatmapChart = {
+        series: this.resourceAdequacyWeekData,
+        chart: {
+            height: 300,
+            width: '90%',
+            type: 'heatmap',
+            offsetX: 0,
+            offsetY: -8,
+            toolbar: {
+                show: false
+            }
+        },
+        dataLabels: {
+            enabled: false
+        },
+        legend: {
+            show: true,
+            horizontalAlign: 'center',
+            offsetX: 0,
+            offsetY: 20,
+            markers: {
+                width: 20,
+                height: 6,
+                radius: 2,
+            },
+            itemMargin: {
+                horizontal: 12,
+                vertical: 0
+            },
+        },
+        colors: colors,
+        
+        plotOptions: {
+            heatmap: {
+                
+                colorScale: {
+                    ranges: [{
+                        from: 0,
+                        to: 0,
+                        name: 'Late Upload',
+                        color: colors[2]
+                    },
+                    {
+                        from: 2,
+                        to: 2,
+                        name: 'Not Uploaded',
+                        color: colors[1]
+                    },
+                    {
+                        from: 1,
+                        to: 1,
+                        name: 'Uploaded',
+                        color: colors[0]
+                    },
+                    ]
+                }
+            }
+        },
+        tooltip: {
+            
+            custom: function(opts: any) {
+                // if (w && w.config && w.config.series && w.config.series[seriesIndex] && w.config.series[seriesIndex].data && w.config.series[seriesIndex].data[dataPointIndex]) {
+                    const uploadTime =  opts.ctx.w.config.series[opts.seriesIndex].data[opts.dataPointIndex].upload_time;
+                    // const uploadTime = w.config.series[seriesIndex].data[dataPointIndex].upload_time;
+                    if (uploadTime) {
+                        return '<b>Upload Time: </b> ' + uploadTime ;
+                            
+                            
+                    }
+                   
+    
+                    
+                // }
+
+                else {
+                    return "<b>Not Uploaded</b>" ;
+                }
+                
+                    
+            }
+        }
+    };
+}
+
+
+
+
+private _basicRAMonthHeatmapChart(colors: any) {
+    colors = this.getChartColorsArray(colors);
+    this.resourceAdequacyMonthHeatmapChart = {
+        series: this.resourceAdequacyMonthData,
+        xaxis: {
+            type: 'datetime'
+          },  
+        chart: {
+            height: 300,
+            width: '100%',
+            type: 'heatmap',
+            offsetX: 0,
+            offsetY: -8,
+            toolbar: {
+                show: false
+            }
+        },
+        dataLabels: {
+            enabled: false
+        },
+        legend: {
+            show: true,
+            horizontalAlign: 'center',
+            offsetX: 0,
+            offsetY: 20,
+            markers: {
+                width: 20,
+                height: 6,
+                radius: 2,
+            },
+            itemMargin: {
+                horizontal: 12,
+                vertical: 0
+            },
+        },
+        colors: colors,
+        
+        plotOptions: {
+            heatmap: {
+                
+                colorScale: {
+                    ranges: [{
+                        from: 0,
+                        to: 0,
+                        name: 'Late Upload',
+                        color: colors[2]
+                    },
+                    {
+                        from: 2,
+                        to: 2,
+                        name: 'Not Uploaded',
+                        color: colors[1]
+                    },
+                    {
+                        from: 1,
+                        to: 1,
+                        name: 'Uploaded',
+                        color: colors[0]
+                    },
+                    ]
+                }
+            }
+        },
+        tooltip: {
+            
+            custom: function(opts: any) {
+                // if (w && w.config && w.config.series && w.config.series[seriesIndex] && w.config.series[seriesIndex].data && w.config.series[seriesIndex].data[dataPointIndex]) {
+                    const uploadTime =  opts.ctx.w.config.series[opts.seriesIndex].data[opts.dataPointIndex].upload_time;
+                    // const uploadTime = w.config.series[seriesIndex].data[dataPointIndex].upload_time;
+                    if (uploadTime) {
+                        return '<b>Upload Time: </b> ' + uploadTime ;
+                            
+                            
+                    }
+                   
+    
+                    
+                // }
+
+                else {
+                    return "<b>Not Uploaded</b>" ;
+                }
+                
+                    
+            }
+        }
+    };
+}
+
+private _basicRAYearHeatmapChart(colors: any) {
+    colors = this.getChartColorsArray(colors);
+    this.resourceAdequacyYearHeatmapChart = {
+        series: this.resourceAdequacyYearData,
+        xaxis: {
+            type: 'datetime'
+          },  
+        chart: {
+            height: 300,
+            width: '100%',
+            type: 'heatmap',
+            offsetX: 0,
+            offsetY: -8,
+            toolbar: {
+                show: false
+            }
+        },
+        dataLabels: {
+            enabled: false
+        },
+        legend: {
+            show: true,
+            horizontalAlign: 'center',
+            offsetX: 0,
+            offsetY: 20,
+            markers: {
+                width: 20,
+                height: 6,
+                radius: 2,
+            },
+            itemMargin: {
+                horizontal: 12,
+                vertical: 0
+            },
+        },
+        colors: colors,
+        
+        plotOptions: {
+            heatmap: {
+                
+                colorScale: {
+                    ranges: [{
+                        from: 0,
+                        to: 0,
+                        name: 'Late Upload',
+                        color: colors[2]
+                    },
+                    {
+                        from: 2,
+                        to: 2,
+                        name: 'Not Uploaded',
+                        color: colors[1]
+                    },
+                    {
+                        from: 1,
+                        to: 1,
+                        name: 'Uploaded',
+                        color: colors[0]
+                    },
+                    ]
+                }
+            }
+        },
+        tooltip: {
+            
+            custom: function(opts: any) {
+                // if (w && w.config && w.config.series && w.config.series[seriesIndex] && w.config.series[seriesIndex].data && w.config.series[seriesIndex].data[dataPointIndex]) {
+                    const uploadTime =  opts.ctx.w.config.series[opts.seriesIndex].data[opts.dataPointIndex].upload_time;
+                    // const uploadTime = w.config.series[seriesIndex].data[dataPointIndex].upload_time;
+                    if (uploadTime) {
+                        return '<b>Upload Time: </b> ' + uploadTime ;
+                            
+                            
+                    }
+                   
+    
+                    
+                // }
+
+                else {
+                    return "<b>Not Uploaded</b>" ;
+                }
+                
+                    
+            }
+        }
+    };
+}
+
 
 getPreviousMonthDates() {
     // Get the current date
@@ -706,10 +1159,10 @@ getPreviousMonthDates() {
 
             //   console.log(data);
             //   console.log("API Hit and Response receieved")
-              this.day_data = data["day"];
+              this.forecastDayData = data["day"];
             //   this.week_data = data["week"];
             //   this.month_data = data["month"];
-              this._basicHeatmapChart('["--vz-success", "--vz-danger", "--vz-warning"]');
+              this._basicForecastDayHeatmapChart('["--vz-success", "--vz-danger", "--vz-warning"]');
             //   this._basicWeekHeatmapChart('["--vz-success", "--vz-danger", "--vz-warning"]');
             //   this._basicMonthHeatmapChart('["--vz-success", "--vz-danger", "--vz-warning"]');
               
@@ -737,10 +1190,10 @@ getPreviousMonthDates() {
             //   console.log(data);
             //   console.log("API Hit and Response receieved")
             //   this.day_data = data["day"];
-              this.week_data = data["week"];
+              this.forecastWeekData = data["week"];
             //   this.month_data = data["month"];
             //   this._basicHeatmapChart('["--vz-success", "--vz-danger", "--vz-warning"]');
-              this._basicWeekHeatmapChart('["--vz-success", "--vz-danger", "--vz-warning"]');
+              this._basicForecastWeekHeatmapChart('["--vz-success", "--vz-danger", "--vz-warning"]');
             //   this._basicMonthHeatmapChart('["--vz-success", "--vz-danger", "--vz-warning"]');
               
               this.dataArrived = true;
@@ -765,12 +1218,154 @@ getPreviousMonthDates() {
             //   console.log("API Hit and Response receieved")
             //   this.day_data = data["day"];
             //   this.week_data = data["week"];
-              this.month_data = data["month"];
+              this.forecastMonthData = data["month"];
             //   this._basicHeatmapChart('["--vz-success", "--vz-danger", "--vz-warning"]');
             //   this._basicWeekHeatmapChart('["--vz-success", "--vz-danger", "--vz-warning"]');
-              this._basicMonthHeatmapChart('["--vz-success", "--vz-danger", "--vz-warning"]');
+              this._basicForecastMonthHeatmapChart('["--vz-success", "--vz-danger", "--vz-warning"]');
               
               this.dataArrived = true;
+        
+            })
+
+    }
+
+    fetchForYear() {
+
+        this.yearloading = true;
+
+        const formData = {
+            // state: this.validationform.get('state')!.value,
+            fromDate: this.yearForm.get('yearRange')?.value["from"].toLocaleDateString('en-GB'),
+            toDate: this.yearForm.get('yearRange')?.value["to"].toLocaleDateString('en-GB')
+          };
+
+          this.dashboardService.fetchYearRangeStatus(formData).subscribe((data: any) => {
+                this.yearloading = false;
+            //   console.log(data);
+            //   console.log("API Hit and Response receieved")
+            //   this.day_data = data["day"];
+            //   this.week_data = data["week"];
+              this.forecastYearData = data["year"];
+            //   this._basicHeatmapChart('["--vz-success", "--vz-danger", "--vz-warning"]');
+            //   this._basicWeekHeatmapChart('["--vz-success", "--vz-danger", "--vz-warning"]');
+              this._basicForecastYearHeatmapChart('["--vz-success", "--vz-danger", "--vz-warning"]');
+              
+              this.dataArrived = true;
+        
+            })
+
+    }
+
+
+    fetchRAForDay() {
+
+        
+        const formData = {
+            // state: this.validationform.get('state')!.value,
+            fromDate: this.dayForm.get('dayRange')?.value["from"].toLocaleDateString('en-GB'),
+            toDate: this.dayForm.get('dayRange')?.value["to"].toLocaleDateString('en-GB')
+          };
+
+          this.raloading = true
+
+
+          this.dashboardService.fetchRADayRangeStatus(formData).subscribe((data: any) => {
+            this.raloading = false;
+
+            //   console.log(data);
+            //   console.log("API Hit and Response receieved")
+              this.resourceAdequacyDayData = data["day"];
+            //   this.week_data = data["week"];
+            //   this.month_data = data["month"];
+              this._basicRADayHeatmapChart('["--vz-success", "--vz-danger", "--vz-warning"]');
+            //   this._basicWeekHeatmapChart('["--vz-success", "--vz-danger", "--vz-warning"]');
+            //   this._basicMonthHeatmapChart('["--vz-success", "--vz-danger", "--vz-warning"]');
+              
+              this.radataArrived = true;
+        
+            })
+
+
+            
+    }
+
+    fetchRAForWeek() {
+
+        const formData = {
+            // state: this.validationform.get('state')!.value,
+            fromDate: this.weekForm.get('weekRange')?.value["from"].toLocaleDateString('en-GB'),
+            toDate: this.weekForm.get('weekRange')?.value["to"].toLocaleDateString('en-GB')
+          };
+
+          this.raweekloading = true;
+          
+
+          this.dashboardService.fetchRAWeekRangeStatus(formData).subscribe((data: any) => {
+                this.raweekloading = false;
+            //   console.log(data);
+            //   console.log("API Hit and Response receieved")
+            //   this.day_data = data["day"];
+              this.resourceAdequacyWeekData = data["week"];
+            //   this.month_data = data["month"];
+            //   this._basicHeatmapChart('["--vz-success", "--vz-danger", "--vz-warning"]');
+              this._basicRAWeekHeatmapChart('["--vz-success", "--vz-danger", "--vz-warning"]');
+            //   this._basicMonthHeatmapChart('["--vz-success", "--vz-danger", "--vz-warning"]');
+              
+              this.radataArrived = true;
+        
+            })
+
+    }
+
+    fetchRAForMonth() {
+
+        this.ramonthloading = true;
+
+        const formData = {
+            // state: this.validationform.get('state')!.value,
+            fromDate: this.monthForm.get('monthRange')?.value["from"].toLocaleDateString('en-GB'),
+            toDate: this.monthForm.get('monthRange')?.value["to"].toLocaleDateString('en-GB')
+          };
+
+          this.dashboardService.fetchRAMonthRangeStatus(formData).subscribe((data: any) => {
+                this.ramonthloading = false;
+            //   console.log(data);
+            //   console.log("API Hit and Response receieved")
+            //   this.day_data = data["day"];
+            //   this.week_data = data["week"];
+              this.resourceAdequacyMonthData = data["month"];
+            //   this._basicHeatmapChart('["--vz-success", "--vz-danger", "--vz-warning"]');
+            //   this._basicWeekHeatmapChart('["--vz-success", "--vz-danger", "--vz-warning"]');
+              this._basicRAMonthHeatmapChart('["--vz-success", "--vz-danger", "--vz-warning"]');
+              
+              this.radataArrived = true;
+        
+            })
+
+    }
+
+    fetchRAForYear() {
+
+        this.rayearloading = true;
+
+        const formData = {
+            // state: this.validationform.get('state')!.value,
+            fromDate: this.yearForm.get('yearRange')?.value["from"].toLocaleDateString('en-GB'),
+            toDate: this.yearForm.get('yearRange')?.value["to"].toLocaleDateString('en-GB')
+          };
+
+          this.dashboardService.fetchRAYearRangeStatus(formData).subscribe((data: any) => {
+                this.rayearloading = false;
+            //   console.log(data);
+            //   console.log("API Hit and Response receieved")
+            //   this.day_data = data["day"];
+            //   this.week_data = data["week"];
+              this.resourceAdequacyYearData = data["year"];
+            //   this._basicHeatmapChart('["--vz-success", "--vz-danger", "--vz-warning"]');
+            //   this._basicWeekHeatmapChart('["--vz-success", "--vz-danger", "--vz-warning"]');
+              this._basicRAYearHeatmapChart('["--vz-success", "--vz-danger", "--vz-warning"]');
+              
+              this.radataArrived = true;
         
             })
 
@@ -894,32 +1489,7 @@ getPreviousMonthDates() {
 }
 
 
-    fetchForYear() {
 
-        this.yearloading = true;
-
-        const formData = {
-            // state: this.validationform.get('state')!.value,
-            fromDate: this.yearForm.get('yearRange')?.value["from"].toLocaleDateString('en-GB'),
-            toDate: this.yearForm.get('yearRange')?.value["to"].toLocaleDateString('en-GB')
-          };
-
-          this.dashboardService.fetchYearRangeStatus(formData).subscribe((data: any) => {
-                this.yearloading = false;
-            //   console.log(data);
-            //   console.log("API Hit and Response receieved")
-            //   this.day_data = data["day"];
-            //   this.week_data = data["week"];
-              this.year_data = data["year"];
-            //   this._basicHeatmapChart('["--vz-success", "--vz-danger", "--vz-warning"]');
-            //   this._basicWeekHeatmapChart('["--vz-success", "--vz-danger", "--vz-warning"]');
-              this._basicYearHeatmapChart('["--vz-success", "--vz-danger", "--vz-warning"]');
-              
-              this.dataArrived = true;
-        
-            })
-
-    }
 
 
 
