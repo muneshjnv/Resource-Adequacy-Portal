@@ -647,6 +647,8 @@ export class MonthaheadComponent {
                     icon: 'success',
                     confirmButtonColor: 'rgb(3, 142, 220)',
                     confirmButtonText: 'OK'
+                  }).then(() => {
+                    window.location.reload();
                   });
 
                   this.spreadsheet.nativeElement.jexcel.setData(this.data);
