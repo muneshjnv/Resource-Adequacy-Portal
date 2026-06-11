@@ -729,19 +729,57 @@ export class MonthaheadComponent {
     this.previewClicked = true;
   }
   
-  downloadExcel() {
-    // Define the path to the Excel file in the assets folder
-    const excelFilePath = 'assets/Month-Ahead Demand Forecast format (from States).xlsx';
+  // downloadExcel() {
+  //   // Define the path to the Excel file in the assets folder
+  //   const excelFilePath = 'assets/Month-Ahead Demand Forecast format (from States).xlsx';
   
-    // Trigger the download by creating a temporary <a> element
+  //   // Trigger the download by creating a temporary <a> element
+  //   const a = document.createElement('a');
+  //   a.href = excelFilePath;
+  //   a.download = 'sample.xlsx'; // Specify the desired file name
+  // 74
+  //   // Programmatically trigger a click event to initiate the download
+  //   a.click();
+  // }
+  
+
+  downloadExcel() {
+    const endDate = new Date(this.validationform.get('disabledDate')!.value["to"]);
+    const dayOfMonth = endDate.getDate();
+  
+    // Declare variable once
+    let excelFilePath = '';
+  
+    // Set file path based on day
+    if (dayOfMonth === 28) {
+      excelFilePath = 'assets/Month-Ahead Demand Forecast format_28 days(from States).xlsx';
+    } else if (dayOfMonth === 29) {
+      excelFilePath = 'assets/Month-Ahead Demand Forecast format_29 days(from States).xlsx';
+    } else if (dayOfMonth === 30) {
+      excelFilePath = 'assets/Month-Ahead Demand Forecast format_30 days(from States).xlsx';
+    } else if (dayOfMonth === 31) {
+      excelFilePath = 'assets/Month-Ahead Demand Forecast format_31 days(from States).xlsx';
+    } else {
+      console.warn("Invalid day of month for forecast template.");
+      return; // Stop execution if day doesn't match any valid Excel format
+    }
+  
+    // Trigger the download
     const a = document.createElement('a');
     a.href = excelFilePath;
-    a.download = 'sample.xlsx'; // Specify the desired file name
-  74
-    // Programmatically trigger a click event to initiate the download
+    a.download = 'sample.xlsx'; // Change this name if needed
     a.click();
   }
-  
+
+
+
+
+
+
+
+
+
+
   
   handleFileInput(event: any) {
 

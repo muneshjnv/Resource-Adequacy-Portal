@@ -167,11 +167,28 @@
                     <div class="col-md-2">
                         <label for="validationCustom04" class="form-label">Revision: {{ revision }}</label>       
                     </div>
-
+<!-- 
                     <div class="col-md-2 d-flex align-items-end ">
                         <div *ngIf="dataArrived">
                             <button class="btn btn-sm btn-primary" type="submit" (click)="downloadReport()">Download File</button>
                         </div>
+                    </div> -->
+
+                    <div class="col-md-2 d-flex justify-content-center">
+                        <div *ngIf="dataArrived">
+                            <button class="btn btn-primary"
+                                    type="button"
+                                    (click)="downloadReport()"
+                                    style="height: 45px; white-space: nowrap;">
+                                Download File
+                            </button>
+                        </div>
+                        <button class="btn btn-secondary ms-2"
+                                type="button"
+                                (click)="downloadAllStatesReport()"
+                                style="height: 45px; white-space: nowrap;">
+                            Download Combined File (All States)
+                        </button>
                     </div>
 
                 </div>

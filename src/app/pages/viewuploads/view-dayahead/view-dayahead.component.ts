@@ -245,6 +245,31 @@ export class ViewDayaheadComponent {
       );
     }
   
+    downloadAllStatesReport(): void {
+      const fetchDate = this.validationform.get('fetchDate')!.value;
+      const formattedDate = fetchDate.toLocaleDateString('en-GB'); // "DD/MM/YYYY"
+    
+      this.dayAheadForecast.downloadAllStatesCombinedDayAhead(formattedDate).subscribe(
+        (response: Blob) => {
+          const blob = new Blob([response], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `dayAhead_Forecast_AllStates_${formattedDate}.xlsx`;
+          a.click();
+          window.URL.revokeObjectURL(url);
+        },
+        (error) => {
+          console.error('Error downloading the combined file', error);
+          Swal.fire({text: 'Error downloading the combined file', icon: 'error'});
+        }
+      );
+    }
+    
+
+
+
+
 
     ngAfterViewInit() {
       jspreadsheet(this.spreadsheet.nativeElement, {

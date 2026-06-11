@@ -4,11 +4,28 @@
 
 
 <div class="row" *ngIf="![10,11,12,13,14,15,17].includes(userData['state_id'])">    
-
+    <div class="dashboard-container">
     <div class="col-xl-12">
         <div class="card card-height-50">
             <div class="card-header align-items-center d-flex">
                 <h4 class="card-title mb-0 flex-grow-1">Forecast Data Upload Status</h4> 
+
+                <div class="export-buttons me-1">
+                    <Button
+                      class="btn btn-primary dropdown-toggle"
+                      type="button"
+                      data-bs-toggle="dropdown"
+                      aria-expanded="false"
+                    >
+                      Export Dashboard
+                    </Button>
+                    <ul class="dropdown-menu">
+                      <li><a class="dropdown-item" (click)="exportAsImage()">Export as Image</a></li>
+                      <li><a class="dropdown-item" (click)="exportAsPDF()">Export as PDF</a></li>
+                      <li><a class="dropdown-item" (click)="exportAsExcel()">Export as Excel</a></li>
+                     </ul>
+                  </div>
+
 
                 <div class="btn-group" role="group" aria-label="Basic radio toggle button group">
                     <input type="radio" class="btn-check" name="forecastBtnradio" id="btnradio1" checked="" [(ngModel)]="forecastSelectedOption" value="day">
@@ -25,6 +42,7 @@
                 </div>
                 
             </div><!-- end card header -->
+            <div class="heatmaps-container">
             <div *ngIf="forecastSelectedOption === 'day'">
 
                 <form class="row g-3 needs-validation" novalidate  [formGroup]="dayForm">
@@ -67,7 +85,7 @@
                 </div>
             </div><!-- end cardbody -->
         </div>
-
+    
         <div *ngIf="forecastSelectedOption === 'week'">
             <form class="row g-3 needs-validation" novalidate  [formGroup]="weekForm">
                 <div class="row">&nbsp;</div>
@@ -200,8 +218,9 @@
             </div>
             
 
-        
         </div>
+        </div>
+
         <!-- end card -->
     </div>
 
@@ -226,6 +245,7 @@
             </div>
             
         </div><!-- end card header -->
+        <div class="heatmaps-container">
         <div *ngIf="resourceAdequacySelectedOption === 'day'">
 
             <form class="row g-3 needs-validation" novalidate  [formGroup]="dayForm">
@@ -400,7 +420,7 @@
             </div>
         </div>
         
-
+    </div>
     
     </div>
     <!-- end card -->
@@ -573,5 +593,5 @@
 
     
 </div>
-
+</div>
 

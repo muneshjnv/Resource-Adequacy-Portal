@@ -40,6 +40,12 @@ export class DayAheadForecastService {
     })
   }
 
-
+  downloadAllStatesCombinedDayAhead(date: string) {
+    return this.http.post(
+      this.url + '/downloadAllStatesCombined', // Backend endpoint for combined intraday download
+      { forecastType: 'dayahead', date },
+      { responseType: 'blob' }
+    );
+  }
 
 }

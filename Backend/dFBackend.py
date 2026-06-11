@@ -44,7 +44,14 @@ from werkzeug.utils import secure_filename
 import os
 
 import secrets
-
+from io import BytesIO
+import xlwings as xw
+import tempfile
+from base64 import b64decode
+from Crypto.Cipher import AES
+import hashlib
+# from werkzeug.security import check_password_hash
+# import bcrypt
 
 conn.autocommit = True
 cursor = conn.cursor()
@@ -56,6 +63,21 @@ cursor = conn.cursor()
 # def force_https():
 #     if not request.is_secure:
 #         return redirect(request.url.replace('http://', 'https://'))
+
+
+
+from werkzeug.middleware.proxy_fix import ProxyFix
+
+app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1)
+
+app.config.update(
+    SESSION_COOKIE_SECURE=True,      # Secure cookie
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SAMESITE='Lax',
+    MAX_CONTENT_LENGTH=3 * 1024 * 1024 * 1024  # Allow up to 3GB file uploads
+)
+
+
 
 
 def validate_session(session_token, ip_address, device_id):
@@ -331,60 +353,170 @@ def token_required(f):
     return decorated
 
 
+
+
+# def decrypt_password(enc_password_base64: str, secret_key: str) -> str:
+#     # Prepare key
+#     key = hashlib.sha256(secret_key.encode()).digest()
+    
+#     # Decode base64
+#     enc = b64decode(enc_password_base64)
+    
+#     # ECB mode (matches your frontend config)
+#     cipher = AES.new(key, AES.MODE_ECB)
+    
+#     # Decrypt
+#     decrypted_bytes = cipher.decrypt(enc)
+    
+#     # Remove PKCS7 padding
+#     pad_len = decrypted_bytes[-1]
+#     decrypted_bytes = decrypted_bytes[:-pad_len]
+    
+#     return decrypted_bytes.decode('utf-8')
+
+
+
+# @app.route("/api/login", methods=["POST"])
+# def login():
+#     try:
+#         # Get client IP address
+#         ip_address = request.remote_addr
+
+#         # Get device ID from headers
+#         device_id = request.headers.get('Device-ID', 'unknown_device')
+
+#         # Get username and password from request
+#         data = request.get_json()
+#         username = data.get('username')
+#         password = data.get('password')
+#         captcha_token = data.get('recaptcha')
+
+#         # Validate CAPTCHA
+#         if not validate_captcha(captcha_token):
+#             return jsonify({
+#                 "error": "Invalid CAPTCHA. Please try again.",
+#                 "status": "failure"
+#             })
+
+#         # Rate limiting check
+#         if is_rate_limited(ip_address, username, device_id):
+#             return jsonify({
+#                 "error": "Too many login attempts. Please try again in 5 minutes.",
+#                 "retry_after": RATE_LIMIT_WINDOW.seconds // 60,
+#                 "status": "failure"
+#             })
+
+#         if not username or not password:
+#             return jsonify({"error": "Username and password are required.", "status": "failure"})
+
+#         # Database connection
+#         conn = psycopg2.connect(**db_params)
+#         cursor = conn.cursor()
+
+#         # Query user data
+#         query = "SELECT username, password_hash, user_role, state_name, state_id FROM states WHERE username = %s"
+#         cursor.execute(query, (username,))
+#         login_data = cursor.fetchone()
+
+#         if not login_data:
+#             return jsonify({"error": "Invalid Credentials!", "status": "failure"})
+
+#         # Extract user details
+#         db_username, enc_password, role, state_name, state_id = login_data
+
+#         # Verify password
+#         if not bcrypt.check_password_hash(enc_password, password):
+#             return jsonify({
+#                 "error": "Entered Password is Incorrect, Please try again!",
+#                 "status": "failure"
+#             })
+
+#         # Generate Session Token
+#         session_token = secrets.token_urlsafe(32)  # Secure random session token
+#         session_expiration = datetime.utcnow() + timedelta(minutes=30)  # Session valid for 30 minutes
+
+#         # Store session details in the database
+#         cursor.execute("""
+#             INSERT INTO user_sessions (username, session_token, ip_address, device_id, user_agent, created_at, expires_at)
+#             VALUES (%s, %s, %s, %s, %s, NOW(), %s)
+#         """, (
+#             username, session_token, ip_address, device_id, request.headers.get('User-Agent'), session_expiration
+#         ))
+#         conn.commit()
+
+#         # Generate JWT Token
+#         jwt_data = {
+#             "sub": username,
+#             "exp": datetime.utcnow() + app.config.get('JWT_ACCESS_TOKEN_EXPIRES'),
+#             "role": role
+#         }
+
+#         if username == 'sr_internal' and password == 'Srldc#$1234':  # Special credentials
+#             jwt_data["script_access"] = True
+
+#         access_token = jwt.encode(payload=jwt_data, key=app.config.get('JWT_SECRET_KEY'), algorithm=app.config.get('ALGORITHM'))
+
+#         return jsonify({
+#             "token": access_token,            # JWT for API access
+#             "session_token": session_token,  # Session token for session handling
+#             "user": username,
+#             "username": state_name,
+#             "role": role,
+#             "state_id": state_id,
+#             "expires_at": session_expiration.strftime("%Y-%m-%d %H:%M:%S"),
+#             "status": "success"
+#         })
+
+#     except Exception as e:
+#         # Log the error (custom log_error function)
+#         log_error("login", e)
+#         return jsonify({"error": "Problem in logging in, Please contact ERLDC IT!", "status": "failure"})
+
+
 @app.route("/api/login", methods=["POST"])
 def login():
     try:
-        # Get client IP address
         ip_address = request.remote_addr
-
-        # Get device ID from headers
         device_id = request.headers.get('Device-ID', 'unknown_device')
-
-        # Get username and password from request
         data = request.get_json()
         username = data.get('username')
         password = data.get('password')
         captcha_token = data.get('recaptcha')
 
-        # Validate CAPTCHA
+        # 1️⃣ CAPTCHA validation
         if not validate_captcha(captcha_token):
-            return jsonify({
-                "error": "Invalid CAPTCHA. Please try again.",
-                "status": "failure"
-            })
+            return jsonify({"error": "Invalid CAPTCHA"}), 400
 
-        # Rate limiting check
+        # 2️⃣ Rate limiting
         if is_rate_limited(ip_address, username, device_id):
             return jsonify({
-                "error": "Too many login attempts. Please try again in 5 minutes.",
-                "retry_after": RATE_LIMIT_WINDOW.seconds // 60,
-                "status": "failure"
-            })
+                "error": "Too many login attempts. Try again after 5 Minutes.",
+                "retry_after": RATE_LIMIT_WINDOW.seconds // 60
+            }), 429
 
         if not username or not password:
-            return jsonify({"error": "Username and password are required.", "status": "failure"})
+            return jsonify({"error": "Username and password required"}), 400
 
-        # Database connection
         conn = psycopg2.connect(**db_params)
         cursor = conn.cursor()
 
-        # Query user data
+
+#         # Query user data
         query = "SELECT username, password_hash, user_role, state_name, state_id FROM states WHERE username = %s"
         cursor.execute(query, (username,))
         login_data = cursor.fetchone()
-
-        if not login_data:
-            return jsonify({"error": "Invalid Credentials!", "status": "failure"})
+        # if not login_data:
+        #     return jsonify({"error": "Invalid Credentials!", "status": "failure"})
 
         # Extract user details
         db_username, enc_password, role, state_name, state_id = login_data
 
         # Verify password
-        if not bcrypt.check_password_hash(enc_password, password):
+        if not login_data or not bcrypt.check_password_hash(enc_password, password):
             return jsonify({
-                "error": "Entered Password is Incorrect, Please try again!",
-                "status": "failure"
-            })
+                "error": "Invalid Credentials!",
+                # "status": "failure"
+            }),401
 
         # Generate Session Token
         session_token = secrets.token_urlsafe(32)  # Secure random session token
@@ -406,8 +538,8 @@ def login():
             "role": role
         }
 
-        if username == 'sr_internal' and password == 'Srldc#$1234':  # Special credentials
-            jwt_data["script_access"] = True
+        # if username == 'sr_internal' and password == 'Srldc#$1234':  # Special credentials
+        #     jwt_data["script_access"] = True
 
         access_token = jwt.encode(payload=jwt_data, key=app.config.get('JWT_SECRET_KEY'), algorithm=app.config.get('ALGORITHM'))
 
@@ -419,16 +551,13 @@ def login():
             "role": role,
             "state_id": state_id,
             "expires_at": session_expiration.strftime("%Y-%m-%d %H:%M:%S"),
-            "status": "success"
-        })
+            # "status": "success"
+        }),200
 
     except Exception as e:
         # Log the error (custom log_error function)
         log_error("login", e)
-        return jsonify({"error": "Problem in logging in, Please contact ERLDC IT!", "status": "failure"})
-
-
-
+        return jsonify({"error": "Problem in logging in, Please contact ERLDC IT!"}),500
 
 
 @app.route('/api/fetchrevisions', methods=['POST'])
@@ -1185,6 +1314,181 @@ def downloadYearAhead():
         # cursor.close()
         return jsonify({'status': 'failure', 'error': str(e)}), 500
 
+
+
+@app.route("/api/downloadAllStatesCombined", methods=["POST"])
+@jwt_required()
+@token_required
+def downloadAllStatesCombined():
+
+    try:
+        conn = psycopg2.connect(**db_params)
+        cursor = conn.cursor()
+        data_json = request.get_json()
+        forecast_type = data_json.get('forecastType')
+        date = data_json.get('date')  # For intraday/dayahead
+        from_date = data_json.get('from_date')  # For week/month/year ahead
+        to_date = data_json.get('to_date')
+
+        # Fetch state names
+        cursor.execute("SELECT state_id, state_name FROM states WHERE state_id IN (1,2,3,4,5,7)")
+        states = cursor.fetchall()
+
+        files_to_merge = []
+
+        for state_id, state_name in states:
+            revision_no = None
+            file_path = None
+
+            if forecast_type.lower() == "intraday":
+                table = "intraday_file_uploads"
+                cursor.execute("""
+                    SELECT MAX(revision_no) FROM intraday_file_uploads
+                    WHERE state_id = %s AND upload_date = to_date(%s, 'DD/MM/YYYY')
+                """, (state_id, date))
+
+            elif forecast_type.lower() == "dayahead":
+                table = "file_uploads"
+                cursor.execute("""
+                    SELECT MAX(revision_no) FROM file_uploads
+                    WHERE state_id = %s AND upload_date = to_date(%s, 'DD/MM/YYYY')
+                """, (state_id, date))
+
+            elif forecast_type.lower() == "weekahead":
+                table = "week_ahead_file_uploads"
+                cursor.execute("""
+                    SELECT MAX(revision_no) FROM week_ahead_file_uploads
+                    WHERE state_id = %s AND from_date = to_date(%s, 'DD/MM/YYYY') AND to_date = to_date(%s, 'DD/MM/YYYY')
+                """, (state_id, from_date, to_date))
+
+            elif forecast_type.lower() == "monthahead":
+                table = "month_ahead_file_uploads"
+                cursor.execute("""
+                    SELECT MAX(revision_no) FROM month_ahead_file_uploads
+                    WHERE state_id = %s AND from_date = to_date(%s, 'DD/MM/YYYY') AND to_date = to_date(%s, 'DD/MM/YYYY')
+                """, (state_id, from_date, to_date))
+
+            elif forecast_type.lower() == "yearahead":
+                table = "year_ahead_file_uploads"
+                cursor.execute("""
+                    SELECT MAX(revision_no) FROM year_ahead_file_uploads
+                    WHERE state_id = %s AND from_date = to_date(%s, 'DD/MM/YYYY') AND to_date = to_date(%s, 'DD/MM/YYYY')
+                """, (state_id, from_date, to_date))
+
+            else:
+                continue
+
+            rev = cursor.fetchone()
+            if not rev or rev[0] is None:
+                continue
+
+            revision_no = rev[0]
+
+            # Fetch file path
+            if forecast_type.lower() in ["intraday", "dayahead"]:
+                cursor.execute(f"""
+                    SELECT file_name FROM {table}
+                    WHERE state_id = %s AND upload_date = to_date(%s, 'DD/MM/YYYY') AND revision_no = %s
+                """, (state_id, date, revision_no))
+            else:
+                cursor.execute(f"""
+                    SELECT file_name FROM {table}
+                    WHERE state_id = %s AND from_date = to_date(%s, 'DD/MM/YYYY') 
+                    AND to_date = to_date(%s, 'DD/MM/YYYY') AND revision_no = %s
+                """, (state_id, from_date, to_date, revision_no))
+
+            result_row = cursor.fetchone()
+            if result_row and result_row[0]:
+                file_path = result_row[0]
+                if os.path.exists(file_path):
+                    files_to_merge.append((state_name, file_path))
+
+        cursor.close()
+
+        if not files_to_merge:
+            return jsonify({'status': 'failure', 'error': 'No files found to merge'}), 404
+
+         # Combine files using xlwings
+        excel = xw.App(visible=False)
+        combined_wb = excel.books.add()
+
+        for state_name, file_path in files_to_merge:
+            try:
+                source_wb = excel.books.open(file_path)
+                sheet = source_wb.sheets[0]
+                sheet.api.Copy(Before=combined_wb.sheets[0].api if combined_wb.sheets.count > 0 else None)
+                copied_sheet = combined_wb.sheets[0]
+                copied_sheet.name = state_name[:31]
+                source_wb.close()
+            except Exception as e:
+                log_error(f"Copy error in {file_path}", e)
+                continue
+
+        # Create a temporary file path
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".xlsx") as tmp:
+            temp_path = tmp.name
+
+        # Remove default blank sheet if it exists
+        try:
+            if combined_wb.sheets.count > len(files_to_merge):
+                combined_wb.sheets[-1].delete()
+        except:
+            pass
+
+        # Create ER sheet at the end which will be sum of all the states for each cells
+        er_sheet = combined_wb.sheets.add(name="ER", after=combined_wb.sheets[-1])
+
+        # Copy template
+        first_sheet = combined_wb.sheets[0]
+        first_sheet.used_range.copy(er_sheet.range("A1"))
+
+        state_sheets = [s.name for s in combined_wb.sheets if s.name != "ER"]
+
+        for row in range(8, 105):
+            for col in range(3, 26):
+                col_letter = xw.utils.col_name(col)
+
+                formula = "=" + "+".join(
+                    [f"'{sheet}'!{col_letter}{row}" for sheet in state_sheets]
+                )
+
+                er_sheet.range(f"{col_letter}{row}").formula = formula
+
+        # Keep State name as ERLDC
+        er_sheet.range("C3").value = "ERLDC"
+
+        # Save workbook to temp file
+        combined_wb.save(temp_path)
+        combined_wb.close()
+        excel.quit()
+
+        # Read file into memory
+        with open(temp_path, "rb") as f:
+            output = BytesIO(f.read())
+
+        # Optionally, delete the temp file now
+        os.remove(temp_path)
+
+        filename = f'Combined_{forecast_type}_{date or from_date}_{to_date if to_date else ""}.xlsx'
+
+        return send_file(output,
+                         as_attachment=True,
+                         download_name=filename,
+                         mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+
+    except Exception as e:
+        log_error("downloadAllStatesCombined", e)
+        try:
+            cursor.close()
+        except:
+            pass
+        return jsonify({'status': 'failure', 'error': str(e)}), 500
+
+
+
+
+
+
 @app.route('/api/pendingentries', methods=['GET'])
 @jwt_required()
 @token_required
@@ -1725,36 +2029,19 @@ def uploadMonthAheadDataAndFile():
     try:
         conn = psycopg2.connect(**db_params)
         cursor = conn.cursor()
-        # print(request.get_json())
-        # print(request["form_data"])
-        # print(request["data"])
+        
         header_data = dict(request.headers)
-        # print(header_data)
+        
+        # Only parse the form fields we actually need - skip the massive "data" field
         state = request.form.get('state')
-        # print("state",state)
         fromDate = request.form.get('fromDate')
-
         toDate = request.form.get('toDate')
-        # print(disabledDate)
-        data = request.form.get('data')
-        data = json.loads(data)
+        
+        # Note: "data" field is not parsed - it contains the entire spreadsheet as JSON
+        # The Excel file itself contains all the data needed
 
         # print(disabledDate, "Date range")
-
         
-
-        # Generate new time slots based on the dates provided
-        # new_data = generate_time_slots(fromDate, toDate)
-        # new_data = generate_time_slots(fromDate, toDate)
-    
-        # # Update the first three columns of the original data with new data
-        # for i in range(min(len(data), len(new_data))):
-        #     data[i][:3] = new_data[i]
-
-
-        data = json.dumps(data)
-        # print(data[0])
-
         token = header_data['Authorization'].split()[1]
         x = decode_token(token, csrf_value=None, allow_expired=False)
 
@@ -1828,11 +2115,11 @@ def uploadMonthAheadDataAndFile():
                 if file.filename != '':
                     # print("entered in save")
                     file.save(file_path)
-                    # Insert data into the database
+                    # Insert data into the database (without the large data field - it's in the Excel file)
                     cursor.execute("""
                         INSERT INTO month_ahead_file_uploads (state_id, from_date, to_date, upload_time, file_name, revision_no, uploaded_by, file_data) 
                         VALUES (%s, to_date(%s, 'DD/MM/YYYY'), to_date(%s, 'DD/MM/YYYY'), to_timestamp(%s, 'YYYY-MM-DD HH24:MI:SS'), %s, %s, %s, %s)
-                    """, (state, fromDate, toDate, datetime.now().strftime('%Y-%m-%d %H:%M:%S'), file_path, len(existing_revs), role, data))
+                    """, (state, fromDate, toDate, datetime.now().strftime('%Y-%m-%d %H:%M:%S'), file_path, len(existing_revs), role, ''))
                     conn.commit()
 
                     # Check if all states have uploaded files for the week
@@ -2718,26 +3005,27 @@ def raScatterPlotUploadStatus():
         start_date = end_date - timedelta(days=30)
 
         sql_query = """
-                    WITH min_revision AS (
-                        SELECT 
-                            state_id, 
-                            upload_date, 
-                            MAX(revision_no) AS min_revision_no
-                        FROM 
-                            file_uploads
-                        GROUP BY 
-                            state_id, 
-                            upload_date
-                    ),
-                    valid_uploads AS (
+                    WITH valid_revisions AS (
                         SELECT 
                             f.*
                         FROM 
                             file_uploads f
-                        INNER JOIN min_revision m ON 
-                            f.state_id = m.state_id
-                            AND f.upload_date = m.upload_date
-                            AND f.revision_no = m.min_revision_no
+                        WHERE EXISTS (
+                            SELECT 1 FROM jsonb_array_elements(f.file_data) AS row
+                            WHERE EXISTS (
+                                SELECT 1 FROM jsonb_array_elements(row.value) WITH ORDINALITY AS val(v, idx)
+                                WHERE idx >= 4
+                                AND val.v::text <> ''
+                                AND val.v::text ~ '^[-+]?[0-9]*\.?[0-9]+$'
+                                AND (val.v::text)::numeric <> 0
+                            )
+                        )
+                    ),
+                    first_valid_revision AS (
+                        SELECT DISTINCT ON (v.state_id, v.upload_date)
+                            v.*
+                        FROM valid_revisions v
+                        ORDER BY v.state_id, v.upload_date, v.revision_no  -- lowest revision_no
                     ),
                     upload_status AS (
                         SELECT 
@@ -2756,10 +3044,10 @@ def raScatterPlotUploadStatus():
                                         AND (val.v::text)::numeric <> 0
                                     )
                                 ) THEN 2  -- All values in cols 4–last are zero
-                                WHEN vu.upload_time < (vu.upload_date - INTERVAL '1 day' + INTERVAL '10 hours') THEN 1  -- Proper upload
+                                WHEN vu.upload_time < (vu.upload_date - INTERVAL '1 day' + INTERVAL '10 hours') THEN 1  -- On Time
                                 ELSE 0  -- Late Upload
                             END AS upload_status_code
-                        FROM valid_uploads vu
+                        FROM first_valid_revision vu
                     )
                     SELECT 
                         s.state_name,
@@ -2785,6 +3073,7 @@ def raScatterPlotUploadStatus():
                     ORDER BY
                         s.state_name,
                         upload_date DESC;
+
         """
         cursor.execute(sql_query, (end_date, start_date, end_date))
         results = cursor.fetchall()
@@ -2852,40 +3141,43 @@ def raScatterPlotUploadStatus():
             end_date = end_date - timedelta(days=end_date.weekday() + 1)  # Adjust to the last Sunday before or on end_date
 
         sql_query = """
-                    WITH min_revision AS (
+                    WITH valid_revisions AS (
                         SELECT 
-                            state_id, 
-                            from_date, 
-                            MAX(revision_no) AS min_revision_no
+                            fu.*
                         FROM 
-                            week_ahead_file_uploads
-                        WHERE
-                            from_date BETWEEN %s AND %s
-                        GROUP BY 
-                            state_id, 
-                            from_date
-                    ), min_uploads AS (
-                        SELECT 
+                            week_ahead_file_uploads fu
+                        WHERE 
+                            fu.from_date BETWEEN %s AND %s
+                            AND EXISTS (
+                                SELECT 1 FROM jsonb_array_elements(fu.file_data) AS row
+                                WHERE EXISTS (
+                                    SELECT 1 
+                                    FROM jsonb_array_elements(row.value) WITH ORDINALITY AS val(v, idx)
+                                    WHERE idx >= 5
+                                    AND val.v::text <> ''
+                                    AND val.v::text ~ '^[-+]?[0-9]*\.?[0-9]+$'
+                                    AND (val.v::text)::numeric <> 0
+                                )
+                            )
+                    ),
+                    first_valid_uploads AS (
+                        SELECT DISTINCT ON (fu.state_id, fu.from_date)
                             fu.state_id, 
                             fu.from_date, 
                             fu.upload_time,
                             fu.revision_no,
                             fu.file_data
-                        FROM 
-                            week_ahead_file_uploads fu
-                        INNER JOIN min_revision mr ON
-                            fu.state_id = mr.state_id
-                            AND fu.from_date = mr.from_date
-                            AND fu.revision_no = mr.min_revision_no
+                        FROM valid_revisions fu
+                        ORDER BY fu.state_id, fu.from_date, fu.revision_no  -- Picks lowest revision_no
                     )
                     SELECT 
                         states.state_name,
-                        COALESCE(mu.from_date, %s) AS week_start_date,
-                        COALESCE(mu.upload_time, NULL) AS upload_time,
+                        COALESCE(fu.from_date, %s) AS week_start_date,
+                        COALESCE(fu.upload_time, NULL) AS upload_time,
                         CASE
-                            WHEN mu.file_data IS NULL THEN 2  -- Not Uploaded
+                            WHEN fu.file_data IS NULL THEN 2  -- Not Uploaded
                             WHEN NOT EXISTS (
-                                SELECT 1 FROM jsonb_array_elements(mu.file_data) AS row
+                                SELECT 1 FROM jsonb_array_elements(fu.file_data) AS row
                                 WHERE EXISTS (
                                     SELECT 1 
                                     FROM jsonb_array_elements(row.value) WITH ORDINALITY AS val(v, idx)
@@ -2895,24 +3187,25 @@ def raScatterPlotUploadStatus():
                                     AND (val.v::text)::numeric <> 0
                                 )
                             ) THEN 2  -- All values in cols 5–last are zero
-                            WHEN mu.upload_time < DATE_TRUNC('week', mu.from_date - INTERVAL '1 week') + INTERVAL '1 day' THEN 1  -- Proper upload
+                            WHEN fu.upload_time < DATE_TRUNC('week', fu.from_date - INTERVAL '1 week') + INTERVAL '1 day' THEN 1  -- On-time upload
                             ELSE 0  -- Late upload
                         END AS upload_status_code,
-                        COUNT(mu.state_id) AS upload_count
+                        COUNT(fu.state_id) AS upload_count
                     FROM 
                         states
                     LEFT JOIN 
-                        min_uploads mu ON states.state_id = mu.state_id
+                        first_valid_uploads fu ON states.state_id = fu.state_id
                     WHERE 
                         states.state_id IN (1,2,3,4,5,7)
                     GROUP BY 
                         states.state_name, 
-                        mu.from_date,
-                        mu.upload_time,
-                        mu.file_data  
+                        fu.from_date,
+                        fu.upload_time,
+                        fu.file_data
                     ORDER BY
                         states.state_name,
-                        mu.from_date DESC;
+                        fu.from_date DESC;
+
         """
         cursor.execute(sql_query, (start_date.strftime('%Y-%m-%d'), end_date.strftime('%Y-%m-%d'), end_date.strftime('%Y-%m-%d')))
         results = cursor.fetchall()
@@ -2979,40 +3272,43 @@ def raScatterPlotUploadStatus():
 
         # Prepare the SQL query to fetch the data
         sql_query = """
-                    WITH min_revision AS (
+                    WITH valid_revisions AS (
                         SELECT 
-                            state_id, 
-                            DATE_TRUNC('month', from_date) AS from_month, 
-                            MAX(revision_no) AS min_revision_no
+                            fu.*
                         FROM 
-                            month_ahead_file_uploads
-                        WHERE
-                            from_date BETWEEN %s AND %s
-                        GROUP BY 
-                            state_id, 
-                            from_month
-                    ), min_uploads AS (
-                        SELECT 
+                            month_ahead_file_uploads fu
+                        WHERE 
+                            fu.from_date BETWEEN %s AND %s
+                            AND EXISTS (
+                                SELECT 1 FROM jsonb_array_elements(fu.file_data) AS row
+                                WHERE EXISTS (
+                                    SELECT 1 
+                                    FROM jsonb_array_elements(row.value) WITH ORDINALITY AS val(v, idx)
+                                    WHERE idx >= 5
+                                    AND val.v::text <> ''
+                                    AND val.v::text ~ '^[-+]?[0-9]*\.?[0-9]+$'
+                                    AND (val.v::text)::numeric <> 0
+                                )
+                            )
+                    ),
+                    first_valid_uploads AS (
+                        SELECT DISTINCT ON (fu.state_id, DATE_TRUNC('month', fu.from_date))
                             fu.state_id, 
-                            DATE_TRUNC('month', fu.from_date) AS from_month, 
+                            DATE_TRUNC('month', fu.from_date) AS from_month,
                             fu.upload_time,
                             fu.revision_no,
                             fu.file_data
-                        FROM 
-                            month_ahead_file_uploads fu
-                        INNER JOIN min_revision mr ON
-                            fu.state_id = mr.state_id
-                            AND DATE_TRUNC('month', fu.from_date) = mr.from_month
-                            AND fu.revision_no = mr.min_revision_no
+                        FROM valid_revisions fu
+                        ORDER BY fu.state_id, DATE_TRUNC('month', fu.from_date), fu.revision_no  -- Picks lowest revision_no
                     )
                     SELECT 
                         states.state_name,
-                        COALESCE(mu.from_month, %s) AS month_start_date,
-                        COALESCE(mu.upload_time, NULL) AS upload_time,
+                        COALESCE(fu.from_month, %s) AS month_start_date,
+                        COALESCE(fu.upload_time, NULL) AS upload_time,
                         CASE
-                            WHEN mu.file_data IS NULL THEN 2  -- Not Uploaded
+                            WHEN fu.file_data IS NULL THEN 2  -- Not Uploaded
                             WHEN NOT EXISTS (
-                                SELECT 1 FROM jsonb_array_elements(mu.file_data) AS row
+                                SELECT 1 FROM jsonb_array_elements(fu.file_data) AS row
                                 WHERE EXISTS (
                                     SELECT 1 
                                     FROM jsonb_array_elements(row.value) WITH ORDINALITY AS val(v, idx)
@@ -3022,24 +3318,25 @@ def raScatterPlotUploadStatus():
                                     AND (val.v::text)::numeric <> 0
                                 )
                             ) THEN 2  -- All values in cols 5–last are zero
-                            WHEN mu.upload_time < DATE_TRUNC('month', mu.from_month) - INTERVAL '1 month' + INTERVAL '5 day' THEN 1  -- Uploaded on time
-                            ELSE 0  -- Late Upload
+                            WHEN fu.upload_time < DATE_TRUNC('month', fu.from_month) - INTERVAL '1 month' + INTERVAL '5 day' THEN 1  -- On-time upload
+                            ELSE 0  -- Late upload
                         END AS upload_status_code,
-                        COUNT(mu.state_id) AS upload_count
+                        COUNT(fu.state_id) AS upload_count
                     FROM 
                         states
                     LEFT JOIN 
-                        min_uploads mu ON states.state_id = mu.state_id
+                        first_valid_uploads fu ON states.state_id = fu.state_id
                     WHERE 
                         states.state_id IN (1,2,3,4,5,7)
                     GROUP BY 
                         states.state_name, 
-                        mu.from_month,
-                        mu.upload_time,
-                        mu.file_data  
+                        fu.from_month,
+                        fu.upload_time,
+                        fu.file_data
                     ORDER BY
                         states.state_name,
-                        mu.from_month DESC;
+                        fu.from_month DESC;
+
         """
         cursor.execute(sql_query, (start_date.strftime('%Y-%m-%d'), end_date.strftime('%Y-%m-%d'), end_date.strftime('%Y-%m-%d')))
         results = cursor.fetchall()
@@ -3112,39 +3409,67 @@ def raScatterPlotUploadStatus():
 
         # SQL query to fetch relevant data for both financial years
         sql_query = """
+                    WITH valid_file_data AS (
+                    SELECT *
+                    FROM year_ahead_file_uploads fu
+                    WHERE
+                        fu.from_date IS NOT NULL
+                        AND fu.file_data IS NOT NULL
+                        AND EXISTS (
+                            SELECT 1 
+                            FROM jsonb_array_elements(fu.file_data) AS row
+                            WHERE EXISTS (
+                                SELECT 1 
+                                FROM jsonb_array_elements(row.value) WITH ORDINALITY AS val(v, idx)
+                                WHERE idx >= 4
+                               AND val.v::text <> ''
+                               AND val.v::text ~ '^[-+]?[0-9]*\.?[0-9]+$'
+                               AND (val.v::text)::numeric <> 0
+                            )
+                        )
+                ),
+                min_revision AS (
                     SELECT 
-                        states.state_name,
-                        yafu.from_date,
-                        yafu.to_date,
-                        yafu.upload_time,
-                        CASE
-                            WHEN yafu.file_data IS NULL THEN 2  -- Not Uploaded
-                            WHEN NOT EXISTS (
-                                SELECT 1 FROM jsonb_array_elements(yafu.file_data) AS row
-                                WHERE EXISTS (
-                                    SELECT 1 
-                                    FROM jsonb_array_elements(row.value) WITH ORDINALITY AS val(v, idx)
-                                    WHERE idx >= 4
-                                    AND val.v::text <> ''
-                                    AND val.v::text ~ '^[-+]?[0-9]*\.?[0-9]+$'
-                                    AND (val.v::text)::numeric <> 0
-                                )
-                            ) THEN 2  -- All values in cols 4–last are zero
-                            WHEN yafu.upload_time <= yafu.from_date + INTERVAL '5 months' - INTERVAL '1 day' THEN 1  -- Uploaded on time
-                            ELSE 0  -- Late Upload
-                        END AS upload_status,
-                        COUNT(yafu.state_id) AS upload_count
-                    FROM 
-                        states
-                    LEFT JOIN 
-                        year_ahead_file_uploads yafu ON states.state_id = yafu.state_id
-                    WHERE 
-                        states.state_id IN (1,2,3,4,5,7)
-                        AND (yafu.from_date BETWEEN %s AND %s OR yafu.from_date IS NULL)
-                    GROUP BY 
-                        states.state_name, yafu.from_date, yafu.to_date, yafu.upload_time, yafu.file_data
-                    ORDER BY
-                        states.state_name, yafu.from_date DESC;
+                        state_id, 
+                        from_date, 
+                        MIN(revision_no) AS min_revision_no
+                    FROM valid_file_data
+                    GROUP BY state_id, from_date
+                ),
+                valid_uploads AS (
+                    SELECT 
+                        fu.state_id,
+                        fu.from_date,
+                        fu.to_date,
+                        fu.upload_time,
+                        fu.file_data
+                    FROM year_ahead_file_uploads fu
+                    INNER JOIN min_revision mr ON 
+                        fu.state_id = mr.state_id
+                        AND fu.from_date = mr.from_date
+                        AND fu.revision_no = mr.min_revision_no
+                )
+                SELECT 
+                    states.state_name,
+                    vu.from_date,
+                    vu.to_date,
+                    vu.upload_time,
+                    CASE
+                        WHEN vu.upload_time <= vu.from_date + INTERVAL '5 months' - INTERVAL '1 day' THEN 1  -- On-time
+                        ELSE 0  -- Late
+                    END AS upload_status,
+                    COUNT(vu.state_id) AS upload_count
+                FROM 
+                    states
+                LEFT JOIN 
+                    valid_uploads vu ON states.state_id = vu.state_id
+                WHERE 
+                    states.state_id IN (1,2,3,4,5,7)
+                GROUP BY 
+                    states.state_name, vu.from_date, vu.to_date, vu.upload_time
+                ORDER BY
+                    states.state_name, vu.from_date DESC;
+
         """
         cursor.execute(sql_query, (current_financial_year_start.strftime('%Y-%m-%d'), next_financial_year_end.strftime('%Y-%m-%d')))
         results = cursor.fetchall()
@@ -4020,26 +4345,27 @@ def radayRangeStatus():
 
         # SQL query to fetch data within the specified date range
         sql_query = """
-                    WITH min_revision AS (
-                        SELECT 
-                            state_id, 
-                            upload_date, 
-                            MAX(revision_no) AS min_revision_no
-                        FROM 
-                            file_uploads
-                        GROUP BY 
-                            state_id, 
-                            upload_date
-                    ),
-                    valid_uploads AS (
+                        WITH valid_revisions AS (
                         SELECT 
                             f.*
                         FROM 
                             file_uploads f
-                        INNER JOIN min_revision m ON 
-                            f.state_id = m.state_id
-                            AND f.upload_date = m.upload_date
-                            AND f.revision_no = m.min_revision_no
+                        WHERE EXISTS (
+                            SELECT 1 FROM jsonb_array_elements(f.file_data) AS row
+                            WHERE EXISTS (
+                                SELECT 1 FROM jsonb_array_elements(row.value) WITH ORDINALITY AS val(v, idx)
+                                WHERE idx >= 4
+                                AND val.v::text <> ''
+                                AND val.v::text ~ '^[-+]?[0-9]*\.?[0-9]+$'
+                                AND (val.v::text)::numeric <> 0
+                            )
+                        )
+                    ),
+                    first_valid_revision AS (
+                        SELECT DISTINCT ON (v.state_id, v.upload_date)
+                            v.*
+                        FROM valid_revisions v
+                        ORDER BY v.state_id, v.upload_date, v.revision_no  -- lowest revision_no
                     ),
                     upload_status AS (
                         SELECT 
@@ -4057,11 +4383,11 @@ def radayRangeStatus():
                                         AND val.v::text ~ '^[-+]?[0-9]*\.?[0-9]+$'
                                         AND (val.v::text)::numeric <> 0
                                     )
-                                ) THEN 2  -- All values in cols 4–25 are zero
-                                WHEN vu.upload_time < (vu.upload_date - INTERVAL '1 day' + INTERVAL '10 hours') THEN 1  -- Proper upload
+                                ) THEN 2  -- All values in cols 4–last are zero
+                                WHEN vu.upload_time < (vu.upload_date - INTERVAL '1 day' + INTERVAL '10 hours') THEN 1  -- On Time
                                 ELSE 0  -- Late Upload
                             END AS upload_status_code
-                        FROM valid_uploads vu
+                        FROM first_valid_revision vu
                     )
                     SELECT 
                         s.state_name,
@@ -4135,6 +4461,7 @@ def radayRangeStatus():
         log_error("dayrangestatus", e)
         cursor.close()
         return jsonify(message="There is a problem, please contact ERLDC IT!", status="failure")
+
 
 
 @app.route('/api/weekrangestatus', methods=['POST'])
@@ -4291,71 +4618,80 @@ def raweekRangeStatus():
 
         # SQL query for fetching data across weeks
         sql_query = """
-                    WITH min_revision AS (
-                        SELECT 
-                            state_id, 
-                            from_date, 
-                            MAX(revision_no) AS min_revision_no
-                        FROM 
-                            week_ahead_file_uploads
-                        WHERE
-                            from_date BETWEEN %s AND %s
-                        GROUP BY 
-                            state_id, 
-                            from_date
-                    ),
-                    valid_uploads AS (
-                        SELECT 
-                            fu.*
-                        FROM 
-                            week_ahead_file_uploads fu
-                        INNER JOIN min_revision mr ON
-                            fu.state_id = mr.state_id
-                            AND fu.from_date = mr.from_date
-                            AND fu.revision_no = mr.min_revision_no
-                    ),
-                    upload_status AS (
-                        SELECT 
-                            vu.state_id,
-                            vu.from_date,
-                            vu.upload_time,
-                            CASE
-                                WHEN vu.file_data IS NULL THEN 2  -- Not Uploaded
-                                WHEN NOT EXISTS (
-                                    SELECT 1 FROM jsonb_array_elements(vu.file_data) AS row
-                                    WHERE EXISTS (
-                                        SELECT 1 
-                                        FROM jsonb_array_elements(row.value) WITH ORDINALITY AS val(v, idx)
-                                        WHERE idx >= 5
-                                        AND val.v::text <> ''
-                                        AND val.v::text ~ '^[-+]?[0-9]*\.?[0-9]+$'
-                                        AND (val.v::text)::numeric <> 0
-                                    )
-                                ) THEN 2  -- All values in cols 5–last are zero
-                                WHEN vu.upload_time < DATE_TRUNC('week', vu.from_date - INTERVAL '1 week') + INTERVAL '1 day' THEN 1  -- Proper upload
-                                ELSE 0  -- Late upload
-                            END AS upload_status_code
-                        FROM valid_uploads vu
-                    )
+                    WITH valid_file_data AS (
                     SELECT 
-                        s.state_name,
-                        us.from_date AS week_start_date,
-                        us.upload_time,
-                        COALESCE(us.upload_status_code, 2) AS upload_status_code
+                        *
                     FROM 
-                        states s
-                    LEFT JOIN upload_status us ON 
-                        s.state_id = us.state_id
-                    WHERE 
-                        s.state_id IN (1,2,3,4,5,7)
+                        week_ahead_file_uploads fu
+                    WHERE
+                        fu.file_data IS NOT NULL
+                        AND EXISTS (
+                            SELECT 1 
+                            FROM jsonb_array_elements(fu.file_data) AS row
+                            WHERE EXISTS (
+                                SELECT 1 
+                                FROM jsonb_array_elements(row.value) WITH ORDINALITY AS val(v, idx)
+                                WHERE idx >= 5
+                                AND val.v::text <> ''
+                                AND val.v::text ~ '^[-+]?[0-9]*\.?[0-9]+$'
+                                AND (val.v::text)::numeric <> 0
+                            )
+                        )
+                ),
+                min_revision AS (
+                    SELECT 
+                        state_id, 
+                        from_date, 
+                        MIN(revision_no) AS min_revision_no
+                    FROM 
+                        valid_file_data
+                    WHERE
+                        from_date BETWEEN %s AND %s
                     GROUP BY 
-                        s.state_name, 
-                        us.from_date,
-                        us.upload_time,
-                        us.upload_status_code
-                    ORDER BY
-                        s.state_name,
-                        week_start_date DESC;
+                        state_id, 
+                        from_date
+                ),
+                valid_uploads AS (
+                    SELECT 
+                        fu.*
+                    FROM 
+                        week_ahead_file_uploads fu
+                    INNER JOIN min_revision mr ON
+                        fu.state_id = mr.state_id
+                        AND fu.from_date = mr.from_date
+                        AND fu.revision_no = mr.min_revision_no
+                ),
+                upload_status AS (
+                    SELECT 
+                        vu.state_id,
+                        vu.from_date,
+                        vu.upload_time,
+                        CASE
+                            WHEN vu.file_data IS NULL THEN 2  -- Not Uploaded
+                            WHEN vu.upload_time < DATE_TRUNC('week', vu.from_date - INTERVAL '1 week') + INTERVAL '1 day' THEN 1  -- Proper upload
+                            ELSE 0  -- Late upload
+                        END AS upload_status_code
+                    FROM valid_uploads vu
+                )
+                SELECT 
+                    s.state_name,
+                    us.from_date AS week_start_date,
+                    us.upload_time,
+                    COALESCE(us.upload_status_code, 2) AS upload_status_code
+                FROM 
+                    states s
+                LEFT JOIN upload_status us ON 
+                    s.state_id = us.state_id
+                WHERE 
+                    s.state_id IN (1,2,3,4,5,7)
+                GROUP BY 
+                    s.state_name, 
+                    us.from_date,
+                    us.upload_time,
+                    us.upload_status_code
+                ORDER BY
+                    s.state_name,
+                    week_start_date DESC;
         """
         
         cursor.execute(sql_query, (custom_start_date.strftime('%Y-%m-%d'), custom_end_date.strftime('%Y-%m-%d')))
@@ -4575,13 +4911,33 @@ def raMonthRangeStatus():
 
         # Execute SQL Query
         sql_query = """
-                    WITH min_revision AS (
+                    WITH valid_file_data AS (
+                        SELECT 
+                            *
+                        FROM 
+                            month_ahead_file_uploads fu
+                        WHERE
+                            fu.file_data IS NOT NULL
+                            AND EXISTS (
+                                SELECT 1 
+                                FROM jsonb_array_elements(fu.file_data) AS row
+                                WHERE EXISTS (
+                                    SELECT 1 
+                                    FROM jsonb_array_elements(row.value) WITH ORDINALITY AS val(v, idx)
+                                    WHERE idx >= 5
+                                    AND val.v::text <> ''
+                                    AND val.v::text ~ '^[-+]?[0-9]*\.?[0-9]+$'
+                                    AND (val.v::text)::numeric <> 0
+                                )
+                            )
+                    ),
+                    min_revision AS (
                         SELECT 
                             state_id, 
                             DATE_TRUNC('month', from_date) AS from_month, 
-                            MAX(revision_no) AS min_revision_no
+                            MIN(revision_no) AS min_revision_no
                         FROM 
-                            month_ahead_file_uploads
+                            valid_file_data
                         WHERE
                             from_date BETWEEN %s AND %s
                         GROUP BY 
@@ -4604,18 +4960,6 @@ def raMonthRangeStatus():
                             DATE_TRUNC('month', vu.from_date) AS from_month,
                             vu.upload_time,
                             CASE
-                                WHEN vu.file_data IS NULL THEN 2  -- Not Uploaded
-                                WHEN NOT EXISTS (
-                                    SELECT 1 FROM jsonb_array_elements(vu.file_data) AS row
-                                    WHERE EXISTS (
-                                        SELECT 1 
-                                        FROM jsonb_array_elements(row.value) WITH ORDINALITY AS val(v, idx)
-                                        WHERE idx >= 5
-                                        AND val.v::text <> ''
-                                        AND val.v::text ~ '^[-+]?[0-9]*\.?[0-9]+$'
-                                        AND (val.v::text)::numeric <> 0
-                                    )
-                                ) THEN 2  -- All values in cols 5–last are zero
                                 WHEN vu.upload_time < DATE_TRUNC('month', vu.from_date) - INTERVAL '1 month' + INTERVAL '5 day' THEN 1  -- On-time Upload
                                 ELSE 0  -- Late Upload
                             END AS upload_status_code
@@ -4641,6 +4985,7 @@ def raMonthRangeStatus():
                     ORDER BY
                         s.state_name,
                         month_start_date DESC;
+
                     """
         cursor.execute(sql_query, (start_of_first_month.strftime('%Y-%m-%d'), end_of_last_month.strftime('%Y-%m-%d'), end_of_last_month.strftime('%Y-%m-%d')))
         results = cursor.fetchall()
@@ -4864,63 +5209,67 @@ def raYearRangeStatus():
         financial_years.reverse() # Reverse to get the latest year first
         # SQL query to fetch relevant data
         sql_query = """
-                    WITH max_revision AS (
-                        SELECT 
-                            state_id, 
-                            from_date, 
-                            MAX(revision_no) AS max_revision_no
-                        FROM 
-                            year_ahead_file_uploads
-                        WHERE
-                            from_date IS NOT NULL
-                        GROUP BY 
-                            state_id, from_date
-                    ), latest_uploads AS (
-                        SELECT 
-                            fu.state_id,
-                            fu.from_date,
-                            fu.to_date,
-                            fu.upload_time,
-                            fu.file_data
-                        FROM 
-                            year_ahead_file_uploads fu
-                        INNER JOIN max_revision mr ON 
-                            fu.state_id = mr.state_id
-                            AND fu.from_date = mr.from_date
-                            AND fu.revision_no = mr.max_revision_no
-                    )
+                    WITH valid_file_data AS (
+                    SELECT *
+                    FROM year_ahead_file_uploads fu
+                    WHERE
+                        fu.from_date IS NOT NULL
+                        AND fu.file_data IS NOT NULL
+                        AND EXISTS (
+                            SELECT 1 
+                            FROM jsonb_array_elements(fu.file_data) AS row
+                            WHERE EXISTS (
+                                SELECT 1 
+                                FROM jsonb_array_elements(row.value) WITH ORDINALITY AS val(v, idx)
+                                WHERE idx >= 4
+                               AND val.v::text <> ''
+                               AND val.v::text ~ '^[-+]?[0-9]*\.?[0-9]+$'
+                               AND (val.v::text)::numeric <> 0
+                            )
+                        )
+                ),
+                min_revision AS (
                     SELECT 
-                        states.state_name,
-                        lu.from_date,
-                        lu.to_date,
-                        lu.upload_time,
-                        CASE
-                            WHEN lu.file_data IS NULL THEN 2  -- Not Uploaded
-                            WHEN NOT EXISTS (
-                                SELECT 1 FROM jsonb_array_elements(lu.file_data) AS row
-                                WHERE EXISTS (
-                                    SELECT 1 
-                                    FROM jsonb_array_elements(row.value) WITH ORDINALITY AS val(v, idx)
-                                    WHERE idx >= 4
-                                    AND val.v::text <> ''
-                                    AND val.v::text ~ '^[-+]?[0-9]*\.?[0-9]+$'
-                                    AND (val.v::text)::numeric <> 0
-                                )
-                            ) THEN 2  -- All values in cols 4–last are zero
-                            WHEN lu.upload_time <= lu.from_date + INTERVAL '5 months' - INTERVAL '1 day' THEN 1  -- Uploaded on time
-                            ELSE 0  -- Late Upload
-                        END AS upload_status,
-                        COUNT(lu.state_id) AS upload_count
-                    FROM 
-                        states
-                    LEFT JOIN 
-                        latest_uploads lu ON states.state_id = lu.state_id
-                    WHERE 
-                        states.state_id IN (1,2,3,4,5,7)
-                    GROUP BY 
-                        states.state_name, lu.from_date, lu.to_date, lu.upload_time, lu.file_data
-                    ORDER BY
-                        states.state_name, lu.from_date DESC;
+                        state_id, 
+                        from_date, 
+                        MIN(revision_no) AS min_revision_no
+                    FROM valid_file_data
+                    GROUP BY state_id, from_date
+                ),
+                valid_uploads AS (
+                    SELECT 
+                        fu.state_id,
+                        fu.from_date,
+                        fu.to_date,
+                        fu.upload_time,
+                        fu.file_data
+                    FROM year_ahead_file_uploads fu
+                    INNER JOIN min_revision mr ON 
+                        fu.state_id = mr.state_id
+                        AND fu.from_date = mr.from_date
+                        AND fu.revision_no = mr.min_revision_no
+                )
+                SELECT 
+                    states.state_name,
+                    vu.from_date,
+                    vu.to_date,
+                    vu.upload_time,
+                    CASE
+                        WHEN vu.upload_time <= vu.from_date + INTERVAL '5 months' - INTERVAL '1 day' THEN 1  -- On-time
+                        ELSE 0  -- Late
+                    END AS upload_status,
+                    COUNT(vu.state_id) AS upload_count
+                FROM 
+                    states
+                LEFT JOIN 
+                    valid_uploads vu ON states.state_id = vu.state_id
+                WHERE 
+                    states.state_id IN (1,2,3,4,5,7)
+                GROUP BY 
+                    states.state_name, vu.from_date, vu.to_date, vu.upload_time
+                ORDER BY
+                    states.state_name, vu.from_date DESC;
+
                     """
         cursor.execute(sql_query)
         results = cursor.fetchall()
@@ -5900,11 +6249,14 @@ def MdpDescriptionData():
         )
 
 
-
 if __name__ == '__main__':
     cors = CORS(app)
     from waitress import serve
-    serve(app, host="0.0.0.0", port=5000)
+    # Configure Waitress with optimized settings for large file uploads
+    # Large recv_bytes buffer = faster multipart parsing
+    # Long channel_timeout = time for large files to upload
+    serve(app, host="0.0.0.0", port=5005, max_request_body_size=2*1024*1024*1024, 
+          channel_timeout=900, recv_bytes=1024*1024, threads=4)
     # app.run(host='0.0.0.0', port=5000, debug=False)
 
 

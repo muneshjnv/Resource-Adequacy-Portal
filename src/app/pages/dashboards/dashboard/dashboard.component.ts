@@ -7,6 +7,11 @@ import { of } from 'rxjs';
 import { TokenStorageService } from 'src/app/core/services/token-storage.service';
 import { ToastService } from 'src/app/core/services/toast-service';
 
+import html2canvas from 'html2canvas';
+import { jsPDF } from 'jspdf';
+import * as XLSX from 'xlsx';
+import { saveAs } from 'file-saver'; 
+
 @Component({
   selector: 'app-dashboard',
   templateUrl: './dashboard.component.html',
@@ -1631,6 +1636,132 @@ getPreviousMonthDates() {
     return date.toISOString().split('T')[0];
   }
 
+// Functions to export dashboard
+
+exportAsImage(): void {
+    const heatmaps = document.querySelectorAll('.heatmaps-container');
+    if (heatmaps.length === 0) {
+        console.error('No heatmaps found!');
+        return;
+    }
+
+    const canvasArray: HTMLCanvasElement[] = [];
+    const promises = Array.from(heatmaps).map((heatmap) => {
+        return html2canvas(heatmap as HTMLElement).then((canvas) => {
+            canvasArray.push(canvas);
+        });
+    });
+
+    Promise.all(promises).then(() => {
+        const combinedCanvas = document.createElement('canvas');
+        const context = combinedCanvas.getContext('2d');
+
+        // Calculate total height
+        const totalHeight = canvasArray.reduce((sum, canvas) => sum + canvas.height, 0);
+        combinedCanvas.width = canvasArray[0].width;
+        combinedCanvas.height = totalHeight;
+
+        // Combine all canvases
+        let yOffset = 0;
+        canvasArray.forEach((canvas) => {
+            context?.drawImage(canvas, 0, yOffset);
+            yOffset += canvas.height;
+        });
+
+        // Export combined canvas as image
+        const link = document.createElement('a');
+        link.download = 'heatmaps.png';
+        link.href = combinedCanvas.toDataURL('image/png');
+        link.click();
+    }).catch((error) => {
+        console.error('Error exporting heatmaps as image:', error);
+    });
+}
+
+exportAsPDF(): void {
+    const heatmaps = document.querySelectorAll('.heatmaps-container');
+    if (heatmaps.length === 0) {
+        console.error('No heatmaps found!');
+        return;
+    }
+
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    const promises = Array.from(heatmaps).map((heatmap) => {
+        return html2canvas(heatmap as HTMLElement).then((canvas) => {
+            const imgData = canvas.toDataURL('image/png');
+            const imgWidth = 210; // A4 width in mm
+            const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+            pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+            pdf.addPage(); // Add a new page for the next heatmap
+        });
+    });
+
+    Promise.all(promises).then(() => {
+        if (pdf.internal.pages.length > 1) {
+            pdf.deletePage(pdf.internal.pages.length); // Remove the last empty page
+        }
+        pdf.save('heatmaps.pdf');
+    }).catch((error) => {
+        console.error('Error exporting heatmaps as PDF:', error);
+    });
+}
+
+exportAsExcel(): void {
+    const workbook = XLSX.utils.book_new();
+
+    // Add sheets for Forecast Heatmap
+    this.addHeatmapSheet(workbook, 'Forecast Day', this.forecastDayData);
+    this.addHeatmapSheet(workbook, 'Forecast Week', this.forecastWeekData);
+    this.addHeatmapSheet(workbook, 'Forecast Month', this.forecastMonthData);
+    this.addHeatmapSheet(workbook, 'Forecast Year', this.forecastYearData);
+
+    // Add sheets for Resource Adequacy Heatmap
+    this.addHeatmapSheet(workbook, 'Resource Adequacy Day', this.resourceAdequacyDayData);
+    this.addHeatmapSheet(workbook, 'Resource Adequacy Week', this.resourceAdequacyWeekData);
+    this.addHeatmapSheet(workbook, 'Resource Adequacy Month', this.resourceAdequacyMonthData);
+    this.addHeatmapSheet(workbook, 'Resource Adequacy Year', this.resourceAdequacyYearData);
+
+    // Save the Excel file
+    const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+    const blob = new Blob([excelBuffer], { type: 'application/octet-stream' });
+    saveAs(blob, 'heatmaps.xlsx');
+}
+
+private addHeatmapSheet(workbook: XLSX.WorkBook, sheetName: string, data: any[]): void {
+    if (!data || data.length === 0) {
+        console.warn(`No data available for ${sheetName}`);
+        return;
+    }
+
+    // Extract unique dates and states
+    const dates = [...new Set(data.flatMap((stateData: any) => stateData.data.map((item: any) => item.x)))];
+    const states = data.map((stateData: any) => stateData.name);
+
+    // Create a 2D array for the heatmap
+    const heatmap: any[][] = [];
+
+    // Add the header row (dates)
+    heatmap.push(['State/Date', ...dates]);
+
+    // Add rows for each state
+    states.forEach((state) => {
+        const stateData = data.find((stateData: any) => stateData.name === state);
+        const row = [state];
+        dates.forEach((date) => {
+            // Find the status value for the current state and date
+            const cell = stateData.data.find((item: any) => item.x === date);
+            row.push(cell ? cell.y : ''); // Add status or leave blank
+        });
+        heatmap.push(row);
+    });
+
+    // Convert the 2D array to a worksheet
+    const worksheet = XLSX.utils.aoa_to_sheet(heatmap);
+
+    // Append the worksheet to the workbook
+    XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
+}
 
   
 }
