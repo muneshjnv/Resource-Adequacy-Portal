@@ -75,8 +75,10 @@ app.config.update(
     SESSION_COOKIE_HTTPONLY=True,
     SESSION_COOKIE_SAMESITE='Lax',
     MAX_CONTENT_LENGTH=3 * 1024 * 1024 * 1024  # Allow up to 3GB file uploads
+    
 )
-
+app.config['MAX_FORM_MEMORY_SIZE'] = 50 * 1024 * 1024
+app.config['MAX_FORM_PARTS'] = 5000
 
 
 
@@ -1457,6 +1459,59 @@ def downloadAllStatesCombined():
         # Keep State name as ERLDC
         er_sheet.range("C3").value = "ERLDC"
 
+        # Create Summary sheet
+        summary_sheet = combined_wb.sheets.add(
+            name="ER Daily Demand Estimation",
+            after=combined_wb.sheets[-1]
+        )
+
+        # Headers
+        summary_sheet.range("A1:H1").value = [[
+            "PERIOD",
+            "BH_DEMAND_FORECAST",
+            "JH_DEMAND_FORECAST",
+            "DVC_DEMAND_FORECAST",
+            "GR_DEMAND_FORECAST",
+            "WB_DEMAND_FORECAST",
+            "SI_DEMAND_FORECAST",
+            "ER_DEMAND_FORECAST"
+        ]]
+
+        # Create sheet lookup dictionary
+        sheet_lookup = {s.name: s for s in combined_wb.sheets}
+
+        # PERIOD column from first sheet
+        summary_sheet.range("A2").value = \
+            first_sheet.range("B8:B103").options(ndim=2).value
+
+        # Forecast mappings
+        mapping = [
+            ("Bihar", "B"),
+            ("Jharkhand", "C"),
+            ("DVC", "D"),
+            ("Odisha", "E"),
+            ("West Bengal", "F"),
+            ("Sikkim", "G"),
+            ("ER", "H")
+        ]
+
+        # Populate forecast columns
+        for sheet_name, target_col in mapping:
+
+            if sheet_name in sheet_lookup:
+
+                summary_sheet.range(f"{target_col}2").value = \
+                    sheet_lookup[sheet_name].range("C8:C103").options(ndim=2).value
+
+            else:
+
+                # Fill blanks if sheet not available
+                summary_sheet.range(f"{target_col}2:{target_col}97").value = \
+                    [[""] for _ in range(96)]
+
+        # Optional formatting
+        summary_sheet.autofit()
+
         # Save workbook to temp file
         combined_wb.save(temp_path)
         combined_wb.close()
@@ -2019,8 +2074,7 @@ def uploadWeekAheadDataAndFile():
         return jsonify(message="There is some problem in uploading the file! Please contact ERLDC IT", status="failure")
 
 
-    
-
+        
 
 @app.route('/api/uploadmonthahead', methods=['POST'])
 @jwt_required()
@@ -2029,19 +2083,36 @@ def uploadMonthAheadDataAndFile():
     try:
         conn = psycopg2.connect(**db_params)
         cursor = conn.cursor()
-        
+        # print(request.get_json())
+        # print(request["form_data"])
+        # print(request["data"])
         header_data = dict(request.headers)
-        
-        # Only parse the form fields we actually need - skip the massive "data" field
+        # print(header_data)
         state = request.form.get('state')
+        # print("state",state)
         fromDate = request.form.get('fromDate')
+
         toDate = request.form.get('toDate')
-        
-        # Note: "data" field is not parsed - it contains the entire spreadsheet as JSON
-        # The Excel file itself contains all the data needed
+        # print(disabledDate)
+        data = request.form.get('data')
+        data = json.loads(data)
 
         # print(disabledDate, "Date range")
+
         
+
+        # Generate new time slots based on the dates provided
+        # new_data = generate_time_slots(fromDate, toDate)
+        # new_data = generate_time_slots(fromDate, toDate)
+    
+        # # Update the first three columns of the original data with new data
+        # for i in range(min(len(data), len(new_data))):
+        #     data[i][:3] = new_data[i]
+
+
+        data = json.dumps(data)
+        # print(data[0])
+
         token = header_data['Authorization'].split()[1]
         x = decode_token(token, csrf_value=None, allow_expired=False)
 
@@ -2115,11 +2186,11 @@ def uploadMonthAheadDataAndFile():
                 if file.filename != '':
                     # print("entered in save")
                     file.save(file_path)
-                    # Insert data into the database (without the large data field - it's in the Excel file)
+                    # Insert data into the database
                     cursor.execute("""
                         INSERT INTO month_ahead_file_uploads (state_id, from_date, to_date, upload_time, file_name, revision_no, uploaded_by, file_data) 
                         VALUES (%s, to_date(%s, 'DD/MM/YYYY'), to_date(%s, 'DD/MM/YYYY'), to_timestamp(%s, 'YYYY-MM-DD HH24:MI:SS'), %s, %s, %s, %s)
-                    """, (state, fromDate, toDate, datetime.now().strftime('%Y-%m-%d %H:%M:%S'), file_path, len(existing_revs), role, ''))
+                    """, (state, fromDate, toDate, datetime.now().strftime('%Y-%m-%d %H:%M:%S'), file_path, len(existing_revs), role, data))
                     conn.commit()
 
                     # Check if all states have uploaded files for the week
@@ -2161,7 +2232,6 @@ def uploadMonthAheadDataAndFile():
         cursor.close()
         return jsonify(message="There is some problem in uploading the file! Please contact ERLDC IT", status="failure")
         
-
 
 
 @app.route('/api/fetchmonthrevisions', methods=['POST'])

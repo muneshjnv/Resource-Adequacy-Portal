@@ -533,10 +533,11 @@ export class MonthaheadComponent {
   
       if(colIndex == 3) {
         const exactValue = value.toString()
-        console.log(typeof value);
+        // console.log(typeof value);
         if(typeof value !== 'number' && Number.isNaN(Number.parseInt(exactValue))){
+          console.log("inside update table")
           cell.style.background = '#ffcccb'
-          Swal.fire({text:'Your Data has some errors, They are highlighted. Please check and Update',confirmButtonColor: 'rgb(3, 142, 220)',});
+          Swal.fire({text:'Your Data has some , They are highlighted. Please check and Update',confirmButtonColor: 'rgb(3, 142, 220)',});
         }
   
         const modifiedValue = value.toString()
@@ -591,12 +592,13 @@ export class MonthaheadComponent {
   
   formSubmit() {
     this.formsubmit = true;
+    console.log("inside formsubmit")
   }
   
   
   confirm() {
 
-  
+  console.log("confirm() entered");
 
     if(this.validationform.get('excelFile')!.value == null) {
       Swal.fire({text:'It seems you have not uploaded the file, Please upload the file!',confirmButtonColor: 'rgb(3, 142, 220)',});
@@ -609,7 +611,7 @@ export class MonthaheadComponent {
 
       
 
-      // console.log("Entered Else part!")
+      console.log("Entered Else part!")
 
       if(this.validationform.valid) {
 
@@ -629,6 +631,15 @@ export class MonthaheadComponent {
             formData.append('toDate', this.validationform.get('disabledDate')?.value["to"].toLocaleDateString('en-GB'));
             formData.append('excelFile', this.validationform.get('excelFile')!.value);
             formData.append('data', JSON.stringify(this.spreadsheet.nativeElement.jexcel.getData()))
+
+    const jsonData = JSON.stringify(
+    this.spreadsheet.nativeElement.jexcel.getData()
+);
+    console.log(
+    "JSON Size2 MB:",
+    new Blob([jsonData]).size / 1024 / 1024
+);
+
 
             this.uploading = true;
               
@@ -675,6 +686,7 @@ export class MonthaheadComponent {
   
   onUpload() {
     // console.log(this.validationform.get('excelFile')!.value)
+    console.log("onupload() entered");
     if(this.validationform.get('excelFile')!.value == null) {
       Swal.fire({text:'It seems you have not uploaded the file, Please upload the file!',confirmButtonColor: 'rgb(3, 142, 220)',});
   
@@ -688,6 +700,15 @@ export class MonthaheadComponent {
     formData.append('toDate', this.validationform.get('disabledDate')!.value["to"]);
     formData.append('excelFile', this.validationform.get('excelFile')!.value);
     formData.append('data', JSON.stringify(this.spreadsheet.nativeElement.jexcel.getData()))
+
+
+    const jsonData = JSON.stringify(
+    this.spreadsheet.nativeElement.jexcel.getData()
+);
+    console.log(
+    "JSON Size1 MB:",
+    new Blob([jsonData]).size / 1024 / 1024
+);
       
       this.monthAheadForecastService.uploadWeekAheadFile(formData).subscribe((res: any)=> {
         if('error' in res) {
@@ -883,7 +904,7 @@ export class MonthaheadComponent {
         }
 
         Swal.fire({text:'Data is successfully loaded, you can now preview the data!',confirmButtonColor: 'rgb(3, 142, 220)',});
-
+console.log("after data load")
 
 
 
