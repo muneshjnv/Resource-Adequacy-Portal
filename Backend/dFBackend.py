@@ -57,6 +57,12 @@ conn.autocommit = True
 cursor = conn.cursor()
 
 
+# ── External REST API (read-only, API-key authenticated) ──────────────
+from externalAPI import external_api
+app.register_blueprint(external_api)
+# ─────────────────────────────────────────────────────────────────────
+
+
 # cur = conn2.cursor()
 
 # @app.before_request
@@ -77,6 +83,7 @@ app.config.update(
     MAX_CONTENT_LENGTH=3 * 1024 * 1024 * 1024  # Allow up to 3GB file uploads
     
 )
+app.config['JSON_SORT_KEYS'] = False
 app.config['MAX_FORM_MEMORY_SIZE'] = 50 * 1024 * 1024
 app.config['MAX_FORM_PARTS'] = 5000
 
@@ -1336,7 +1343,7 @@ def downloadAllStatesCombined():
         cursor.execute("SELECT state_id, state_name FROM states WHERE state_id IN (1,2,3,4,5,7)")
         states = cursor.fetchall()
 
-        files_to_merge = []
+        files_to_merge = {}
 
         for state_id, state_name in states:
             revision_no = None
@@ -1403,32 +1410,106 @@ def downloadAllStatesCombined():
             if result_row and result_row[0]:
                 file_path = result_row[0]
                 if os.path.exists(file_path):
-                    files_to_merge.append((state_name, file_path))
+                    files_to_merge[state_name] = file_path
 
         cursor.close()
 
         if not files_to_merge:
             return jsonify({'status': 'failure', 'error': 'No files found to merge'}), 404
 
-         # Combine files using xlwings
+        # Combine files using xlwings
         excel = xw.App(visible=False)
         combined_wb = excel.books.add()
 
-        for state_name, file_path in files_to_merge:
-            try:
-                source_wb = excel.books.open(file_path)
-                sheet = source_wb.sheets[0]
-                sheet.api.Copy(Before=combined_wb.sheets[0].api if combined_wb.sheets.count > 0 else None)
-                copied_sheet = combined_wb.sheets[0]
-                copied_sheet.name = state_name[:31]
-                source_wb.close()
-            except Exception as e:
-                log_error(f"Copy error in {file_path}", e)
-                continue
+        required_states = [
+            "Bihar",
+            "Jharkhand",
+            "DVC",
+            "Odisha",
+            "West Bengal",
+            "Sikkim"
+        ]
 
-        # Create a temporary file path
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".xlsx") as tmp:
+        # Remove default blank workbook sheet
+        try:
+            combined_wb.sheets[0].delete()
+        except:
+            pass
+
+        template_sheet = None
+
+        # Create sheets in fixed order
+        for state_name in required_states:
+
+            if state_name in files_to_merge:
+
+                try:
+                    source_wb = excel.books.open(files_to_merge[state_name])
+
+                    source_sheet = source_wb.sheets[0]
+
+                    source_sheet.api.Copy(
+                        After=combined_wb.sheets[-1].api
+                        if combined_wb.sheets.count > 0
+                        else None
+                    )
+
+                    copied_sheet = combined_wb.sheets[-1]
+                    copied_sheet.name = state_name
+
+                    if template_sheet is None:
+                        template_sheet = copied_sheet
+
+                    source_wb.close()
+
+                except Exception as e:
+                    log_error(f"Copy error in {state_name}", e)
+
+        # Need at least one template sheet
+        if template_sheet is None:
+            return jsonify({
+                "status": "failure",
+                "error": "No valid state file found"
+            }), 404
+
+        # Create missing state sheets
+        existing_sheets = {
+            sheet.name: sheet
+            for sheet in combined_wb.sheets
+        }
+
+        for state_name in required_states:
+
+            if state_name not in existing_sheets:
+
+                template_sheet.api.Copy(
+                    After=combined_wb.sheets[-1].api
+                )
+
+                new_sheet = combined_wb.sheets[-1]
+                new_sheet.name = state_name
+
+                # State name
+                new_sheet.range("C3").value = state_name
+
+                # Zero forecast data
+                new_sheet.range("C8:Y104").value = [
+                    [0] * 23 for _ in range(97)
+                ]
+
+        # Reorder sheets to fixed sequence
+        for idx, state_name in enumerate(required_states):
+            combined_wb.sheets[state_name].api.Move(
+                Before=combined_wb.sheets[idx].api
+            )
+
+        # Create temp file
+        with tempfile.NamedTemporaryFile(
+            delete=False,
+            suffix=".xlsx"
+        ) as tmp:
             temp_path = tmp.name
+
 
         # Remove default blank sheet if it exists
         try:
@@ -1437,35 +1518,48 @@ def downloadAllStatesCombined():
         except:
             pass
 
+        first_sheet = combined_wb.sheets["Bihar"]
+
         # Create ER sheet at the end which will be sum of all the states for each cells
-        er_sheet = combined_wb.sheets.add(name="ER", after=combined_wb.sheets[-1])
 
-        # Copy template
-        first_sheet = combined_wb.sheets[0]
-        first_sheet.used_range.copy(er_sheet.range("A1"))
+        er_sheet = combined_wb.sheets.add(
+            name="ER",
+            after=combined_wb.sheets[-1]
+        )
 
-        state_sheets = [s.name for s in combined_wb.sheets if s.name != "ER"]
+        first_sheet.used_range.copy(
+            er_sheet.range("A1")
+        )
 
         for row in range(8, 105):
+
             for col in range(3, 26):
+
                 col_letter = xw.utils.col_name(col)
 
-                formula = "=" + "+".join(
-                    [f"'{sheet}'!{col_letter}{row}" for sheet in state_sheets]
-                )
+                formula = "=SUM(" + ",".join([
+                    f"'{sheet}'!{col_letter}{row}"
+                    for sheet in required_states
+                ]) + ")"
 
-                er_sheet.range(f"{col_letter}{row}").formula = formula
+                er_sheet.range(
+                    f"{col_letter}{row}"
+                ).formula = formula
 
-        # Keep State name as ERLDC
         er_sheet.range("C3").value = "ERLDC"
 
-        # Create Summary sheet
+        # Keep C3 blank if required
+        # er_sheet.range("C3").value = ""
+
+        # -------------------------
+        # ER Daily Demand Estimation
+        # -------------------------
+
         summary_sheet = combined_wb.sheets.add(
             name="ER Daily Demand Estimation",
             after=combined_wb.sheets[-1]
         )
 
-        # Headers
         summary_sheet.range("A1:H1").value = [[
             "PERIOD",
             "BH_DEMAND_FORECAST",
@@ -1477,39 +1571,30 @@ def downloadAllStatesCombined():
             "ER_DEMAND_FORECAST"
         ]]
 
-        # Create sheet lookup dictionary
-        sheet_lookup = {s.name: s for s in combined_wb.sheets}
+        mapping = {
+            "B": "Bihar",
+            "C": "Jharkhand",
+            "D": "DVC",
+            "E": "Odisha",
+            "F": "West Bengal",
+            "G": "Sikkim",
+            "H": "ER"
+        }
 
-        # PERIOD column from first sheet
-        summary_sheet.range("A2").value = \
-            first_sheet.range("B8:B103").options(ndim=2).value
+        for excel_row in range(2, 98):
 
-        # Forecast mappings
-        mapping = [
-            ("Bihar", "B"),
-            ("Jharkhand", "C"),
-            ("DVC", "D"),
-            ("Odisha", "E"),
-            ("West Bengal", "F"),
-            ("Sikkim", "G"),
-            ("ER", "H")
-        ]
+            source_row = excel_row + 6
 
-        # Populate forecast columns
-        for sheet_name, target_col in mapping:
+            summary_sheet.range(
+                f"A{excel_row}"
+            ).formula = f"=Bihar!B{source_row}"
 
-            if sheet_name in sheet_lookup:
+            for col_letter, sheet_name in mapping.items():
 
-                summary_sheet.range(f"{target_col}2").value = \
-                    sheet_lookup[sheet_name].range("C8:C103").options(ndim=2).value
+                summary_sheet.range(
+                    f"{col_letter}{excel_row}"
+                ).formula = f"='{sheet_name}'!C{source_row}"
 
-            else:
-
-                # Fill blanks if sheet not available
-                summary_sheet.range(f"{target_col}2:{target_col}97").value = \
-                    [[""] for _ in range(96)]
-
-        # Optional formatting
         summary_sheet.autofit()
 
         # Save workbook to temp file
