@@ -45,7 +45,8 @@ export class ViewDayaheadComponent {
     '3': 'Odisha',
     '4': 'West Bengal',
     '5': 'DVC',
-    '7': 'Sikkim'
+    '7': 'Sikkim',
+    '8': 'ERLDC'
   };
 
 
@@ -245,12 +246,18 @@ export class ViewDayaheadComponent {
       );
     }
   
+    downloadingAll: boolean = false;
+
     downloadAllStatesReport(): void {
+      if (this.downloadingAll) return; // Prevent concurrent requests
+      this.downloadingAll = true;
+
       const fetchDate = this.validationform.get('fetchDate')!.value;
       const formattedDate = fetchDate.toLocaleDateString('en-GB'); // "DD/MM/YYYY"
     
       this.dayAheadForecast.downloadAllStatesCombinedDayAhead(formattedDate).subscribe(
         (response: Blob) => {
+          this.downloadingAll = false;
           const blob = new Blob([response], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
           const url = window.URL.createObjectURL(blob);
           const a = document.createElement('a');
@@ -260,8 +267,21 @@ export class ViewDayaheadComponent {
           window.URL.revokeObjectURL(url);
         },
         (error) => {
+          this.downloadingAll = false;
           console.error('Error downloading the combined file', error);
-          Swal.fire({text: 'Error downloading the combined file', icon: 'error'});
+          // Backend returns JSON but responseType is 'blob', so parse the actual error message
+          if (error.error instanceof Blob) {
+            error.error.text().then((text: string) => {
+              try {
+                const json = JSON.parse(text);
+                Swal.fire({ text: json.error || 'Error downloading the combined file', icon: 'error' });
+              } catch {
+                Swal.fire({ text: 'Error downloading the combined file', icon: 'error' });
+              }
+            });
+          } else {
+            Swal.fire({ text: 'Error downloading the combined file', icon: 'error' });
+          }
         }
       );
     }
@@ -275,8 +295,8 @@ export class ViewDayaheadComponent {
       jspreadsheet(this.spreadsheet.nativeElement, {
       data: this.data,
       // freezeColumns: 2,
-          footers: [[ ' ','Total MUs', '=ROUND(SUM(C1:C96)/4000,2)' , '=ROUND(SUM(D1:D96)/4000,2)' , '=ROUND(SUM(E1:E96)/4000,2)','=ROUND(SUM(F1:F96)/4000,2)' , '=ROUND(SUM(G1:G96)/4000,2)' , '=ROUND(SUM(H1:H96)/4000,2)','=ROUND(SUM(I1:I96)/4000,2)' , '=ROUND(SUM(J1:J96)/4000,2)' , '=ROUND(SUM(K1:K96)/4000,2)','=ROUND(SUM(L1:L96)/4000,2)' , '=ROUND(SUM(M1:M96)/4000,2)' , '=ROUND(SUM(N1:N96)/4000,2)','=ROUND(SUM(O1:O96)/4000,2)' , '=ROUND(SUM(P1:P96)/4000,2)' , '=ROUND(SUM(Q1:Q96)/4000,2)','=ROUND(SUM(R1:R96)/4000,2)' , '=ROUND(SUM(S1:S96)/4000,2)' , '=ROUND(SUM(T1:T96)/4000,2)', '=ROUND(SUM(U1:U96)/4000,2)','=ROUND(SUM(V1:V96)/4000,2)' , '=ROUND(SUM(W1:W96)/4000,2)' , '=ROUND(SUM(X1:X96)/4000,2)', '=ROUND(SUM(Y1:Y96)/4000,2)', '=ROUND(SUM(Z1:Z96)/4000,2)', '=ROUND(SUM(AA1:AA96)/4000,2)', '=ROUND(SUM(AB1:AB96)/4000,2)', '=ROUND(SUM(AC1:AC96)/4000,2)', '=ROUND(SUM(AD1:AD96)/4000,2)', '=ROUND(SUM(AE1:AE96)/4000,2)', '=ROUND(SUM(AF1:AF96)/4000,2)', '=ROUND(SUM(AG1:AG96)/4000,2)', '=ROUND(SUM(AH1:AH96)/4000,2)', '=ROUND(SUM(AI1:AI96)/4000,2)', '=ROUND(SUM(AJ1:AJ96)/4000,2)', '=ROUND(SUM(AK1:AK96)/4000,2)' ]],
-
+      footers: [[ ' ','Total MUs', '=ROUND(SUM(C1:C96)/4000,2)' , '=ROUND(SUM(D1:D96)/4000,2)' , '=ROUND(SUM(E1:E96)/4000,2)','=ROUND(SUM(F1:F96)/4000,2)' , '=ROUND(SUM(G1:G96)/4000,2)' , '=ROUND(SUM(H1:H96)/4000,2)','=ROUND(SUM(I1:I96)/4000,2)' , '=ROUND(SUM(J1:J96)/4000,2)' , '=ROUND(SUM(K1:K96)/4000,2)','=ROUND(SUM(L1:L96)/4000,2)' , '=ROUND(SUM(M1:M96)/4000,2)' , '=ROUND(SUM(N1:N96)/4000,2)','=ROUND(SUM(O1:O96)/4000,2)' , '=ROUND(SUM(P1:P96)/4000,2)' , '=ROUND(SUM(Q1:Q96)/4000,2)','=ROUND(SUM(R1:R96)/4000,2)' , '=ROUND(SUM(S1:S96)/4000,2)' , '=ROUND(SUM(T1:T96)/4000,2)', '=ROUND(SUM(U1:U96)/4000,2)','=ROUND(SUM(V1:V96)/4000,2)' , '=ROUND(SUM(W1:W96)/4000,2)' , '=ROUND(SUM(X1:X96)/4000,2)', '=ROUND(SUM(Y1:Y96)/4000,2)' ]],
+  
       tableOverflow: true,
       tableWidth: '1200px',
       tableHeight: '400px',
@@ -442,91 +462,6 @@ export class ViewDayaheadComponent {
       decimal: '.',
       mask: '0.00'
     },
-       // New columns for plant-wise allocation (cols 26-37)
-    {
-      type: 'numeric',
-      title: 'MW',
-      width:'150',
-      decimal: '.',
-      mask: '0.00'
-    },
-    {
-      type: 'numeric',
-      title: 'MW',
-      width:'150',
-      decimal: '.',
-      mask: '0.00'
-    },
-    {
-      type: 'numeric',
-      title: 'MW',
-      width:'150',
-      decimal: '.',
-      mask: '0.00'
-    },
-    {
-      type: 'numeric',
-      title: 'MW',
-      width:'150',
-      decimal: '.',
-      mask: '0.00'
-    },
-    {
-      type: 'numeric',
-      title: 'MW',
-      width:'150',
-      decimal: '.',
-      mask: '0.00'
-    },
-    {
-      type: 'numeric',
-      title: 'MW',
-      width:'150',
-      decimal: '.',
-      mask: '0.00'
-    },
-    {
-      type: 'numeric',
-      title: 'MW',
-      width:'150',
-      decimal: '.',
-      mask: '0.00'
-    },
-    {
-      type: 'numeric',
-      title: 'MW',
-      width:'150',
-      decimal: '.',
-      mask: '0.00'
-    },
-    {
-      type: 'numeric',
-      title: 'MW',
-      width:'150',
-      decimal: '.',
-      mask: '0.00'
-    },
-    {
-      type: 'numeric',
-      title: 'MW',
-      width:'150',
-      decimal: '.',
-      mask: '0.00'
-    },
-    {
-      type: 'numeric',
-      title: 'MW',
-      width:'150',
-      decimal: '.',
-      mask: '0.00'
-    },
-    {
-      type: 'numeric',
-      title: 'MW',
-      width:'150',
-      decimal: '.',
-      mask: '0.00'
-    },
     ],
     nestedHeaders:[
       
@@ -593,22 +528,7 @@ export class ViewDayaheadComponent {
         colspan: 1, 
         
       },
-      {
-        title: 'Plant-wise allocation of UR_S',
-        colspan: 3,
-      },
-      {
-        title: 'Plant-wise allocation of UR_T',
-        colspan: 3,
-      },
-      {
-        title: 'Plant-wise allocation of DR_S',
-        colspan: 3,
-      },
-      {
-        title: 'Plant-wise allocation of DR_T',
-        colspan: 3,
-      },
+      
   
         ],
         [
@@ -700,19 +620,6 @@ export class ViewDayaheadComponent {
           colspan: 1, 
           
         },
-// 12 new empty sub-header cells for plant-wise allocations
-        { title: '', colspan: 1 },
-        { title: '', colspan: 1 },
-        { title: '', colspan: 1 },
-        { title: '', colspan: 1 },
-        { title: '', colspan: 1 },
-        { title: '', colspan: 1 },
-        { title: '', colspan: 1 },
-        { title: '', colspan: 1 },
-        { title: '', colspan: 1 },
-        { title: '', colspan: 1 },
-        { title: '', colspan: 1 },
-        { title: '', colspan: 1 },
         ],
         [
           {
@@ -828,24 +735,11 @@ export class ViewDayaheadComponent {
           colspan: 1, 
           
         }, 
-        // {
-        //   title: '',
-        //   colspan: 1, 
+        {
+          title: '',
+          colspan: 1, 
           
-        // }, 
-// 12 new detail-header cells: Plant-1, Plant-2, … for each allocation group
-        { title: 'Plant-1', colspan: 1 },
-        { title: 'Plant-2', colspan: 1 },
-        { title: '…', colspan: 1 },
-        { title: 'Plant-1', colspan: 1 },
-        { title: 'Plant-2', colspan: 1 },
-        { title: '…', colspan: 1 },
-        { title: 'Plant-1', colspan: 1 },
-        { title: 'Plant-2', colspan: 1 },
-        { title: '…', colspan: 1 },
-        { title: 'Plant-1', colspan: 1 },
-        { title: 'Plant-2', colspan: 1 },
-        { title: '…', colspan: 1 },
+        }, 
           
       ],
     ],

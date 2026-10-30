@@ -24,11 +24,13 @@ How to register this Blueprint in dFBackend.py
 """
 
 import secrets
+import os
 import psycopg2
 from functools import wraps
 from datetime import datetime, date
 
 import json
+from openpyxl import load_workbook
 from flask import Blueprint, request, jsonify, Response
 from collections import OrderedDict
 
@@ -131,7 +133,7 @@ def row_to_dict(columns, row):
     return {columns[i]: (row[i] if i < len(row) else None) for i in range(len(columns))}
 
 
-def _nest_block_row(row: dict) -> dict:
+def _nest_block_row(row: dict, plant_allocations: dict | None = None) -> dict:
     """Map a flat record to the exact block structure requested by the user."""
     # helpers to safely read numeric values
     def n(k):
@@ -207,33 +209,169 @@ def _nest_block_row(row: dict) -> dict:
         ("Tertiary", n("tertiary_down_ancillary_mw"))
     ])
 
-    # Details of Reserves - plant-wise allocations
-    drs = [n("dr_s_plant1_mw"), n("dr_s_plant2_mw"), n("dr_s_plant3_mw")]
-    drt = [n("dr_t_plant1_mw"), n("dr_t_plant2_mw"), n("dr_t_plant3_mw")]
-    urs = [n("ur_s_plant1_mw"), n("ur_s_plant2_mw"), n("ur_s_plant3_mw")]
-    urt = [n("ur_t_plant1_mw"), n("ur_t_plant2_mw"), n("ur_t_plant3_mw")]
+    # Details of Reserves - use Excel plant headers when available.
+    if plant_allocations is None:
+        plant_allocations = {
+            "UR_S": OrderedDict([
+                ("Plant-1", n("ur_s_plant1_mw")),
+                ("Plant-2", n("ur_s_plant2_mw")),
+                ("Plant-3", n("ur_s_plant3_mw")),
+            ]),
+            "UR_T": OrderedDict([
+                ("Plant-1", n("ur_t_plant1_mw")),
+                ("Plant-2", n("ur_t_plant2_mw")),
+                ("Plant-3", n("ur_t_plant3_mw")),
+            ]),
+            "DR_S": OrderedDict([
+                ("Plant-1", n("dr_s_plant1_mw")),
+                ("Plant-2", n("dr_s_plant2_mw")),
+                ("Plant-3", n("dr_s_plant3_mw")),
+            ]),
+            "DR_T": OrderedDict([
+                ("Plant-1", n("dr_t_plant1_mw")),
+                ("Plant-2", n("dr_t_plant2_mw")),
+                ("Plant-3", n("dr_t_plant3_mw")),
+            ]),
+        }
 
-    details = OrderedDict()
-    details["Plant-wise allocation of UR_S"] = OrderedDict([
-        ("Plant-1", urs[0]),
-        ("Plant-2", urs[1])
-    ])
-    details["Plant-wise allocation of UR_T"] = OrderedDict([
-        ("Plant-1", urt[0]),
-        ("Plant-2", urt[1])
-    ])
-    details["Plant-wise allocation of DR_S"] = OrderedDict([
-        ("Plant-1", drs[0]),
-        ("Plant-2", drs[1])
-    ])
-    details["Plant-wise allocation of DR_T"] = OrderedDict([
-        ("Plant-1", drt[0]),
-        ("Plant-2", drt[1])
+    details = OrderedDict([
+        ("Plant-wise allocation of UR_S", plant_allocations.get("UR_S", OrderedDict())),
+        ("Plant-wise allocation of UR_T", plant_allocations.get("UR_T", OrderedDict())),
+        ("Plant-wise allocation of DR_S", plant_allocations.get("DR_S", OrderedDict())),
+        ("Plant-wise allocation of DR_T", plant_allocations.get("DR_T", OrderedDict())),
     ])
 
     block["Details of Reserves"] = details
 
     return block
+
+
+def _excel_day_rows(file_path: str) -> tuple[list, dict]:
+    """Read day-ahead rows and reserve group mapping from the stored workbook.
+
+    Returns
+    -------
+    data_rows : list[list]
+        The raw data rows (one per block).
+    group_map : dict[str, list[tuple[int, str]]]
+        Maps each reserve group name (``UR_S``, ``UR_T``, ``DR_S``, ``DR_T``)
+        to a list of ``(column_index, plant_name)`` tuples.  The number of
+        plants per group is determined dynamically from the Excel headers so it
+        works regardless of how many plants each state has.
+    """
+    workbook = load_workbook(file_path, data_only=True, read_only=True)
+    worksheet = workbook.active
+    worksheet_rows = [list(row) for row in worksheet.iter_rows(values_only=True)]
+    workbook.close()
+
+    data_row_index = next(
+        (index for index, row in enumerate(worksheet_rows)
+         if row and isinstance(row[0], (int, float)) and 1 <= row[0] <= 96),
+        None,
+    )
+    if data_row_index is None:
+        return [], {}
+
+    header_rows = worksheet_rows[:data_row_index]
+    data_rows = [row for row in worksheet_rows[data_row_index:] if row]
+
+    # --- Discover reserve group boundaries from the header rows ----------
+    # Row 3 (typically) contains merged group headers like
+    #   "Plant-wise allocation of UR_S" starting at some column.
+    # We scan all header rows for these labels to find the starting column
+    # of each group, then derive the ending column from the next group's
+    # start (or the total column count).
+    GROUP_LABELS = OrderedDict([
+        ("UR_S", "Plant-wise allocation of UR_S"),
+        ("UR_T", "Plant-wise allocation of UR_T"),
+        ("DR_S", "Plant-wise allocation of DR_S"),
+        ("DR_T", "Plant-wise allocation of DR_T"),
+    ])
+
+    # Map group_name -> start column index
+    group_starts: dict[str, int] = {}
+    for header_row in header_rows:
+        for col_idx, cell in enumerate(header_row):
+            if not isinstance(cell, str):
+                continue
+            cell_clean = cell.strip()
+            for gname, glabel in GROUP_LABELS.items():
+                if gname not in group_starts and cell_clean == glabel:
+                    group_starts[gname] = col_idx
+
+    if not group_starts:
+        # No reserve groups found — return data rows with empty map
+        return data_rows, {}
+
+    # Determine the total number of columns from data rows
+    max_cols = max((len(r) for r in data_rows), default=0)
+
+    # Build an ordered list of (group_name, start_col) sorted by column
+    ordered_groups = sorted(group_starts.items(), key=lambda x: x[1])
+
+    # Derive end column for each group (exclusive)
+    group_ranges: list[tuple[str, int, int]] = []
+    for i, (gname, start_col) in enumerate(ordered_groups):
+        if i + 1 < len(ordered_groups):
+            end_col = ordered_groups[i + 1][1]
+        else:
+            end_col = max_cols
+        group_ranges.append((gname, start_col, end_col))
+
+    # --- Read plant names from the deepest non-"MW" header row -----------
+    # Plant names live in the sub-header row (typically row 5).  For each
+    # column in a group range we look upward through header rows to find
+    # the plant name, skipping generic labels like "MW".
+    SKIP_LABELS = {"MW", "MVAr"}
+
+    group_map: dict[str, list[tuple[int, str]]] = {}
+    for gname, start_col, end_col in group_ranges:
+        plants: list[tuple[int, str]] = []
+        for col_idx in range(start_col, end_col):
+            plant_name = None
+            # Walk header rows bottom-up to find a meaningful label
+            for header_row in reversed(header_rows):
+                val = header_row[col_idx] if col_idx < len(header_row) else None
+                if isinstance(val, str) and val.strip() and val.strip() not in SKIP_LABELS:
+                    candidate = val.strip()
+                    # Skip the group header itself (it spans merged cells)
+                    if candidate not in GROUP_LABELS.values():
+                        plant_name = candidate
+                        break
+            if plant_name is None:
+                plant_name = f"Plant-{col_idx - start_col + 1}"
+            plants.append((col_idx, plant_name))
+        group_map[gname] = plants
+
+    return data_rows, group_map
+
+
+def _excel_plant_allocations(row: list, group_map: dict) -> dict:
+    """Build reserve allocations for a single data row using the dynamic group map.
+
+    Parameters
+    ----------
+    row : list
+        A single Excel data row (all columns).
+    group_map : dict[str, list[tuple[int, str]]]
+        Mapping produced by ``_excel_day_rows`` — group name to list of
+        ``(column_index, plant_name)`` pairs.
+
+    Returns
+    -------
+    dict[str, OrderedDict]
+        ``{"UR_S": OrderedDict([(plant_name, value), ...]), ...}``
+    """
+    if not group_map:
+        return {}
+
+    allocations = {}
+    for group_name, plants in group_map.items():
+        allocations[group_name] = OrderedDict(
+            (plant_name, (row[col_idx] if col_idx < len(row) and row[col_idx] is not None else 0))
+            for col_idx, plant_name in plants
+        )
+    return allocations
 
 
 def _compute_total_lus(records: list) -> dict:
@@ -578,6 +716,7 @@ def _fetch_day_or_intra(table: str, query_date: date, state_filter: list | None 
                state_id,
                upload_time,
                revision_no,
+             file_name,
                file_data
         FROM   {table}
         WHERE  upload_date = %s
@@ -589,22 +728,38 @@ def _fetch_day_or_intra(table: str, query_date: date, state_filter: list | None 
     conn.close()
 
     results = []
-    for state_id, upload_time, revision_no, file_data in rows:
+    for state_id, upload_time, revision_no, file_name, file_data in rows:
         if state_filter is not None and state_id not in state_filter:
             continue
 
         info = state_map.get(state_id, {"state_name": "Unknown", "acronym": ""})
 
-        # file_data is a list of rows from JSONB
         records = []
         blocks = []
-        for row in (file_data or []):
-            block_no = row[0] if row else None
-            if not isinstance(block_no, (int, float)):
-                continue
-            record = row_to_dict(DAY_INTRA_COLUMNS, row)
-            records.append(record)
-            blocks.append(_nest_block_row(record))
+        if table == "file_uploads" and file_name and os.path.exists(file_name):
+            excel_rows, group_map = _excel_day_rows(file_name)
+        else:
+            excel_rows, group_map = [], {}
+
+        if excel_rows:
+            for row in excel_rows:
+                block_no = row[0] if row else None
+                if not isinstance(block_no, (int, float)):
+                    continue
+                record = row_to_dict(DAY_INTRA_COLUMNS, row)
+                records.append(record)
+                blocks.append(_nest_block_row(
+                    record,
+                    _excel_plant_allocations(row, group_map),
+                ))
+        else:
+            for row in (file_data or []):
+                block_no = row[0] if row else None
+                if not isinstance(block_no, (int, float)):
+                    continue
+                record = row_to_dict(DAY_INTRA_COLUMNS, row)
+                records.append(record)
+                blocks.append(_nest_block_row(record))
 
         state_entry = OrderedDict()
         state_entry["Details for State:"] = info["state_name"]

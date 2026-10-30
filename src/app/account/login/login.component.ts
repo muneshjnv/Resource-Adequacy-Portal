@@ -72,6 +72,18 @@ export class LoginComponent implements OnInit {
       localStorage.setItem('device_id', this.generateUUID());
     }
 
+    if (this.loginForm.invalid) {
+      this.loginForm.markAllAsTouched();
+      this.error = 'Please enter username and password.';
+      return;
+    }
+
+    if (!this.captchaResolved || !this.captchaToken) {
+      this.error = 'Please complete the CAPTCHA before logging in.';
+      this.toastService.show('Please complete the CAPTCHA before logging in.', { classname: 'bg-warning text-white', delay: 4000 });
+      return;
+    }
+
     const device_id = localStorage.getItem('device_id');
     this.loading = true;
     this.submitted = true;
@@ -81,7 +93,7 @@ export class LoginComponent implements OnInit {
 
     // Send raw password securely via HTTPS
     this.authenticationService
-      .login(this.f['email'].value, rawPassword, this.captchaToken as string, device_id)
+      .login(this.f['email'].value, rawPassword, this.captchaToken, device_id)
       .subscribe(
         (data: any) => {
           this.loading = false;

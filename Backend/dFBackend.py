@@ -80,11 +80,11 @@ app.config.update(
     SESSION_COOKIE_SECURE=True,      # Secure cookie
     SESSION_COOKIE_HTTPONLY=True,
     SESSION_COOKIE_SAMESITE='Lax',
-    MAX_CONTENT_LENGTH=3 * 1024 * 1024 * 1024  # Allow up to 3GB file uploads
+    MAX_CONTENT_LENGTH=25 * 1024 * 1024   # Allow up to 25Mb file uploads
     
 )
 app.config['JSON_SORT_KEYS'] = False
-app.config['MAX_FORM_MEMORY_SIZE'] = 50 * 1024 * 1024
+app.config['MAX_FORM_MEMORY_SIZE'] = 25 * 1024 * 1024
 app.config['MAX_FORM_PARTS'] = 5000
 
 
@@ -877,7 +877,7 @@ def uploadIntradayDataAndFile():
                 SELECT state_id FROM states WHERE state_id NOT IN (
                     SELECT state_id FROM intraday_file_uploads WHERE upload_date = %s
                 )
-                AND state_id IN (1,2,3,4,5,7)  -- Exclude some states as required
+                AND state_id IN (1,2,3,4,5,7,8)  -- Exclude some states as required
                 """, 
                 (disabledDate,)
             )
@@ -996,7 +996,7 @@ def uploadDayAheadDataAndFile():
                 SELECT state_id FROM states WHERE state_id NOT IN (
                     SELECT state_id FROM file_uploads WHERE upload_date = %s
                 )
-                AND state_id IN (1,2,3,4,5,7)  -- Exclude some states as required
+                AND state_id IN (1,2,3,4,5,7,8)  -- Exclude some states as required
                 """, 
                 (disabledDate,)
             )
@@ -1334,13 +1334,14 @@ def downloadAllStatesCombined():
         conn = psycopg2.connect(**db_params)
         cursor = conn.cursor()
         data_json = request.get_json()
+        print(f"[downloadAllStatesCombined] Request: {data_json}")
         forecast_type = data_json.get('forecastType')
         date = data_json.get('date')  # For intraday/dayahead
         from_date = data_json.get('from_date')  # For week/month/year ahead
         to_date = data_json.get('to_date')
 
         # Fetch state names
-        cursor.execute("SELECT state_id, state_name FROM states WHERE state_id IN (1,2,3,4,5,7)")
+        cursor.execute("SELECT state_id, state_name FROM states WHERE state_id IN (1,2,3,4,5,7,8)")
         states = cursor.fetchall()
 
         files_to_merge = {}
@@ -1411,15 +1412,28 @@ def downloadAllStatesCombined():
                 file_path = result_row[0]
                 if os.path.exists(file_path):
                     files_to_merge[state_name] = file_path
+                    print(f"[downloadAllStatesCombined] Found file for {state_name}: {file_path}")
+                else:
+                    print(f"[downloadAllStatesCombined] File path does not exist for {state_name}: {file_path}")
 
         cursor.close()
 
         if not files_to_merge:
+            print("[downloadAllStatesCombined] No files found to merge")
             return jsonify({'status': 'failure', 'error': 'No files found to merge'}), 404
 
-        # Combine files using xlwings
-        excel = xw.App(visible=False)
-        combined_wb = excel.books.add()
+        print(f"[downloadAllStatesCombined] Merging {len(files_to_merge)} state files: {list(files_to_merge.keys())}")
+
+        # ── Combine files using openpyxl (pure Python, no Excel COM) ──────
+        from openpyxl import load_workbook as _load_wb
+        from openpyxl import Workbook as _Workbook
+        from openpyxl.utils import get_column_letter
+        from openpyxl.cell.cell import MergedCell as _MergedCell
+        from copy import copy as _copy
+
+        combined_wb = _Workbook()
+        # Remove the default sheet created by openpyxl
+        combined_wb.remove(combined_wb.active)
 
         required_states = [
             "Bihar",
@@ -1427,140 +1441,196 @@ def downloadAllStatesCombined():
             "DVC",
             "Odisha",
             "West Bengal",
-            "Sikkim"
+            "Sikkim", 
+            'ERLDC'
         ]
 
-        # Remove default blank workbook sheet
-        try:
-            combined_wb.sheets[0].delete()
-        except:
-            pass
+        template_source_wb = None
+        template_source_ws = None
 
-        template_sheet = None
-
-        # Create sheets in fixed order
+        # Copy each state's first sheet into the combined workbook in order
         for state_name in required_states:
-
             if state_name in files_to_merge:
-
                 try:
-                    source_wb = excel.books.open(files_to_merge[state_name])
+                    source_wb = _load_wb(files_to_merge[state_name])
+                    source_ws = source_wb.active
 
-                    source_sheet = source_wb.sheets[0]
+                    # Create new sheet in combined workbook
+                    new_ws = combined_wb.create_sheet(title=state_name)
 
-                    source_sheet.api.Copy(
-                        After=combined_wb.sheets[-1].api
-                        if combined_wb.sheets.count > 0
-                        else None
-                    )
+                    # Copy column widths
+                    for col_letter_src, col_dim in source_ws.column_dimensions.items():
+                        new_ws.column_dimensions[col_letter_src].width = col_dim.width
+                        if col_dim.hidden:
+                            new_ws.column_dimensions[col_letter_src].hidden = True
 
-                    copied_sheet = combined_wb.sheets[-1]
-                    copied_sheet.name = state_name
+                    # Copy row heights
+                    for row_num, row_dim in source_ws.row_dimensions.items():
+                        if row_dim.height is not None:
+                            new_ws.row_dimensions[row_num].height = row_dim.height
+                        if row_dim.hidden:
+                            new_ws.row_dimensions[row_num].hidden = True
 
-                    if template_sheet is None:
-                        template_sheet = copied_sheet
+                    # Copy cell values and styles (skip MergedCell objects in source)
+                    for row in source_ws.iter_rows():
+                        for cell in row:
+                            if isinstance(cell, _MergedCell):
+                                continue
+                            new_cell = new_ws.cell(row=cell.row, column=cell.column)
+                            new_cell.value = cell.value
 
-                    source_wb.close()
+                            # Copy style attributes
+                            if cell.has_style:
+                                new_cell.font = _copy(cell.font)
+                                new_cell.fill = _copy(cell.fill)
+                                new_cell.border = _copy(cell.border)
+                                new_cell.alignment = _copy(cell.alignment)
+                                new_cell.number_format = cell.number_format
+                                new_cell.protection = _copy(cell.protection)
+
+                    # Apply merged cells AFTER copying values (to avoid MergedCell read-only errors)
+                    for merged_range in source_ws.merged_cells.ranges:
+                        new_ws.merge_cells(str(merged_range))
+
+                    # Copy print settings if available
+                    new_ws.sheet_format = _copy(source_ws.sheet_format)
+
+                    # Remember the first successfully copied sheet as template
+                    if template_source_wb is None:
+                        template_source_wb = source_wb
+                        template_source_ws = source_ws
+                    else:
+                        source_wb.close()
+
+                    print(f"[downloadAllStatesCombined] Copied sheet for {state_name}")
 
                 except Exception as e:
+                    print(f"[downloadAllStatesCombined] Error copying {state_name}: {e}")
                     log_error(f"Copy error in {state_name}", e)
 
         # Need at least one template sheet
-        if template_sheet is None:
+        if template_source_ws is None:
+            print("[downloadAllStatesCombined] No valid state file found")
             return jsonify({
                 "status": "failure",
                 "error": "No valid state file found"
             }), 404
 
-        # Create missing state sheets
-        existing_sheets = {
-            sheet.name: sheet
-            for sheet in combined_wb.sheets
-        }
+        # Create missing state sheets using the template
+        existing_sheets = set(combined_wb.sheetnames)
 
         for state_name in required_states:
-
             if state_name not in existing_sheets:
+                print(f"[downloadAllStatesCombined] Creating blank sheet for missing state: {state_name}")
+                new_ws = combined_wb.create_sheet(title=state_name)
 
-                template_sheet.api.Copy(
-                    After=combined_wb.sheets[-1].api
-                )
+                # Copy column widths and row heights from template
+                for col_letter_src, col_dim in template_source_ws.column_dimensions.items():
+                    new_ws.column_dimensions[col_letter_src].width = col_dim.width
 
-                new_sheet = combined_wb.sheets[-1]
-                new_sheet.name = state_name
+                for row_num, row_dim in template_source_ws.row_dimensions.items():
+                    if row_dim.height is not None:
+                        new_ws.row_dimensions[row_num].height = row_dim.height
 
-                # State name
-                new_sheet.range("C3").value = state_name
+                # Copy header rows (rows 1-7) from template with styles (skip MergedCell)
+                for row in template_source_ws.iter_rows(min_row=1, max_row=7):
+                    for cell in row:
+                        if isinstance(cell, _MergedCell):
+                            continue
+                        new_cell = new_ws.cell(row=cell.row, column=cell.column)
+                        new_cell.value = cell.value
+                        if cell.has_style:
+                            new_cell.font = _copy(cell.font)
+                            new_cell.fill = _copy(cell.fill)
+                            new_cell.border = _copy(cell.border)
+                            new_cell.alignment = _copy(cell.alignment)
+                            new_cell.number_format = cell.number_format
+                            new_cell.protection = _copy(cell.protection)
 
-                # Zero forecast data
-                new_sheet.range("C8:Y104").value = [
-                    [0] * 23 for _ in range(97)
-                ]
+                # Copy data rows structure (rows 8-104) — keep block/time cols, zero data
+                for row in template_source_ws.iter_rows(min_row=8, max_row=104):
+                    for cell in row:
+                        if isinstance(cell, _MergedCell):
+                            continue
+                        new_cell = new_ws.cell(row=cell.row, column=cell.column)
+                        if cell.has_style:
+                            new_cell.font = _copy(cell.font)
+                            new_cell.fill = _copy(cell.fill)
+                            new_cell.border = _copy(cell.border)
+                            new_cell.alignment = _copy(cell.alignment)
+                            new_cell.number_format = cell.number_format
+                            new_cell.protection = _copy(cell.protection)
+                        # Keep block number (col A) and time period (col B), zero out data cols
+                        if cell.column <= 2:
+                            new_cell.value = cell.value
+                        else:
+                            new_cell.value = 0
+
+                # Apply merged cells AFTER copying values
+                for merged_range in template_source_ws.merged_cells.ranges:
+                    new_ws.merge_cells(str(merged_range))
+
+                # Set state name
+                new_ws["C3"] = state_name
+
+        # Close the template source workbook
+        if template_source_wb is not None:
+            template_source_wb.close()
 
         # Reorder sheets to fixed sequence
         for idx, state_name in enumerate(required_states):
-            combined_wb.sheets[state_name].api.Move(
-                Before=combined_wb.sheets[idx].api
-            )
+            sheet = combined_wb[state_name]
+            combined_wb.move_sheet(sheet, offset=idx - combined_wb.sheetnames.index(state_name))
 
-        # Create temp file
-        with tempfile.NamedTemporaryFile(
-            delete=False,
-            suffix=".xlsx"
-        ) as tmp:
-            temp_path = tmp.name
+        # ── Create ER sheet (sum of all states) ───────────────────────────
+        print("[downloadAllStatesCombined] Creating ER sheet")
+        first_ws = combined_wb["Bihar"]
+        er_ws = combined_wb.create_sheet(title="ER")
 
+        # Copy column widths and row heights from Bihar
+        for col_letter_src, col_dim in first_ws.column_dimensions.items():
+            er_ws.column_dimensions[col_letter_src].width = col_dim.width
 
-        # Remove default blank sheet if it exists
-        try:
-            if combined_wb.sheets.count > len(files_to_merge):
-                combined_wb.sheets[-1].delete()
-        except:
-            pass
+        for row_num, row_dim in first_ws.row_dimensions.items():
+            if row_dim.height is not None:
+                er_ws.row_dimensions[row_num].height = row_dim.height
 
-        first_sheet = combined_wb.sheets["Bihar"]
+        # Copy all cell values and styles from Bihar as base (skip MergedCell)
+        for row in first_ws.iter_rows():
+            for cell in row:
+                if isinstance(cell, _MergedCell):
+                    continue
+                new_cell = er_ws.cell(row=cell.row, column=cell.column)
+                new_cell.value = cell.value
+                if cell.has_style:
+                    new_cell.font = _copy(cell.font)
+                    new_cell.fill = _copy(cell.fill)
+                    new_cell.border = _copy(cell.border)
+                    new_cell.alignment = _copy(cell.alignment)
+                    new_cell.number_format = cell.number_format
+                    new_cell.protection = _copy(cell.protection)
 
-        # Create ER sheet at the end which will be sum of all the states for each cells
+        # Apply merged cells AFTER copying values
+        for merged_range in first_ws.merged_cells.ranges:
+            er_ws.merge_cells(str(merged_range))
 
-        er_sheet = combined_wb.sheets.add(
-            name="ER",
-            after=combined_wb.sheets[-1]
-        )
-
-        first_sheet.used_range.copy(
-            er_sheet.range("A1")
-        )
-
+        # Replace data cells (rows 8-104, cols C-Y) with SUM formulas
         for row in range(8, 105):
-
-            for col in range(3, 26):
-
-                col_letter = xw.utils.col_name(col)
-
+            for col in range(3, 26):  # C=3 to Y=25
+                col_letter = get_column_letter(col)
                 formula = "=SUM(" + ",".join([
                     f"'{sheet}'!{col_letter}{row}"
                     for sheet in required_states
                 ]) + ")"
+                er_ws.cell(row=row, column=col).value = formula
 
-                er_sheet.range(
-                    f"{col_letter}{row}"
-                ).formula = formula
+        er_ws["C3"] = "ERLDC"
 
-        er_sheet.range("C3").value = "ERLDC"
+        # ── ER Daily Demand Estimation sheet ──────────────────────────────
+        print("[downloadAllStatesCombined] Creating ER Daily Demand Estimation sheet")
+        summary_ws = combined_wb.create_sheet(title="ER Daily Demand Estimation")
 
-        # Keep C3 blank if required
-        # er_sheet.range("C3").value = ""
-
-        # -------------------------
-        # ER Daily Demand Estimation
-        # -------------------------
-
-        summary_sheet = combined_wb.sheets.add(
-            name="ER Daily Demand Estimation",
-            after=combined_wb.sheets[-1]
-        )
-
-        summary_sheet.range("A1:H1").value = [[
+        headers = [
             "PERIOD",
             "BH_DEMAND_FORECAST",
             "JH_DEMAND_FORECAST",
@@ -1569,47 +1639,55 @@ def downloadAllStatesCombined():
             "WB_DEMAND_FORECAST",
             "SI_DEMAND_FORECAST",
             "ER_DEMAND_FORECAST"
-        ]]
+        ]
+        for col_idx, header in enumerate(headers, start=1):
+            summary_ws.cell(row=1, column=col_idx, value=header)
 
-        mapping = {
-            "B": "Bihar",
-            "C": "Jharkhand",
-            "D": "DVC",
-            "E": "Odisha",
-            "F": "West Bengal",
-            "G": "Sikkim",
-            "H": "ER"
+        # Map summary columns to state sheet names
+        # B=2->Bihar, C=3->Jharkhand, D=4->DVC, E=5->Odisha, F=6->WB, G=7->Sikkim, H=8->ER
+        col_sheet_mapping = {
+            2: "Bihar",
+            3: "Jharkhand",
+            4: "DVC",
+            5: "Odisha",
+            6: "West Bengal",
+            7: "Sikkim",
+            8: "ER"
         }
 
         for excel_row in range(2, 98):
-
             source_row = excel_row + 6
 
-            summary_sheet.range(
-                f"A{excel_row}"
-            ).formula = f"=Bihar!B{source_row}"
+            # Period column (A) — reference Bihar's time period column (B)
+            summary_ws.cell(row=excel_row, column=1).value = f"=Bihar!B{source_row}"
 
-            for col_letter, sheet_name in mapping.items():
+            # Demand forecast columns — reference each sheet's column C (forecasted demand)
+            for col_num, sheet_name in col_sheet_mapping.items():
+                summary_ws.cell(row=excel_row, column=col_num).value = f"='{sheet_name}'!C{source_row}"
 
-                summary_sheet.range(
-                    f"{col_letter}{excel_row}"
-                ).formula = f"='{sheet_name}'!C{source_row}"
+        # Auto-fit column widths for summary sheet
+        for col_idx in range(1, len(headers) + 1):
+            col_letter = get_column_letter(col_idx)
+            max_length = len(str(headers[col_idx - 1]))
+            summary_ws.column_dimensions[col_letter].width = max_length + 4
 
-        summary_sheet.autofit()
+        # ── Save and return ───────────────────────────────────────────────
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".xlsx") as tmp:
+            temp_path = tmp.name
 
-        # Save workbook to temp file
         combined_wb.save(temp_path)
         combined_wb.close()
-        excel.quit()
+        print(f"[downloadAllStatesCombined] Saved combined workbook to {temp_path}")
 
         # Read file into memory
         with open(temp_path, "rb") as f:
             output = BytesIO(f.read())
 
-        # Optionally, delete the temp file now
+        # Delete the temp file now
         os.remove(temp_path)
 
         filename = f'Combined_{forecast_type}_{date or from_date}_{to_date if to_date else ""}.xlsx'
+        print(f"[downloadAllStatesCombined] Sending file: {filename}")
 
         return send_file(output,
                          as_attachment=True,
@@ -1617,14 +1695,18 @@ def downloadAllStatesCombined():
                          mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
 
     except Exception as e:
+        print(f"[downloadAllStatesCombined] ERROR: {e}")
         log_error("downloadAllStatesCombined", e)
+        return jsonify({'status': 'failure', 'error': str(e)}), 500
+    finally:
         try:
             cursor.close()
         except:
             pass
-        return jsonify({'status': 'failure', 'error': str(e)}), 500
-
-
+        try:
+            conn.close()
+        except:
+            pass
 
 
 
@@ -2124,7 +2206,7 @@ def uploadWeekAheadDataAndFile():
             cursor.execute("""
                 SELECT state_id FROM states WHERE state_id NOT IN (
                     SELECT state_id FROM week_ahead_file_uploads WHERE from_date = to_date(%s, 'DD/MM/YYYY') AND to_date = to_date(%s, 'DD/MM/YYYY')
-                ) and state_id IN (1,2,3,4,5,7)
+                ) and state_id IN (1,2,3,4,5,7,8)
             """, (fromDate, toDate))
             pending_states = cursor.fetchall()
 
@@ -2282,7 +2364,7 @@ def uploadMonthAheadDataAndFile():
                     cursor.execute("""
                         SELECT state_id FROM states WHERE state_id NOT IN (
                             SELECT state_id FROM month_ahead_file_uploads WHERE from_date = to_date(%s, 'DD/MM/YYYY') AND to_date = to_date(%s, 'DD/MM/YYYY')
-                        ) and state_id IN (1,2,3,4,5,7)
+                        ) and state_id IN (1,2,3,4,5,7,8)
                     """, (fromDate, toDate))
                     pending_states = cursor.fetchall()
 
@@ -2677,7 +2759,7 @@ def scatterPlotUploadStatus():
                     file_uploads.state_id = min_uploads.state_id 
                     AND file_uploads.upload_date = min_uploads.upload_date
                 WHERE 
-                    states.state_id IN (1,2,3,4,5,7)
+                    states.state_id IN (1,2,3,4,5,7,8)
                 GROUP BY 
                     states.state_name, 
                     file_uploads.upload_date,
@@ -2792,7 +2874,7 @@ def scatterPlotUploadStatus():
             LEFT JOIN 
                 min_uploads mu ON states.state_id = mu.state_id
             WHERE 
-                states.state_id IN (1,2,3,4,5,7)
+                states.state_id IN (1,2,3,4,5,7,8)
             GROUP BY 
                 states.state_name, 
                 mu.from_date,
@@ -2805,7 +2887,7 @@ def scatterPlotUploadStatus():
         results = cursor.fetchall()
 
 
-        cursor.execute("SELECT state_name, state_id FROM states WHERE state_id IN (1,2,3,4,5,7)")
+        cursor.execute("SELECT state_name, state_id FROM states WHERE state_id IN (1,2,3,4,5,7,8)")
         states_list = cursor.fetchall()
         all_states = [row[0] for row in states_list]
 
@@ -2906,7 +2988,7 @@ def scatterPlotUploadStatus():
             LEFT JOIN 
                 min_uploads mu ON states.state_id = mu.state_id
             WHERE 
-                states.state_id IN (1,2,3,4,5,7)
+                states.state_id IN (1,2,3,4,5,7,8)
             GROUP BY 
                 states.state_name, 
                 mu.from_month,
@@ -2919,7 +3001,7 @@ def scatterPlotUploadStatus():
         results = cursor.fetchall()
 
         # Fetch the state names from the database
-        cursor.execute("SELECT state_name FROM states WHERE state_id IN (1,2,3,4,5,7)")
+        cursor.execute("SELECT state_name FROM states WHERE state_id IN (1,2,3,4,5,7,8)")
         all_states = [row[0] for row in cursor.fetchall()]
 
         # Initialize month range and data structure
@@ -3002,7 +3084,7 @@ def scatterPlotUploadStatus():
         LEFT JOIN 
             year_ahead_file_uploads yafu ON states.state_id = yafu.state_id
         WHERE 
-            states.state_id IN (1,2,3,4,5,7)
+            states.state_id IN (1,2,3,4,5,7,8)
             AND (yafu.from_date BETWEEN %s AND %s OR yafu.from_date IS NULL)
         GROUP BY 
             states.state_name, yafu.from_date, yafu.to_date, yafu.upload_time
@@ -3013,7 +3095,7 @@ def scatterPlotUploadStatus():
         results = cursor.fetchall()
 
         # Fetch state names to ensure coverage of all states
-        cursor.execute("SELECT state_name FROM states WHERE state_id IN (1,2,3,4,5,7)")
+        cursor.execute("SELECT state_name FROM states WHERE state_id IN (1,2,3,4,5,7,8)")
         all_states = [row[0] for row in cursor.fetchall()]
 
         # Organize the fetched data by state and financial year
@@ -3169,7 +3251,7 @@ def raScatterPlotUploadStatus():
                             SELECT 1 FROM jsonb_array_elements(f.file_data) AS row
                             WHERE EXISTS (
                                 SELECT 1 FROM jsonb_array_elements(row.value) WITH ORDINALITY AS val(v, idx)
-                                WHERE idx >= 4
+                                WHERE idx >= 4 AND idx NOT IN (15, 18, 20)
                                 AND val.v::text <> ''
                                 AND val.v::text ~ '^[-+]?[0-9]*\.?[0-9]+$'
                                 AND (val.v::text)::numeric <> 0
@@ -3193,7 +3275,7 @@ def raScatterPlotUploadStatus():
                                     SELECT 1 FROM jsonb_array_elements(vu.file_data) AS row
                                     WHERE EXISTS (
                                         SELECT 1 FROM jsonb_array_elements(row.value) WITH ORDINALITY AS val(v, idx)
-                                        WHERE idx >= 4
+                                        WHERE idx >= 4 AND idx NOT IN (15, 18, 20)
                                         AND val.v::text <> ''
                                         AND val.v::text ~ '^[-+]?[0-9]*\.?[0-9]+$'
                                         AND (val.v::text)::numeric <> 0
@@ -3219,7 +3301,7 @@ def raScatterPlotUploadStatus():
                         f.state_id = us.state_id 
                         AND f.upload_date = us.upload_date
                     WHERE 
-                        s.state_id IN (1,2,3,4,5,7)
+                        s.state_id IN (1,2,3,4,5,7,8)
                     GROUP BY 
                         s.state_name, 
                         f.upload_date,
@@ -3308,7 +3390,7 @@ def raScatterPlotUploadStatus():
                                 WHERE EXISTS (
                                     SELECT 1 
                                     FROM jsonb_array_elements(row.value) WITH ORDINALITY AS val(v, idx)
-                                    WHERE idx >= 5
+                                    WHERE idx >= 5 AND idx NOT IN (16, 19, 21)
                                     AND val.v::text <> ''
                                     AND val.v::text ~ '^[-+]?[0-9]*\.?[0-9]+$'
                                     AND (val.v::text)::numeric <> 0
@@ -3336,7 +3418,7 @@ def raScatterPlotUploadStatus():
                                 WHERE EXISTS (
                                     SELECT 1 
                                     FROM jsonb_array_elements(row.value) WITH ORDINALITY AS val(v, idx)
-                                    WHERE idx >= 5
+                                    WHERE idx >= 5 AND idx NOT IN (16, 19, 21)
                                     AND val.v::text <> ''
                                     AND val.v::text ~ '^[-+]?[0-9]*\.?[0-9]+$'
                                     AND (val.v::text)::numeric <> 0
@@ -3351,7 +3433,7 @@ def raScatterPlotUploadStatus():
                     LEFT JOIN 
                         first_valid_uploads fu ON states.state_id = fu.state_id
                     WHERE 
-                        states.state_id IN (1,2,3,4,5,7)
+                        states.state_id IN (1,2,3,4,5,7,8)
                     GROUP BY 
                         states.state_name, 
                         fu.from_date,
@@ -3366,7 +3448,7 @@ def raScatterPlotUploadStatus():
         results = cursor.fetchall()
 
 
-        cursor.execute("SELECT state_name, state_id FROM states WHERE state_id IN (1,2,3,4,5,7)")
+        cursor.execute("SELECT state_name, state_id FROM states WHERE state_id IN (1,2,3,4,5,7,8)")
         states_list = cursor.fetchall()
         all_states = [row[0] for row in states_list]
 
@@ -3439,7 +3521,7 @@ def raScatterPlotUploadStatus():
                                 WHERE EXISTS (
                                     SELECT 1 
                                     FROM jsonb_array_elements(row.value) WITH ORDINALITY AS val(v, idx)
-                                    WHERE idx >= 5
+                                    WHERE idx >= 5 AND idx NOT IN (16, 19, 21)
                                     AND val.v::text <> ''
                                     AND val.v::text ~ '^[-+]?[0-9]*\.?[0-9]+$'
                                     AND (val.v::text)::numeric <> 0
@@ -3467,7 +3549,7 @@ def raScatterPlotUploadStatus():
                                 WHERE EXISTS (
                                     SELECT 1 
                                     FROM jsonb_array_elements(row.value) WITH ORDINALITY AS val(v, idx)
-                                    WHERE idx >= 5
+                                    WHERE idx >= 5 AND idx NOT IN (16, 19, 21)
                                     AND val.v::text <> ''
                                     AND val.v::text ~ '^[-+]?[0-9]*\.?[0-9]+$'
                                     AND (val.v::text)::numeric <> 0
@@ -3482,7 +3564,7 @@ def raScatterPlotUploadStatus():
                     LEFT JOIN 
                         first_valid_uploads fu ON states.state_id = fu.state_id
                     WHERE 
-                        states.state_id IN (1,2,3,4,5,7)
+                        states.state_id IN (1,2,3,4,5,7,8)
                     GROUP BY 
                         states.state_name, 
                         fu.from_month,
@@ -3497,7 +3579,7 @@ def raScatterPlotUploadStatus():
         results = cursor.fetchall()
 
         # Fetch the state names from the database
-        cursor.execute("SELECT state_name FROM states WHERE state_id IN (1,2,3,4,5,7)")
+        cursor.execute("SELECT state_name FROM states WHERE state_id IN (1,2,3,4,5,7,8)")
         all_states = [row[0] for row in cursor.fetchall()]
 
         # Initialize month range and data structure
@@ -3576,7 +3658,7 @@ def raScatterPlotUploadStatus():
                             WHERE EXISTS (
                                 SELECT 1 
                                 FROM jsonb_array_elements(row.value) WITH ORDINALITY AS val(v, idx)
-                                WHERE idx >= 4
+                                WHERE idx >= 4 AND idx NOT IN (15, 18, 20)
                                AND val.v::text <> ''
                                AND val.v::text ~ '^[-+]?[0-9]*\.?[0-9]+$'
                                AND (val.v::text)::numeric <> 0
@@ -3619,7 +3701,7 @@ def raScatterPlotUploadStatus():
                 LEFT JOIN 
                     valid_uploads vu ON states.state_id = vu.state_id
                 WHERE 
-                    states.state_id IN (1,2,3,4,5,7)
+                    states.state_id IN (1,2,3,4,5,7,8)
                 GROUP BY 
                     states.state_name, vu.from_date, vu.to_date, vu.upload_time
                 ORDER BY
@@ -3630,7 +3712,7 @@ def raScatterPlotUploadStatus():
         results = cursor.fetchall()
 
         # Fetch state names to ensure coverage of all states
-        cursor.execute("SELECT state_name FROM states WHERE state_id IN (1,2,3,4,5,7)")
+        cursor.execute("SELECT state_name FROM states WHERE state_id IN (1,2,3,4,5,7,8)")
         all_states = [row[0] for row in cursor.fetchall()]
 
         # Organize the fetched data by state and financial year
@@ -4431,7 +4513,7 @@ def dayRangeStatus():
                     file_uploads.state_id = min_uploads.state_id 
                     AND file_uploads.upload_date = min_uploads.upload_date
                 WHERE 
-                    states.state_id IN (1,2,3,4,5,7)
+                    states.state_id IN (1,2,3,4,5,7,8)
                 GROUP BY 
                     states.state_name, 
                     file_uploads.upload_date,
@@ -4509,7 +4591,7 @@ def radayRangeStatus():
                             SELECT 1 FROM jsonb_array_elements(f.file_data) AS row
                             WHERE EXISTS (
                                 SELECT 1 FROM jsonb_array_elements(row.value) WITH ORDINALITY AS val(v, idx)
-                                WHERE idx >= 4
+                                WHERE idx >= 4 AND idx NOT IN (15, 18, 20)
                                 AND val.v::text <> ''
                                 AND val.v::text ~ '^[-+]?[0-9]*\.?[0-9]+$'
                                 AND (val.v::text)::numeric <> 0
@@ -4533,7 +4615,7 @@ def radayRangeStatus():
                                     SELECT 1 FROM jsonb_array_elements(vu.file_data) AS row
                                     WHERE EXISTS (
                                         SELECT 1 FROM jsonb_array_elements(row.value) WITH ORDINALITY AS val(v, idx)
-                                        WHERE idx >= 4
+                                        WHERE idx >= 4 AND idx NOT IN (15, 18, 20)
                                         AND val.v::text <> ''
                                         AND val.v::text ~ '^[-+]?[0-9]*\.?[0-9]+$'
                                         AND (val.v::text)::numeric <> 0
@@ -4559,7 +4641,7 @@ def radayRangeStatus():
                         f.state_id = us.state_id 
                         AND f.upload_date = us.upload_date
                     WHERE 
-                        s.state_id IN (1,2,3,4,5,7)
+                        s.state_id IN (1,2,3,4,5,7,8)
                     GROUP BY 
                         s.state_name, 
                         f.upload_date,
@@ -4688,7 +4770,7 @@ def weekRangeStatus():
             LEFT JOIN 
                 min_uploads mu ON states.state_id = mu.state_id
             WHERE 
-                states.state_id IN (1,2,3,4,5,7)
+                states.state_id IN (1,2,3,4,5,7,8)
             GROUP BY 
                 states.state_name, 
                 mu.from_date,
@@ -4702,7 +4784,7 @@ def weekRangeStatus():
         results = cursor.fetchall()
 
         # Fetch state names
-        cursor.execute("SELECT state_name FROM states WHERE state_id IN (1,2,3,4,5,7)")
+        cursor.execute("SELECT state_name FROM states WHERE state_id IN (1,2,3,4,5,7,8)")
         all_states = [row[0] for row in cursor.fetchall()]
 
         # Initialize data structure for states
@@ -4786,7 +4868,7 @@ def raweekRangeStatus():
                             WHERE EXISTS (
                                 SELECT 1 
                                 FROM jsonb_array_elements(row.value) WITH ORDINALITY AS val(v, idx)
-                                WHERE idx >= 5
+                                WHERE idx >= 5 AND idx NOT IN (16, 19, 21)
                                 AND val.v::text <> ''
                                 AND val.v::text ~ '^[-+]?[0-9]*\.?[0-9]+$'
                                 AND (val.v::text)::numeric <> 0
@@ -4838,7 +4920,7 @@ def raweekRangeStatus():
                 LEFT JOIN upload_status us ON 
                     s.state_id = us.state_id
                 WHERE 
-                    s.state_id IN (1,2,3,4,5,7)
+                    s.state_id IN (1,2,3,4,5,7,8)
                 GROUP BY 
                     s.state_name, 
                     us.from_date,
@@ -4853,7 +4935,7 @@ def raweekRangeStatus():
         results = cursor.fetchall()
 
         # Fetch state names
-        cursor.execute("SELECT state_name FROM states WHERE state_id IN (1,2,3,4,5,7)")
+        cursor.execute("SELECT state_name FROM states WHERE state_id IN (1,2,3,4,5,7,8)")
         all_states = [row[0] for row in cursor.fetchall()]
 
         # Initialize data structure for states
@@ -4966,7 +5048,7 @@ def monthRangeStatus():
         LEFT JOIN 
             min_uploads mu ON states.state_id = mu.state_id
         WHERE 
-            states.state_id IN (1,2,3,4,5,7)
+            states.state_id IN (1,2,3,4,5,7,8)
         GROUP BY 
             states.state_name, 
             mu.from_month,
@@ -5079,7 +5161,7 @@ def raMonthRangeStatus():
                                 WHERE EXISTS (
                                     SELECT 1 
                                     FROM jsonb_array_elements(row.value) WITH ORDINALITY AS val(v, idx)
-                                    WHERE idx >= 5
+                                    WHERE idx >= 5 AND idx NOT IN (16, 19, 21)
                                     AND val.v::text <> ''
                                     AND val.v::text ~ '^[-+]?[0-9]*\.?[0-9]+$'
                                     AND (val.v::text)::numeric <> 0
@@ -5131,7 +5213,7 @@ def raMonthRangeStatus():
                     LEFT JOIN upload_status us ON 
                         s.state_id = us.state_id
                     WHERE 
-                        s.state_id IN (1,2,3,4,5,7)
+                        s.state_id IN (1,2,3,4,5,7,8)
                     GROUP BY 
                         s.state_name, 
                         us.from_month,
@@ -5280,7 +5362,7 @@ def yearRangeStatus():
                     LEFT JOIN 
                         latest_uploads lu ON states.state_id = lu.state_id
                     WHERE 
-                        states.state_id IN (1,2,3,4,5,7)
+                        states.state_id IN (1,2,3,4,5,7,8)
                     GROUP BY 
                         states.state_name, lu.from_date, lu.to_date, lu.upload_time
                     ORDER BY
@@ -5376,7 +5458,7 @@ def raYearRangeStatus():
                             WHERE EXISTS (
                                 SELECT 1 
                                 FROM jsonb_array_elements(row.value) WITH ORDINALITY AS val(v, idx)
-                                WHERE idx >= 4
+                                WHERE idx >= 4 AND idx NOT IN (15, 18, 20)
                                AND val.v::text <> ''
                                AND val.v::text ~ '^[-+]?[0-9]*\.?[0-9]+$'
                                AND (val.v::text)::numeric <> 0
@@ -5419,7 +5501,7 @@ def raYearRangeStatus():
                 LEFT JOIN 
                     valid_uploads vu ON states.state_id = vu.state_id
                 WHERE 
-                    states.state_id IN (1,2,3,4,5,7)
+                    states.state_id IN (1,2,3,4,5,7,8)
                 GROUP BY 
                     states.state_name, vu.from_date, vu.to_date, vu.upload_time
                 ORDER BY
@@ -6410,7 +6492,7 @@ if __name__ == '__main__':
     # Configure Waitress with optimized settings for large file uploads
     # Large recv_bytes buffer = faster multipart parsing
     # Long channel_timeout = time for large files to upload
-    serve(app, host="0.0.0.0", port=5005, max_request_body_size=2*1024*1024*1024, 
+    serve(app, host="0.0.0.0", port=5005, max_request_body_size=25*1024*1024, 
           channel_timeout=900, recv_bytes=1024*1024, threads=4)
     # app.run(host='0.0.0.0', port=5000, debug=False)
 

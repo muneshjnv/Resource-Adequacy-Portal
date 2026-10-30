@@ -63,7 +63,7 @@ export class WeekaheadComponent {
   userData: any;
 
 
-  state_id_dict: any = {'bh_state': 1, 'jh_state':2, 'gr_state': 3, 'wb_state': 4, 'dvc_state':5, 'si_state': 7}
+  state_id_dict: any = {'bh_state': 1, 'jh_state':2, 'gr_state': 3, 'wb_state': 4, 'dvc_state':5, 'si_state': 7, 'erldc': 8}
 
   data: any;
 

@@ -43,7 +43,8 @@ export class ViewYearaheadComponent {
     '3': 'Odisha',
     '4': 'West Bengal',
     '5': 'DVC',
-    '7': 'Sikkim'
+    '7': 'Sikkim',
+    '8': 'ERLDC'
   };
 
 
