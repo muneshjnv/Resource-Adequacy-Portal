@@ -449,7 +449,7 @@ def require_api_key(f):
 
         try:
             conn, cursor = get_db()
-            print("a")
+            # print("a")
             cursor.execute(
                 """
                 SELECT owner_name, is_active
@@ -458,7 +458,7 @@ def require_api_key(f):
                 """,
                 (api_key,)
             )
-            print("b")
+            # print("b")
             row = cursor.fetchone()
 
             cursor.close()
