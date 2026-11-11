@@ -20,6 +20,7 @@ Backend/logs/
 logs/
 Uploaded_Excel_files/
 Backend/venv/
+Backend/.venv/
 /build
 build/
 /.gitignore

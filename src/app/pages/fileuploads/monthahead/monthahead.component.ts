@@ -8,6 +8,7 @@ import * as jspreadsheet from 'jspreadsheet-ce';
 import * as XLSX from 'xlsx';
 import { TokenStorageService } from 'src/app/core/services/token-storage.service';
 import { MonthAheadForecastService } from 'src/app/core/services/month-ahead-forecast.service';
+import { validateERLDCWorkbook } from '../erl-dc-workbook-validation';
 
 @Component({
   selector: 'app-monthahead',
@@ -25,6 +26,7 @@ export class MonthaheadComponent {
   loadedData: boolean = false;
 
   uploading: boolean = false;
+  validatingWorkbook: boolean = false;
   
   // disabledDate: Date = new Date(today.getTime() + 24 * 60 * 60 * 1000);
  
@@ -116,7 +118,9 @@ export class MonthaheadComponent {
         this.data = res["data"];
         this.spreadsheet.nativeElement.jexcel.setData(this.data);
 
-        Swal.fire({text:'Data is prefilled with zeros, Please upload the file preview the data and then Upload!',confirmButtonColor: 'rgb(3, 142, 220)',});
+        if (!this.isERLDCSelected()) {
+          Swal.fire({text:'Data is prefilled with zeros, Please upload the file preview the data and then Upload!',confirmButtonColor: 'rgb(3, 142, 220)',});
+        }
 
 
       }
@@ -156,6 +160,10 @@ export class MonthaheadComponent {
    */
    get form() {
     return this.validationform.controls;
+  }
+
+  isERLDCSelected(): boolean {
+    return String(this.validationform?.get('state')?.value) === '8';
   }
   
   
@@ -600,6 +608,8 @@ export class MonthaheadComponent {
 
   console.log("confirm() entered");
 
+    if (this.validatingWorkbook) return;
+
     if(this.validationform.get('excelFile')!.value == null) {
       Swal.fire({text:'It seems you have not uploaded the file, Please upload the file!',confirmButtonColor: 'rgb(3, 142, 220)',});
   
@@ -630,7 +640,7 @@ export class MonthaheadComponent {
             formData.append('fromDate', this.validationform.get('disabledDate')?.value["from"].toLocaleDateString('en-GB'));
             formData.append('toDate', this.validationform.get('disabledDate')?.value["to"].toLocaleDateString('en-GB'));
             formData.append('excelFile', this.validationform.get('excelFile')!.value);
-            formData.append('data', JSON.stringify(this.spreadsheet.nativeElement.jexcel.getData()))
+            formData.append('data', JSON.stringify(this.isERLDCSelected() ? [] : this.spreadsheet.nativeElement.jexcel.getData()))
 
     const jsonData = JSON.stringify(
     this.spreadsheet.nativeElement.jexcel.getData()
@@ -699,7 +709,7 @@ export class MonthaheadComponent {
     formData.append('fromDate', this.validationform.get('disabledDate')!.value["from"]);
     formData.append('toDate', this.validationform.get('disabledDate')!.value["to"]);
     formData.append('excelFile', this.validationform.get('excelFile')!.value);
-    formData.append('data', JSON.stringify(this.spreadsheet.nativeElement.jexcel.getData()))
+    formData.append('data', JSON.stringify(this.isERLDCSelected() ? [] : this.spreadsheet.nativeElement.jexcel.getData()))
 
 
     const jsonData = JSON.stringify(
@@ -767,19 +777,20 @@ export class MonthaheadComponent {
   downloadExcel() {
     const endDate = new Date(this.validationform.get('disabledDate')!.value["to"]);
     const dayOfMonth = endDate.getDate();
+    const suffix = this.isERLDCSelected() ? '(from ERLDC)' : '(from States)';
   
     // Declare variable once
     let excelFilePath = '';
   
     // Set file path based on day
     if (dayOfMonth === 28) {
-      excelFilePath = 'assets/Month-Ahead Demand Forecast format_28 days(from States).xlsx';
+      excelFilePath = `assets/Month-Ahead Demand Forecast format_28 days${suffix}.xlsx`;
     } else if (dayOfMonth === 29) {
-      excelFilePath = 'assets/Month-Ahead Demand Forecast format_29 days(from States).xlsx';
+      excelFilePath = `assets/Month-Ahead Demand Forecast format_29 days${suffix}.xlsx`;
     } else if (dayOfMonth === 30) {
-      excelFilePath = 'assets/Month-Ahead Demand Forecast format_30 days(from States).xlsx';
+      excelFilePath = `assets/Month-Ahead Demand Forecast format_30 days${suffix}.xlsx`;
     } else if (dayOfMonth === 31) {
-      excelFilePath = 'assets/Month-Ahead Demand Forecast format_31 days(from States).xlsx';
+      excelFilePath = `assets/Month-Ahead Demand Forecast format_31 days${suffix}.xlsx`;
     } else {
       console.warn("Invalid day of month for forecast template.");
       return; // Stop execution if day doesn't match any valid Excel format
@@ -804,10 +815,58 @@ export class MonthaheadComponent {
   
   handleFileInput(event: any) {
 
-    console.log(this.spreadsheet.nativeElement.jexcel);
     const file = event.target.files[0];
     this.validationform.get('excelFile')!.setValue(file);
+    this.validatingWorkbook = false;
     if (!file) return;
+
+    if (this.isERLDCSelected()) {
+      this.validatingWorkbook = true;
+      const clearSelection = (): void => {
+        this.validationform.get('excelFile')!.setValue(null);
+        event.target.value = null;
+        this.validatingWorkbook = false;
+      };
+      if (!file.name.toLowerCase().endsWith('.xlsx')) {
+        clearSelection();
+        Swal.fire({text:'ERLDC forecast workbooks must be in .xlsx format.',confirmButtonColor: 'rgb(255, 0, 0)',});
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const workbook = XLSX.read(reader.result, { type: 'array' });
+          const dateRange = this.validationform.get('disabledDate')!.value;
+          const validationError = validateERLDCWorkbook(workbook, {
+            rowsPerDay: 96,
+            dayCount: dateRange?.to ? new Date(dateRange.to).getDate() : 0,
+            expectedColumns: 32,
+            blockColumn: 1,
+            periodColumn: 2,
+            lastPeriodEnd: '24:00',
+            demandColumn: 3,
+            forecastStartColumn: 3
+          });
+          if (validationError) {
+            clearSelection();
+            Swal.fire({text: validationError,confirmButtonColor: 'rgb(255, 0, 0)',});
+            return;
+          }
+          this.validatingWorkbook = false;
+          Swal.fire({text:'The ERLDC workbook is ready to upload.',icon:'success',confirmButtonColor: 'rgb(3, 142, 220)',});
+        } catch {
+          clearSelection();
+          Swal.fire({text:'The workbook could not be read. Please upload a valid .xlsx workbook.',confirmButtonColor: 'rgb(255, 0, 0)',});
+        }
+      };
+      reader.onerror = () => {
+        clearSelection();
+        Swal.fire({text:'The workbook could not be read. Please try uploading it again.',confirmButtonColor: 'rgb(255, 0, 0)',});
+      };
+      reader.readAsArrayBuffer(file);
+      return;
+    }
   
     const reader = new FileReader();
     reader.onload = (e: any) => {

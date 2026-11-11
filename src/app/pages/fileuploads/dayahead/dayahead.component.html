@@ -82,7 +82,7 @@
 
 
                         <div class="col-md-10">
-                            <input type="file" accept=".XLS, .XLSX" class="form-control" aria-label="file example" (change)="handleFileInput($event)"  required [ngClass]="{'is-invalid': submit && form['excelFile'].errors}">
+                            <input type="file" [accept]="isERLDCSelected() ? '.xlsx' : '.xls,.xlsx'" class="form-control" aria-label="file example" (change)="handleFileInput($event)"  required [ngClass]="{'is-invalid': submit && form['excelFile'].errors}">
                             <div class="invalid-feedback">Please choose a file to Upload</div>
                         </div>
 
@@ -106,7 +106,7 @@
                                 </span>
                             </span>
                         </button>
-                            <button class="btn btn-primary" type="submit" *ngIf="!uploading" (click)="confirm()" [disabled]="this.userData['state_id'] == 20">Upload Data</button>
+                            <button class="btn btn-primary" type="submit" *ngIf="!uploading" (click)="confirm()" [disabled]="this.userData['state_id'] == 20 || validatingWorkbook">Upload Data</button>
                         </div>
                     </form>
                 </div>
@@ -156,7 +156,7 @@
 
                 
 
-                <div #spreadsheet class="d-flex justify-content-center" ></div>
+                <div #spreadsheet class="d-flex justify-content-center" [hidden]="isERLDCSelected()"></div>
 
                       
     

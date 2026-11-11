@@ -43,6 +43,7 @@ export class DayaheadComponent {
   formsubmit!: boolean;
 
   uploading: boolean = false;
+  validatingWorkbook: boolean = false;
 
   
 
@@ -117,7 +118,9 @@ export class DayaheadComponent {
       this.validationform.get('disabledDate')!.disable()
     }
 
-    Swal.fire({text:'Data is prefilled with zeros, Please upload the file preview the data and then Upload!',confirmButtonColor: 'rgb(3, 142, 220)',});
+    if (Number(this.userData['state_id']) !== 8) {
+      Swal.fire({text:'Data is prefilled with zeros, Please upload the file preview the data and then Upload!',confirmButtonColor: 'rgb(3, 142, 220)',});
+    }
 
 
   }
@@ -248,6 +251,65 @@ export class DayaheadComponent {
    get form() {
     return this.validationform.controls;
   }
+
+   isERLDCSelected(): boolean {
+     return String(this.validationform?.get('state')?.value) === '8';
+   }
+
+   private validateERLDCWorkbook(workbook: XLSX.WorkBook): string | null {
+     const requiredSheets = ['Bihar', 'Jharkhand', 'Odisha', 'West Bengal', 'DVC', 'Sikkim'];
+     const sheetNames = new Map(workbook.SheetNames.map(name => [name.trim().toLowerCase(), name]));
+
+     for (const requiredSheet of requiredSheets) {
+       const sheetName = sheetNames.get(requiredSheet.toLowerCase());
+       if (!sheetName) {
+         return `The workbook is missing the ${requiredSheet} sheet.`;
+       }
+
+       const worksheet = workbook.Sheets[sheetName];
+       const rows = XLSX.utils.sheet_to_json<any[]>(worksheet, {
+         header: 1,
+         defval: null,
+         blankrows: true
+       });
+
+       let hasForecastedDemand = false;
+       for (let blockIndex = 0; blockIndex < 96; blockIndex++) {
+         const row = rows[blockIndex + 7];
+         const blockNumber = blockIndex + 1;
+
+         if (!row || row.length !== 37 ||
+             Number(row[0]) !== blockNumber ||
+             String(row[1]).trim() !== this.data[blockIndex][1]) {
+           return `${sheetName} does not contain all 96 forecast blocks in the required format.`;
+         }
+
+         for (let columnIndex = 2; columnIndex < 37; columnIndex++) {
+           const value = row[columnIndex];
+           if (value === null || value === undefined || (typeof value === 'string' && value.trim() === '')) {
+             continue;
+           }
+
+           const isNumeric = (typeof value === 'number' && Number.isFinite(value)) ||
+             (typeof value === 'string' && Number.isFinite(Number(value)));
+
+           if (!isNumeric) {
+             return `${sheetName}, block ${blockNumber}: forecast values must be numbers or blank.`;
+           }
+         }
+
+         if (Number(row[2]) !== 0) {
+           hasForecastedDemand = true;
+         }
+       }
+
+       if (!hasForecastedDemand) {
+         return `${sheetName}: Forecasted Demand contains all zeroes. Please correct the data.`;
+       }
+     }
+
+     return null;
+   }
   
   
   ngAfterViewInit() {
@@ -922,16 +984,22 @@ export class DayaheadComponent {
             formData.append('state', this.validationform.get('state')!.value);
             formData.append('disabledDate', this.validationform.get('disabledDate')!.value);
             formData.append('excelFile', this.validationform.get('excelFile')!.value);
-            formData.append('data', JSON.stringify(this.spreadsheet.nativeElement.jexcel.getData()))
+            formData.append(
+              'data',
+              JSON.stringify(this.isERLDCSelected() ? [] : this.spreadsheet.nativeElement.jexcel.getData())
+            );
 
             this.uploading = true;
               
               this.dayAheadForecast.uploadDayAheadFile(formData).subscribe((res: any)=> {
                 this.uploading = false;
-                if('error' in res) {
-                  // console.log(res['error'])
-                }
-                else {
+                if (!res.message || !String(res.message).toLowerCase().includes('successfully')) {
+                  Swal.fire({
+                    text: res.error || res.message || 'Upload failed. Please contact ERLDC IT.',
+                    icon: 'error',
+                    confirmButtonColor: 'rgb(3, 142, 220)'
+                  });
+                } else {
                   // console.log(res["message"]);
                   // this.toastService.show(res['message'], { classname: 'bg-success text-white', delay: 5000 });
         
@@ -952,6 +1020,13 @@ export class DayaheadComponent {
         
                 }
           
+              }, (error) => {
+                this.uploading = false;
+                Swal.fire({
+                  text: error?.error?.error || error?.error?.message || 'There was a problem uploading the workbook. Please contact ERLDC IT.',
+                  icon: 'error',
+                  confirmButtonColor: 'rgb(3, 142, 220)'
+                });
               })
                   }
         });
@@ -1024,13 +1099,17 @@ export class DayaheadComponent {
   }
   
   downloadExcel() {
-    // Define the path to the Excel file in the assets folder
-    const excelFilePath = 'assets/Day-Ahead Demand Forecast format1 (from States).xlsx';
+    const erlDcTemplate = this.isERLDCSelected();
+    const excelFilePath = erlDcTemplate
+      ? 'assets/Day-Ahead Demand Forecast format (from ERLDC).xlsx'
+      : 'assets/Day-Ahead Demand Forecast format1 (from States).xlsx';
   
     // Trigger the download by creating a temporary <a> element
     const a = document.createElement('a');
     a.href = excelFilePath;
-    a.download = 'sample.xlsx'; // Specify the desired file name
+    a.download = erlDcTemplate
+      ? 'Day-Ahead Demand Forecast format (from ERLDC).xlsx'
+      : 'Day-Ahead Demand Forecast format (from States).xlsx';
   
     // Programmatically trigger a click event to initiate the download
     a.click();
@@ -1042,7 +1121,72 @@ export class DayaheadComponent {
     // console.log(this.spreadsheet.nativeElement.jexcel);
     const file = event.target.files[0];
     this.validationform.get('excelFile')!.setValue(file);
+    this.validatingWorkbook = false;
     if (!file) return;
+
+    if (this.isERLDCSelected()) {
+      this.validatingWorkbook = true;
+      const clearSelection = (): void => {
+        this.validationform.get('excelFile')!.setValue(null);
+        event.target.value = null;
+        this.validatingWorkbook = false;
+      };
+
+      if (!file.name.toLowerCase().endsWith('.xlsx')) {
+        clearSelection();
+        Swal.fire({
+          text: 'ERLDC uploads must be an .xlsx workbook.',
+          icon: 'error',
+          confirmButtonColor: 'rgb(3, 142, 220)'
+        });
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          if (!(reader.result instanceof ArrayBuffer)) {
+            throw new Error('The workbook could not be read.');
+          }
+
+          const workbook = XLSX.read(reader.result, { type: 'array' });
+          const validationError = this.validateERLDCWorkbook(workbook);
+          if (validationError) {
+            clearSelection();
+            Swal.fire({
+              text: validationError,
+              icon: 'error',
+              confirmButtonColor: 'rgb(3, 142, 220)'
+            });
+            return;
+          }
+
+          this.validatingWorkbook = false;
+          Swal.fire({
+            text: 'The ERLDC workbook is ready to upload.',
+            icon: 'success',
+            confirmButtonColor: 'rgb(3, 142, 220)'
+          });
+        } catch (error) {
+          clearSelection();
+          Swal.fire({
+            text: error instanceof Error ? error.message : 'The uploaded workbook could not be read.',
+            icon: 'error',
+            confirmButtonColor: 'rgb(3, 142, 220)'
+          });
+        }
+      };
+      reader.onerror = () => {
+        clearSelection();
+        Swal.fire({
+          text: 'The uploaded workbook could not be read.',
+          icon: 'error',
+          confirmButtonColor: 'rgb(3, 142, 220)'
+        });
+      };
+      reader.readAsArrayBuffer(file);
+      return;
+    }
   
     const reader = new FileReader();
     reader.onload = (e: any) => {
@@ -1269,4 +1413,3 @@ export class DayaheadComponent {
 /***
 * Calender Set
 */
-

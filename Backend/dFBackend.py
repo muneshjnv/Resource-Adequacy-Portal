@@ -799,6 +799,220 @@ def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
+def _is_nonzero_ra_value(value):
+    if isinstance(value, bool):
+        return False
+    if isinstance(value, (int, float)):
+        return value != 0
+    if isinstance(value, str) and re.fullmatch(r'[-+]?[0-9]*\.?[0-9]+', value.strip()):
+        return float(value) != 0
+    return False
+
+
+def _has_ra_values_in_file_data(file_data, first_column=4, excluded_columns=None):
+    if excluded_columns is None:
+        excluded_columns = {15, 18, 20}
+    return any(
+        _is_nonzero_ra_value(value)
+        for row in (file_data or [])
+        if isinstance(row, (list, tuple))
+        for column, value in enumerate(row, start=1)
+        if column >= first_column and column not in excluded_columns
+    )
+
+
+def _has_ra_values_in_workbook(file_path):
+    if not file_path or not os.path.isfile(file_path):
+        return False
+
+    excluded_columns = {15, 18, 20}
+    workbook = openpyxl.load_workbook(file_path, read_only=True, data_only=True)
+    try:
+        for worksheet in workbook.worksheets:
+            for row in worksheet.iter_rows(min_row=8, max_row=103, min_col=4, max_col=37, values_only=True):
+                if any(
+                    _is_nonzero_ra_value(value)
+                    for column, value in enumerate(row, start=4)
+                    if column not in excluded_columns
+                ):
+                    return True
+        return False
+    finally:
+        workbook.close()
+
+
+def _has_ra_values_in_period_workbook(file_path, period, from_date, to_date):
+    if not file_path or not os.path.isfile(file_path) or not from_date or not to_date:
+        return False
+
+    day_count = (to_date - from_date).days + 1
+    if day_count <= 0:
+        return False
+
+    if period in ('week', 'month'):
+        rows_per_day = 96
+        min_column = 5
+        max_column = 22
+        excluded_columns = {16, 19, 21}
+    elif period == 'year':
+        rows_per_day = 24
+        min_column = 4
+        max_column = 21
+        excluded_columns = {15, 18, 20}
+    else:
+        raise ValueError(f"Unsupported resource adequacy period: {period}")
+
+    workbook = openpyxl.load_workbook(file_path, read_only=True, data_only=True)
+    try:
+        last_data_row = 7 + rows_per_day * day_count
+        for worksheet in workbook.worksheets:
+            for row in worksheet.iter_rows(
+                min_row=8,
+                max_row=last_data_row,
+                min_col=min_column,
+                max_col=max_column,
+                values_only=True
+            ):
+                if any(
+                    _is_nonzero_ra_value(value)
+                    for column, value in enumerate(row, start=min_column)
+                    if column not in excluded_columns
+                ):
+                    return True
+        return False
+    finally:
+        workbook.close()
+
+
+def _get_erldc_ra_period_upload_status(cursor, period, start_date, end_date):
+    upload_tables = {
+        'week': 'week_ahead_file_uploads',
+        'month': 'month_ahead_file_uploads',
+        'year': 'year_ahead_file_uploads'
+    }
+    if period not in upload_tables:
+        raise ValueError(f"Unsupported resource adequacy period: {period}")
+
+    cursor.execute("SELECT state_name FROM states WHERE state_id = 8")
+    state_row = cursor.fetchone()
+    erldc_state_name = state_row[0] if state_row else 'ERLDC'
+
+    cursor.execute(
+        f"""
+        SELECT from_date, to_date, upload_time, revision_no, file_name, file_data
+        FROM {upload_tables[period]}
+        WHERE state_id = 8 AND from_date BETWEEN %s AND %s
+        ORDER BY from_date, revision_no
+        """,
+        (start_date, end_date)
+    )
+
+    uploads_by_period = {}
+    for from_date, to_date, upload_time, revision_no, file_path, file_data in cursor.fetchall():
+        uploads_by_period.setdefault(from_date, []).append(
+            (to_date, upload_time, revision_no, file_path, file_data)
+        )
+
+    if period in ('week', 'month'):
+        first_column = 5
+        excluded_columns = {16, 19, 21}
+    else:
+        first_column = 4
+        excluded_columns = {15, 18, 20}
+
+    status_by_period = {}
+    for from_date, uploads in uploads_by_period.items():
+        valid_upload = next(
+            (
+                upload for upload in uploads
+                if _has_ra_values_in_file_data(upload[4], first_column, excluded_columns) or
+                _has_ra_values_in_period_workbook(upload[3], period, from_date, upload[0])
+            ),
+            None
+        )
+        if valid_upload is None:
+            continue
+
+        to_date, upload_time, _, _, _ = valid_upload
+        if period == 'week':
+            week_start = from_date - timedelta(days=from_date.weekday())
+            deadline = datetime.combine(week_start - timedelta(days=6), datetime.min.time())
+        elif period == 'month':
+            first_of_month = from_date.replace(day=1)
+            previous_month_end = first_of_month - timedelta(days=1)
+            deadline = datetime.combine(previous_month_end.replace(day=1) + timedelta(days=5), datetime.min.time())
+        else:
+            target_month = from_date.month + 5
+            target_year = from_date.year + (target_month - 1) // 12
+            target_month = (target_month - 1) % 12 + 1
+            target_day = min(from_date.day, monthrange(target_year, target_month)[1])
+            deadline = datetime.combine(
+                from_date.replace(year=target_year, month=target_month, day=target_day) - timedelta(days=1),
+                datetime.min.time()
+            )
+
+        is_on_time = upload_time is not None and (
+            upload_time <= deadline if period == 'year' else upload_time < deadline
+        )
+        status_code = 1 if is_on_time else 0
+        status_by_period[from_date] = (
+            erldc_state_name,
+            from_date,
+            to_date,
+            upload_time,
+            status_code,
+            len(uploads)
+        )
+
+    return erldc_state_name, status_by_period
+
+
+def _get_erldc_ra_upload_status(cursor, start_date, end_date):
+    cursor.execute("SELECT state_name FROM states WHERE state_id = 8")
+    state_row = cursor.fetchone()
+    erldc_state_name = state_row[0] if state_row else 'ERLDC'
+
+    cursor.execute(
+        """
+        SELECT s.state_name, f.upload_date, f.upload_time, f.revision_no, f.file_name, f.file_data
+        FROM file_uploads f
+        JOIN states s ON s.state_id = f.state_id
+        WHERE f.state_id = 8 AND f.upload_date BETWEEN %s AND %s
+        ORDER BY f.upload_date, f.revision_no
+        """,
+        (start_date.date(), end_date.date())
+    )
+    uploads_by_date = {}
+    for state_name, upload_date, upload_time, revision_no, file_path, file_data in cursor.fetchall():
+        uploads_by_date.setdefault(upload_date, []).append(
+            (state_name, upload_time, revision_no, file_path, file_data)
+        )
+
+    status_rows = []
+    current_date = start_date.date()
+    while current_date <= end_date.date():
+        uploads = uploads_by_date.get(current_date, [])
+        valid_upload = next(
+            (
+                upload for upload in uploads
+                if _has_ra_values_in_file_data(upload[4]) or _has_ra_values_in_workbook(upload[3])
+            ),
+            None
+        )
+        if valid_upload:
+            _, upload_time, _, _, _ = valid_upload
+            deadline = datetime.combine(current_date - timedelta(days=1), datetime.min.time()) + timedelta(hours=10)
+            status_code = 1 if upload_time < deadline else 0
+        else:
+            upload_time = None
+            status_code = 2
+
+        status_rows.append((erldc_state_name, current_date, upload_time, status_code, len(uploads)))
+        current_date += timedelta(days=1)
+
+    return status_rows
+
+
 state_revision_numbers = {}
 
 
@@ -3314,6 +3528,9 @@ def raScatterPlotUploadStatus():
         """
         cursor.execute(sql_query, (end_date, start_date, end_date))
         results = cursor.fetchall()
+        erldc_status = _get_erldc_ra_upload_status(cursor, start_date, end_date)
+        erldc_state_name = erldc_status[0][0] if erldc_status else 'ERLDC'
+        results = [result for result in results if result[0] != erldc_state_name] + erldc_status
 
         day_data = []
         date_range = [end_date - timedelta(days=i) for i in range(30)]
@@ -3446,6 +3663,14 @@ def raScatterPlotUploadStatus():
         """
         cursor.execute(sql_query, (start_date.strftime('%Y-%m-%d'), end_date.strftime('%Y-%m-%d'), end_date.strftime('%Y-%m-%d')))
         results = cursor.fetchall()
+        erldc_state_name, erldc_uploads = _get_erldc_ra_period_upload_status(
+            cursor, 'week', start_date.date(), end_date.date()
+        )
+        results = [result for result in results if result[0] != erldc_state_name]
+        results.extend(
+            (state_name, from_date, upload_time, status_code, upload_count)
+            for state_name, from_date, _, upload_time, status_code, upload_count in erldc_uploads.values()
+        )
 
 
         cursor.execute("SELECT state_name, state_id FROM states WHERE state_id IN (1,2,3,4,5,7,8)")
@@ -3577,6 +3802,14 @@ def raScatterPlotUploadStatus():
         """
         cursor.execute(sql_query, (start_date.strftime('%Y-%m-%d'), end_date.strftime('%Y-%m-%d'), end_date.strftime('%Y-%m-%d')))
         results = cursor.fetchall()
+        erldc_state_name, erldc_uploads = _get_erldc_ra_period_upload_status(
+            cursor, 'month', start_date.date(), end_date.date()
+        )
+        results = [result for result in results if result[0] != erldc_state_name]
+        results.extend(
+            (state_name, from_date, upload_time, status_code, upload_count)
+            for state_name, from_date, _, upload_time, status_code, upload_count in erldc_uploads.values()
+        )
 
         # Fetch the state names from the database
         cursor.execute("SELECT state_name FROM states WHERE state_id IN (1,2,3,4,5,7,8)")
@@ -3710,6 +3943,11 @@ def raScatterPlotUploadStatus():
         """
         cursor.execute(sql_query, (current_financial_year_start.strftime('%Y-%m-%d'), next_financial_year_end.strftime('%Y-%m-%d')))
         results = cursor.fetchall()
+        erldc_state_name, erldc_uploads = _get_erldc_ra_period_upload_status(
+            cursor, 'year', current_financial_year_start.date(), next_financial_year_start.date()
+        )
+        results = [result for result in results if result[0] != erldc_state_name]
+        results.extend(erldc_uploads.values())
 
         # Fetch state names to ensure coverage of all states
         cursor.execute("SELECT state_name FROM states WHERE state_id IN (1,2,3,4,5,7,8)")
@@ -4655,6 +4893,9 @@ def radayRangeStatus():
         
         cursor.execute(sql_query, (end_date, start_date, end_date))
         results = cursor.fetchall()
+        erldc_status = _get_erldc_ra_upload_status(cursor, start_date, end_date)
+        erldc_state_name = erldc_status[0][0] if erldc_status else 'ERLDC'
+        results = [result for result in results if result[0] != erldc_state_name] + erldc_status
         
         print("Checking")
         print(results)
@@ -4933,6 +5174,16 @@ def raweekRangeStatus():
         
         cursor.execute(sql_query, (custom_start_date.strftime('%Y-%m-%d'), custom_end_date.strftime('%Y-%m-%d')))
         results = cursor.fetchall()
+        erldc_state_name, erldc_uploads = _get_erldc_ra_period_upload_status(
+            cursor, 'week', custom_start_date, custom_end_date
+        )
+        results = [result for result in results if result[0] != erldc_state_name]
+        results.extend(
+            (state_name, from_date, upload_time, status_code)
+            for state_name, from_date, _, upload_time, status_code, _ in erldc_uploads.values()
+        )
+        if not erldc_uploads:
+            results.append((erldc_state_name, None, None, 2))
 
         # Fetch state names
         cursor.execute("SELECT state_name FROM states WHERE state_id IN (1,2,3,4,5,7,8)")
@@ -5226,6 +5477,16 @@ def raMonthRangeStatus():
                     """
         cursor.execute(sql_query, (start_of_first_month.strftime('%Y-%m-%d'), end_of_last_month.strftime('%Y-%m-%d'), end_of_last_month.strftime('%Y-%m-%d')))
         results = cursor.fetchall()
+        erldc_state_name, erldc_uploads = _get_erldc_ra_period_upload_status(
+            cursor, 'month', start_of_first_month.date(), end_of_last_month.date()
+        )
+        results = [result for result in results if result[0] != erldc_state_name]
+        results.extend(
+            (state_name, from_date, upload_time, status_code, upload_count)
+            for state_name, from_date, _, upload_time, status_code, upload_count in erldc_uploads.values()
+        )
+        if not erldc_uploads:
+            results.append((erldc_state_name, None, None, 2, 0))
 
         # Process the results
         month_range = [start_of_first_month + timedelta(days=32 * i) for i in range((end_of_last_month.year - start_of_first_month.year) * 12 + end_of_last_month.month - start_of_first_month.month + 1)]
@@ -5510,6 +5771,17 @@ def raYearRangeStatus():
                     """
         cursor.execute(sql_query)
         results = cursor.fetchall()
+        if financial_years:
+            erldc_state_name, erldc_uploads = _get_erldc_ra_period_upload_status(
+                cursor,
+                'year',
+                min(fy_start for fy_start, _ in financial_years),
+                max(fy_start for fy_start, _ in financial_years)
+            )
+            results = [result for result in results if result[0] != erldc_state_name]
+            results.extend(erldc_uploads.values())
+            if not erldc_uploads:
+                results.append((erldc_state_name, None, None, None, 2, 0))
 
         all_states = set(result[0] for result in results)
 
@@ -6494,10 +6766,3 @@ if __name__ == '__main__':
     # Long channel_timeout = time for large files to upload
     serve(app, host="0.0.0.0", port=5005, max_request_body_size=25*1024*1024, 
           channel_timeout=900, recv_bytes=1024*1024, threads=4)
-    # app.run(host='0.0.0.0', port=5000, debug=False)
-
-
-
-
-
-

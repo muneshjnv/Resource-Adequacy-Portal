@@ -178,7 +178,9 @@ export class ViewIntradayComponent {
             if(data["status"] == "success") {
               // console.log(typeof data["data"])
               // console.log(data)
-              this.spreadsheet.nativeElement.jexcel.setData(data["data"])
+              if (!this.isERLDCSelected()) {
+                this.spreadsheet.nativeElement.jexcel.setData(data["data"]);
+              }
               this.uploadDate = data["date"]
               this.uploadTime = data["time"]
               this.revision = data["revision"]
@@ -210,6 +212,10 @@ export class ViewIntradayComponent {
 
     get form() {
       return this.validationform.controls;
+    }
+
+    isERLDCSelected(): boolean {
+      return String(this.validationform?.get('state')?.value) === '8';
     }
 
     formSubmit() {

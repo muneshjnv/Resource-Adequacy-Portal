@@ -213,6 +213,10 @@ export class ViewDayaheadComponent {
       return this.validationform.controls;
     }
 
+    isERLDCSelected(): boolean {
+      return String(this.validationform?.get('state')?.value) === '8';
+    }
+
     formSubmit() {
       this.formsubmit = true;
     }
@@ -808,4 +812,3 @@ export class ViewDayaheadComponent {
   
 
 }
-

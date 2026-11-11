@@ -186,7 +186,9 @@ export class ViewMonthaheadComponent {
             if(data["status"] == "success") {
               // console.log(typeof data["data"])
               // console.log(data)
-              this.spreadsheet.nativeElement.jexcel.setData(data["data"])
+              if (!this.isERLDCSelected()) {
+                this.spreadsheet.nativeElement.jexcel.setData(data["data"]);
+              }
               // this.uploadDate = data["date"]
               this.fromDate = data["from_date"]
               this.toDate = data["to_date"]
@@ -250,6 +252,10 @@ export class ViewMonthaheadComponent {
 
     get form() {
       return this.validationform.controls;
+    }
+
+    isERLDCSelected(): boolean {
+      return String(this.validationform?.get('state')?.value) === '8';
     }
 
     formSubmit() {

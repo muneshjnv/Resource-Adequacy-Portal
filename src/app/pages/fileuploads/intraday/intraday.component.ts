@@ -8,6 +8,7 @@ import { TokenStorageService } from 'src/app/core/services/token-storage.service
 import * as jspreadsheet from 'jspreadsheet-ce';
 import { DatePipe } from '@angular/common';
 import { IntradayForecastService } from 'src/app/core/services/intraday-forecast.service';
+import { validateERLDCWorkbook } from '../erl-dc-workbook-validation';
 
 const today = new Date();
 
@@ -42,6 +43,7 @@ export class IntradayComponent {
   formsubmit!: boolean;
 
   uploading: boolean = false;
+  validatingWorkbook: boolean = false;
 
   
 
@@ -116,7 +118,9 @@ export class IntradayComponent {
       this.validationform.get('disabledDate')!.disable()
     }
 
-    Swal.fire({text:'Data is prefilled with zeros, Please upload the file preview the data and then Upload!',confirmButtonColor: 'rgb(3, 142, 220)',});
+    if (!this.isERLDCSelected()) {
+      Swal.fire({text:'Data is prefilled with zeros, Please upload the file preview the data and then Upload!',confirmButtonColor: 'rgb(3, 142, 220)',});
+    }
 
 
   }
@@ -247,6 +251,10 @@ export class IntradayComponent {
    get form() {
     return this.validationform.controls;
   }
+
+   isERLDCSelected(): boolean {
+     return String(this.validationform?.get('state')?.value) === '8';
+   }
   
   
   ngAfterViewInit() {
@@ -681,6 +689,8 @@ export class IntradayComponent {
   
   confirm() {
 
+    if (this.validatingWorkbook) return;
+
     if(this.validationform.get('excelFile')!.value == null) {
       Swal.fire({text:'It seems you have not uploaded the file, Please upload the file!',confirmButtonColor: 'rgb(3, 142, 220)',});
   
@@ -705,7 +715,7 @@ export class IntradayComponent {
             formData.append('state', this.validationform.get('state')!.value);
             formData.append('disabledDate', this.validationform.get('disabledDate')!.value);
             formData.append('excelFile', this.validationform.get('excelFile')!.value);
-            formData.append('data', JSON.stringify(this.spreadsheet.nativeElement.jexcel.getData()))
+            formData.append('data', JSON.stringify(this.isERLDCSelected() ? [] : this.spreadsheet.nativeElement.jexcel.getData()))
 
             this.uploading = true;
               
@@ -751,6 +761,7 @@ export class IntradayComponent {
   
   
   onUpload() {
+    if (this.validatingWorkbook) return;
     // console.log(this.validationform.get('excelFile')!.value)
     if(this.validationform.get('excelFile')!.value == null) {
       Swal.fire({text:'It seems you have not uploaded the file, Please upload the file!',confirmButtonColor: 'rgb(255, 0, 0)',});
@@ -764,7 +775,7 @@ export class IntradayComponent {
     formData.append('state', this.validationform.get('state')!.value);
     formData.append('disabledDate', this.validationform.get('disabledDate')!.value);
     formData.append('excelFile', this.validationform.get('excelFile')!.value);
-    formData.append('data', JSON.stringify(this.spreadsheet.nativeElement.jexcel.getData()))
+    formData.append('data', JSON.stringify(this.isERLDCSelected() ? [] : this.spreadsheet.nativeElement.jexcel.getData()))
       
       this.intradayForecast.uploadIntradayFile(formData).subscribe((res: any)=> {
         if('error' in res) {
@@ -807,8 +818,9 @@ export class IntradayComponent {
   }
   
   downloadExcel() {
-    // Define the path to the Excel file in the assets folder
-    const excelFilePath = 'assets/Intraday Demand Forecast format (from States).xlsx';
+    const excelFilePath = this.isERLDCSelected()
+      ? 'assets/Intraday Demand Forecast format (from ERLDC).xlsx'
+      : 'assets/Intraday Demand Forecast format (from States).xlsx';
   
     // Trigger the download by creating a temporary <a> element
     const a = document.createElement('a');
@@ -822,10 +834,57 @@ export class IntradayComponent {
   
   handleFileInput(event: any) {
 
-    console.log(this.spreadsheet.nativeElement.jexcel);
     const file = event.target.files[0];
     this.validationform.get('excelFile')!.setValue(file);
+    this.validatingWorkbook = false;
     if (!file) return;
+
+    if (this.isERLDCSelected()) {
+      this.validatingWorkbook = true;
+      const clearSelection = (): void => {
+        this.validationform.get('excelFile')!.setValue(null);
+        event.target.value = null;
+        this.validatingWorkbook = false;
+      };
+      if (!file.name.toLowerCase().endsWith('.xlsx')) {
+        clearSelection();
+        Swal.fire({text:'ERLDC forecast workbooks must be in .xlsx format.',confirmButtonColor: 'rgb(255, 0, 0)',});
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const workbook = XLSX.read(reader.result, { type: 'array' });
+          const validationError = validateERLDCWorkbook(workbook, {
+            rowsPerDay: 96,
+            dayCount: 1,
+            expectedColumns: 21,
+            blockColumn: 0,
+            periodColumn: 1,
+            lastPeriodEnd: '00:00',
+            demandColumn: 2,
+            forecastStartColumn: 2
+          });
+          if (validationError) {
+            clearSelection();
+            Swal.fire({text: validationError,confirmButtonColor: 'rgb(255, 0, 0)',});
+            return;
+          }
+          this.validatingWorkbook = false;
+          Swal.fire({text:'The ERLDC workbook is ready to upload.',icon:'success',confirmButtonColor: 'rgb(3, 142, 220)',});
+        } catch {
+          clearSelection();
+          Swal.fire({text:'The workbook could not be read. Please upload a valid .xlsx workbook.',confirmButtonColor: 'rgb(255, 0, 0)',});
+        }
+      };
+      reader.onerror = () => {
+        clearSelection();
+        Swal.fire({text:'The workbook could not be read. Please try uploading it again.',confirmButtonColor: 'rgb(255, 0, 0)',});
+      };
+      reader.readAsArrayBuffer(file);
+      return;
+    }
   
     const reader = new FileReader();
     reader.onload = (e: any) => {
