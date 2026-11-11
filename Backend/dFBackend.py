@@ -841,6 +841,91 @@ def _has_ra_values_in_workbook(file_path):
         workbook.close()
 
 
+def _add_erl_dc_total_sheet(
+    file_path, data_row_count, first_forecast_column, last_forecast_column
+):
+    required_states = ["Bihar", "Jharkhand", "Odisha", "West Bengal", "DVC", "Sikkim"]
+    workbook = openpyxl.load_workbook(file_path)
+    sheet_names = {name.strip().lower(): name for name in workbook.sheetnames}
+    if not all(state.lower() in sheet_names for state in required_states):
+        workbook.close()
+        return None
+
+    existing_er_sheet = sheet_names.get("er")
+    if existing_er_sheet:
+        workbook.remove(workbook[existing_er_sheet])
+
+    source_ws = workbook[sheet_names["bihar"]]
+    er_ws = workbook.create_sheet(title="ER")
+    from copy import copy
+    from openpyxl.cell.cell import MergedCell
+    from openpyxl.utils import get_column_letter
+
+    for column, dimension in source_ws.column_dimensions.items():
+        er_ws.column_dimensions[column].width = dimension.width
+        er_ws.column_dimensions[column].hidden = dimension.hidden
+
+    for row_number, dimension in source_ws.row_dimensions.items():
+        if dimension.height is not None:
+            er_ws.row_dimensions[row_number].height = dimension.height
+        er_ws.row_dimensions[row_number].hidden = dimension.hidden
+
+    for row in source_ws.iter_rows():
+        for cell in row:
+            if isinstance(cell, MergedCell):
+                continue
+            new_cell = er_ws.cell(row=cell.row, column=cell.column, value=cell.value)
+            if cell.has_style:
+                new_cell.font = copy(cell.font)
+                new_cell.fill = copy(cell.fill)
+                new_cell.border = copy(cell.border)
+                new_cell.alignment = copy(cell.alignment)
+                new_cell.number_format = cell.number_format
+                new_cell.protection = copy(cell.protection)
+
+    for merged_range in source_ws.merged_cells.ranges:
+        er_ws.merge_cells(str(merged_range))
+    er_ws.sheet_format = copy(source_ws.sheet_format)
+    er_ws.sheet_properties = copy(source_ws.sheet_properties)
+    er_ws.page_margins = copy(source_ws.page_margins)
+    er_ws.page_setup = copy(source_ws.page_setup)
+    er_ws.print_options = copy(source_ws.print_options)
+
+    for row_number in range(8, 8 + data_row_count):
+        for column_number in range(first_forecast_column, last_forecast_column + 1):
+            column_letter = get_column_letter(column_number)
+            references = ",".join(
+                f"'{sheet_names[state.lower()]}'!{column_letter}{row_number}"
+                for state in required_states
+            )
+            er_ws.cell(row=row_number, column=column_number, value=f"=SUM({references})")
+
+    er_ws["C3"] = "ERLDC"
+    output = BytesIO()
+    workbook.save(output)
+    workbook.close()
+    output.seek(0)
+    return output
+
+
+def _send_erl_dc_workbook_download(
+    file_path, state_id, data_row_count, first_forecast_column, last_forecast_column
+):
+    mimetype = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    if str(state_id) == "8":
+        workbook_output = _add_erl_dc_total_sheet(
+            file_path, data_row_count, first_forecast_column, last_forecast_column
+        )
+        if workbook_output is not None:
+            return send_file(
+                workbook_output,
+                as_attachment=True,
+                download_name=os.path.basename(file_path),
+                mimetype=mimetype
+            )
+    return send_file(file_path, as_attachment=True, mimetype=mimetype)
+
+
 def _has_ra_values_in_period_workbook(file_path, period, from_date, to_date):
     if not file_path or not os.path.isfile(file_path) or not from_date or not to_date:
         return False
@@ -1301,8 +1386,8 @@ def downloadIntraday():
             cursor.close()
             return jsonify({'status': 'failure', 'error': 'File not found on server'}), 404
 
-        # Send the file as an attachment
-        return send_file(file_path, as_attachment=True, mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        # Send the ERLDC workbook with a generated total sheet when applicable.
+        return _send_erl_dc_workbook_download(file_path, state_id, 96, 3, 21)
 
     except Exception as e:
         log_error("downloadintraday", e)
@@ -1353,8 +1438,8 @@ def downloadDayAhead():
             cursor.close()
             return jsonify({'status': 'failure', 'error': 'File not found on server'}), 404
 
-        # Send the file as an attachment
-        return send_file(file_path, as_attachment=True, mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        # Send the ERLDC workbook with a generated total sheet when applicable.
+        return _send_erl_dc_workbook_download(file_path, state_id, 96, 3, 21)
 
     except Exception as e:
         log_error("downloaddayahead", e)
@@ -1412,8 +1497,9 @@ def downloadWeekAhead():
             cursor.close()
             return jsonify({'status': 'failure', 'error': 'File not found on server'}), 404
 
-        # Send the file as an attachment
-        return send_file(file_path, as_attachment=True, mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        # Send the ERLDC workbook with a generated total sheet when applicable.
+        data_row_count = ((upload_to_date - upload_from_date).days + 1) * 96
+        return _send_erl_dc_workbook_download(file_path, state_id, data_row_count, 4, 37)
 
     except Exception as e:
         log_error("downloadweekahead", e)
@@ -1470,8 +1556,9 @@ def downloadMonthAhead():
             cursor.close()
             return jsonify({'status': 'failure', 'error': 'File not found on server'}), 404
 
-        # Send the file as an attachment
-        return send_file(file_path, as_attachment=True, mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        # Send the ERLDC workbook with a generated total sheet when applicable.
+        data_row_count = ((upload_to_date - upload_from_date).days + 1) * 96
+        return _send_erl_dc_workbook_download(file_path, state_id, data_row_count, 4, 32)
 
     except Exception as e:
         log_error("downloadmonthahead", e)
@@ -1527,8 +1614,9 @@ def downloadYearAhead():
             cursor.close()
             return jsonify({'status': 'failure', 'error': 'File not found on server'}), 404
 
-        # Send the file as an attachment
-        return send_file(file_path, as_attachment=True, mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        # Send the ERLDC workbook with a generated total sheet when applicable.
+        data_row_count = ((upload_to_date - upload_from_date).days + 1) * 24
+        return _send_erl_dc_workbook_download(file_path, state_id, data_row_count, 3, 31)
 
     except Exception as e:
         log_error("downloadyearahead", e)
@@ -1555,7 +1643,7 @@ def downloadAllStatesCombined():
         to_date = data_json.get('to_date')
 
         # Fetch state names
-        cursor.execute("SELECT state_id, state_name FROM states WHERE state_id IN (1,2,3,4,5,7,8)")
+        cursor.execute("SELECT state_id, state_name FROM states WHERE state_id IN (1,2,3,4,5,7)")
         states = cursor.fetchall()
 
         files_to_merge = {}
@@ -1655,8 +1743,7 @@ def downloadAllStatesCombined():
             "DVC",
             "Odisha",
             "West Bengal",
-            "Sikkim", 
-            'ERLDC'
+            "Sikkim"
         ]
 
         template_source_wb = None
